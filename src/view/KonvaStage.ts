@@ -1,9 +1,11 @@
 import Konva from "konva";
 
 /**
- * The only file that imports Konva (Adapter, see #24).
- * Everything else draws through this class, so the canvas library can be
- * swapped or faked in one place.
+ * Konva is only imported under src/view/ (shared owner, see #24).
+ * View classes recieve the stage directly from main.ts, allowing for:
+ * - main.ts to be Konva-free
+ * - management of a single stage per page
+ * - centralized control over the scene lifecycle
  */
 export class KonvaStage {
   private readonly stage: Konva.Stage;
