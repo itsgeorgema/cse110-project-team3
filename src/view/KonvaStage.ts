@@ -2,7 +2,7 @@ import Konva from "konva";
 
 /**
  * Konva is only imported under src/view/ (shared owner, see #24).
- * View classes recieve the stage directly from main.ts, allowing for:
+ * View classes receive the stage directly from main.ts, allowing for:
  * - main.ts to be Konva-free
  * - management of a single stage per page
  * - centralized control over the scene lifecycle
