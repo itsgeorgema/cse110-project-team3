@@ -21,11 +21,15 @@ Example after a validator implementation exists:
 
 ```ts
 const problem = {
-  levelId: "carKinematics:1",
-  inputVariables: ["velocity"],
-  expectedSolution: { velocity: 12.5 },
-  toleranceRule: { absolute: 0.1 },
-  bounds: { velocity: { min: 0 } },
+  gameName = “carKinematics”，
+  levelId = 1，
+  problemStatementVariables = [...]，
+  userInputVariables = [...]，
+  problemStatementVariablesValues， // dictionary, map
+  ProblemStatment = `Problem statement: ${relevantVariable}`，
+  expectedSolution = {velocity: 12.5}，
+  toleranceRule = {absolute: 0.1}，
+  bounds = {velocity: { min: 0 }}
 };
 const input = {
   levelId: problem.levelId,
