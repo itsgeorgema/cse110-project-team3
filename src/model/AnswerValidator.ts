@@ -5,7 +5,8 @@
 
 /** The AnswerSubmission proposed in #25. */
 export interface ValidationSubmission {
-  readonly levelId: string | number;
+  readonly gameId: string;
+  readonly levelId: number;
   readonly values: Readonly<Record<string, number>>;
   readonly units: Readonly<Record<string, string>>;
 }
@@ -23,9 +24,10 @@ export interface AnswerBounds {
 
 /** Validation-related configuration of the active problem. */
 export interface AnswerValidationConfig {
-  readonly levelId: string | number;
+  readonly gameId: string;
+  readonly levelId: number;
   readonly inputVariables: readonly string[];
-  readonly expectedSolution: Readonly<Record<string, number>>;
+  readonly expectedUserInput: Readonly<Record<string, number>>;
   readonly toleranceRule: ToleranceRule;
   readonly bounds?: Readonly<Record<string, AnswerBounds>>;
 }

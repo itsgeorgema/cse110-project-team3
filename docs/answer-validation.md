@@ -20,21 +20,13 @@ The controller displays feedback and records the attempt after playback (#26).
 Example after a validator implementation exists:
 
 ```ts
-const problem = {
-  gameName = “carKinematics”，
-  levelId = 1，
-  problemStatementVariables = [...]，
-  userInputVariables = [...]，
-  problemStatementVariablesValues， // dictionary, map
-  ProblemStatment = `Problem statement: ${relevantVariable}`，
-  expectedSolution = {velocity: 12.5}，
-  toleranceRule = {absolute: 0.1}，
-  bounds = {velocity: { min: 0 }}
+const problem : LevelDataConfig {
+ ...
 };
-const input = {
-  levelId: problem.levelId,
-  values: { velocity: 12.55 },
-  units: { velocity: "m/s" },
+
+const input : ValidationSubmission = {
+  ...
 };
-const result = validator.validateAnswer(input, problem); // Expected: correct === true
+
+const result = validator.validateAnswer(input, problem); // Expected: true
 ```
