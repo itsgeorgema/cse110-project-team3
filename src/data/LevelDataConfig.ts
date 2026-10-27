@@ -1,35 +1,24 @@
-//import interface from AnswerValidator
+import type { LevelDataConfig as ValidatorLevelConfig } from "../model/AnswerValidator";
 
-class LevelDataConfig{
-    levelId: LevelId;
-    gameName: string
-    allowedVariables: VariableSpec[];
-    environment: ContextTestEnvironment;
-    initialConditions: InitialConditions;
-    sceneObjects: {type: string; position: vec2} [];
-    expectedSolution: solution;
-    eoleranceRule: ToleranceRule;
-    targetCoordinates: Vec2[];
-}
+interface LevelDataConfig{
+//     gameName: string;
+//     levelId: LevelId;
+//     problemStatementVariables: string[];
+//     problemStatementVariablesValues: Record<string, number>;
+//     problemStatement: string; // template with {placeholders}, see note below
+//     userInputVariables: string[];
+//     userInputVariablesUnits: Record<string, string>;
+//     expectedUserInput: Record<string, number>;
+//     toleranceRule: ToleranceRule;
+//     bounds: Record<string, Bounds>;
+// }
 
 class LevelDataConfigFactory{
     //caller method, which instantiates the different levels
+    create(gameId, levelId);
 }
 
-interface LevelDataConfigInterface{
-    levelId;
-    gameName;
-    allowedVariables;
-    environment;
-    initialConditions;
-    sceneObjects;
-    expectedSolution;
-    eoleranceRule;
-    targetCoordinates;
-}
-
-
-class Level2 implements LevelDataConfigInterface{
+class Level2 implements LevelDataConfig{
     gameName = "netForce"
     levelId = 2
     problemStatementVariables = [...]
