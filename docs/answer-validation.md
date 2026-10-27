@@ -20,13 +20,10 @@ The controller displays feedback and records the attempt after playback (#26).
 Example after a validator implementation exists:
 
 ```ts
-const problem : LevelDataConfig {
- ...
-};
+declare const problem: LevelDataConfig;
+declare const input: AnswerSubmission;
+declare const validator: AnswerValidator;
 
-const input : ValidationSubmission = {
-  ...
-};
-
-const result = validator.validateAnswer(input, problem); // Expected: true
+const result = validator.validateAnswer(input, problem);
+// result.correct indicates whether the answer is correct.
 ```

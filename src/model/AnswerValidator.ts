@@ -4,7 +4,7 @@
  */
 
 /** The AnswerSubmission proposed in #25. */
-export interface ValidationSubmission {
+export interface AnswerSubmission {
   readonly gameId: string;
   readonly levelId: number;
   readonly values: Readonly<Record<string, number>>;
@@ -22,8 +22,11 @@ export interface AnswerBounds {
   readonly max?: number;
 }
 
-/** Validation-related configuration of the active problem. */
-export interface AnswerValidationConfig {
+/**
+ * Minimal LevelDataConfig stub for interface review.
+ * The physics/problem subteam will extend the full problem configuration.
+ */
+export interface LevelDataConfig {
   readonly gameId: string;
   readonly levelId: number;
   readonly inputVariables: readonly string[];
@@ -32,9 +35,20 @@ export interface AnswerValidationConfig {
   readonly bounds?: Readonly<Record<string, AnswerBounds>>;
 }
 
+/** Only the problem fields needed by the validator. */
+export type AnswerValidationConfig = Pick<
+  LevelDataConfig,
+  | "gameId"
+  | "levelId"
+  | "inputVariables"
+  | "expectedUserInput"
+  | "toleranceRule"
+  | "bounds"
+>;
+
 /** Proposed validation fields of AttemptResult; no simulation outcome is added. */
 export interface AnswerValidationResult {
-  readonly submittedAnswer: ValidationSubmission;
+  readonly submittedAnswer: AnswerSubmission;
   readonly correct: boolean;
   readonly feedback: string;
 }
@@ -46,13 +60,13 @@ export interface AnswerValidationResult {
 export interface AnswerValidator {
   /** Checks required fields, finite values, level identity, and inclusive bounds. */
   validateInput(
-    input: ValidationSubmission,
+    input: AnswerSubmission,
     level: AnswerValidationConfig,
   ): boolean;
 
   /** Checks input and compares all required answers with the configured tolerance. */
   validateAnswer(
-    input: ValidationSubmission,
+    input: AnswerSubmission,
     level: AnswerValidationConfig,
   ): AnswerValidationResult;
 }
