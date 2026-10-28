@@ -24,6 +24,18 @@ export class ProgressionSystem {
 
   private readonly tracker: Pick<ProgressTracker, "isCompleted">;
 
+  /** Completed levels remain replayable; new levels require all earlier levels. */
+  isAvailable(current: LevelIdentity): boolean {
+    const index = this.levels.findIndex(level =>
+      level.gameId === current.gameId && level.levelId === current.levelId,
+    );
+    if (index < 0) return false;
+    return this.tracker.isCompleted(current.gameId, current.levelId) ||
+      this.levels.slice(0, index).every(level =>
+        this.tracker.isCompleted(level.gameId, level.levelId),
+      );
+  }
+
   getNextLevel(current: LevelIdentity): LevelIdentity | undefined {
     const index = this.levels.findIndex(level =>
       level.gameId === current.gameId && level.levelId === current.levelId,
