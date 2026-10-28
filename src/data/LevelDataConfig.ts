@@ -1,4 +1,5 @@
 import type { ToleranceRule, AnswerBounds } from "../model/AnswerValidator";
+import { PhysicsEngine } from "../model/PhysicsEngine";
 
 export interface LevelDataConfig {
   readonly gameName: string;
@@ -48,18 +49,58 @@ export class LevelDataConfigFactory {
     }
   }
 
+  /**
+   * Generates a random integer between min and max, inclusive.
+   *
+   * @param min - The minimum possible integer.
+   * @param max - The maximum possible integer.
+   * @returns A random integer in the range [min, max].
+   */
+  private randomIntegerInclusive(min: number, max: number): number {
+    // Calculate the number of possible integers in the range.
+    // Add 1 because both min and max should be included.
+    const range = max - min + 1;
+
+    // Math.random() returns a number >= 0 and < 1.
+    // Multiplying by range scales it to a number >= 0 and < range.
+    // Math.floor() rounds down to an integer from 0 to range - 1.
+    // Note range - 1 = max - min.
+    const randomOffset = Math.floor(Math.random() * range);
+
+    // Shift the random integer by min so the result is between
+    // min and max, inclusive.
+    return randomOffset + min;
+  }
+
   private createKinematicsLevel1LevelDataConfig() : LevelDataConfig {
+    const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
+    const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
+    const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+
+    const problemStatement = `Velocity is displacement (the change in ` +
+                              `position from start to finish) divided by the ` +
+                              `time taken. If a getaway car moves ` +
+                              `${displacementForProblem} meters straight ` +
+                              `toward the backstage gate in ${timeForProblem} ` +
+                              `seconds, what is the car's velocity?`;
+
     return {
       gameName: "kinematics",
       levelId: 1,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      problemStatementVariables: ["distance", "time"],
+      problemStatementVariablesValues: {
+        time: timeForProblem,
+        velocity: velocityForProblem,
+        distance: displacementForProblem
+      },
+      problemStatement: problemStatement,
+      userInputVariables: ["velocity"],
+      userInputVariablesUnits: { velocity: "m/s" },
+      expectedUserInput: { velocity: velocityForProblem },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: {
+        velocity: { min: 0.0 }
+      }
     };
   }
 
