@@ -104,29 +104,54 @@ export class LevelDataConfigFactory {
   }
 
   private createKinematicsLevel2LevelDataConfig() : LevelDataConfig {
-    // TODO Finish
+    const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
+    const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
+    const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+
+    const problemStatement = `Displacement is velocity (speed and direction) ` +
+                              `multiplied by the time taken. If a getaway car ` +
+                              `moves in ${velocityForProblem} m/s in a ` +
+                              `${timeForProblem} seconds, what is the car's displacement?`;
+                             
+
     return {
       gameName: "kinematics",
       levelId: 2,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      problemStatementVariables: ["velocity", "time"],
+      problemStatementVariablesValues: {
+        velocity: velocityForProblem,
+        time: timeForProblem
+      },
+      problemStatement: problemStatement,
+      userInputVariables: ["displacement"],
+      userInputVariablesUnits: {displacement:"m"},
+      expectedUserInput: {displacement: displacementForProblem},
+      toleranceRule: { absolute: 0.00001 },
+      bounds: {
+        velocity: { min: 0.0 }
+      }
     };
   }
 
   private createKinematicsLevel3LevelDataConfig() : LevelDataConfig {
      // TODO Finish
+    // const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
+    // const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
+    // const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+
+    // const problemStatement = `Velocity is displacement (the change in ` +
+    //                           `position from start to finish) divided by the ` +
+    //                           `time taken. If a getaway car moves ` +
+    //                           `${displacementForProblem} meters straight ` +
+    //                           `toward the backstage gate in ${timeForProblem} ` +
+    //                           `seconds, what is the car's velocity?`;
+
     return {
       gameName: "kinematics",
       levelId: 3,
       problemStatementVariables: [],
       problemStatementVariablesValues: {},
-      problemStatement: "",
+      problemStatement: '',
       userInputVariables: [],
       userInputVariablesUnits: {},
       expectedUserInput: {},
