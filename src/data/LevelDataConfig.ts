@@ -1,24 +1,24 @@
-import type { LevelDataConfig as ValidatorLevelConfig } from "../model/AnswerValidator";
+import type { ToleranceRule, AnswerBounds } from "../model/AnswerValidator";
 
-interface LevelDataConfig{
-//     gameName: string;
-//     levelId: LevelId;
-//     problemStatementVariables: string[];
-//     problemStatementVariablesValues: Record<string, number>;
-//     problemStatement: string; // template with {placeholders}, see note below
-//     userInputVariables: string[];
-//     userInputVariablesUnits: Record<string, string>;
-//     expectedUserInput: Record<string, number>;
-//     toleranceRule: ToleranceRule;
-//     bounds: Record<string, Bounds>;
-// }
-
-class LevelDataConfigFactory{
-    //caller method, which instantiates the different levels
-    create(gameId, levelId);
+export interface LevelDataConfig {
+  readonly gameName: string;
+  readonly levelId: number;
+  readonly problemStatementVariables: readonly string[];
+  readonly problemStatementVariablesValues: Readonly<Record<string, number>>,
+  readonly problemStatement: string; // Problem statement in form `${relevantVariable}`
+  readonly userInputVariables: readonly string[];
+  readonly userInputVariablesUnits: Readonly<Record<string, string>>;
+  readonly expectedUserInput: Readonly<Record<string, number>>;
+  readonly toleranceRule: ToleranceRule;
+  readonly bounds: Readonly<Record<string, AnswerBounds>>;
 }
 
-class Level2 implements LevelDataConfig{
+export class LevelDataConfigFactory {
+    //caller method, which instantiates the different levels
+    // create(gameId, levelId);
+}
+
+/*class Level2 implements LevelDataConfig{
     gameName = "netForce"
     levelId = 2
     problemStatementVariables = [...]
@@ -34,6 +34,6 @@ class Level2 implements LevelDataConfig{
         //wording generator
         // calls calculateGravity, calculateNormalForce, and calculateNetForceDirectlyOpposingForces in a factory
     }
-}
+}*/
 
 //test bench via verification
