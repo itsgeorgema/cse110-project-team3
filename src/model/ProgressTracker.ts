@@ -18,6 +18,15 @@ export class ProgressTracker {
     this.attempts.push(snapshot);
   }
 
+  /** A later failed replay never removes an earlier successful completion. */
+  isCompleted(gameId: string, levelId: number): boolean {
+    return this.attempts.some(attempt =>
+      attempt.correct &&
+      attempt.submittedAnswer.gameId === gameId &&
+      attempt.submittedAnswer.levelId === levelId,
+    );
+  }
+
   getAttempts(): readonly AnswerValidationResult[] {
     return Object.freeze([...this.attempts]);
   }
