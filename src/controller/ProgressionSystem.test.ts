@@ -12,6 +12,39 @@ function record(tracker: ProgressTracker, correct: boolean, level = first) {
 }
 
 describe("ProgressionSystem", () => {
+  it("makes only the first level initially available and rejects unknown levels", () => {
+    const tracker = new ProgressTracker();
+    const progression = new ProgressionSystem(tracker, [first, second]);
+    expect(progression.isAvailable(first)).toBe(true);
+    expect(progression.isAvailable(second)).toBe(false);
+    expect(progression.isAvailable({ ...first, levelId: 99 })).toBe(false);
+    expect(new ProgressionSystem(tracker, []).isAvailable(first)).toBe(false);
+  });
+
+  it("unlocks after success, keeps failures retryable, and allows completed replays", () => {
+    const tracker = new ProgressTracker();
+    const progression = new ProgressionSystem(tracker, [first, second]);
+    record(tracker, false);
+    expect(progression.isAvailable(first)).toBe(true);
+    expect(progression.isAvailable(second)).toBe(false);
+    record(tracker, true);
+    expect(progression.isAvailable(second)).toBe(true);
+    record(tracker, false);
+    expect(progression.isAvailable(first)).toBe(true);
+    expect(progression.isAvailable(second)).toBe(true);
+  });
+
+  it("requires all preceding levels while preserving completion earned earlier", () => {
+    const tracker = new ProgressTracker();
+    const third = { ...second, levelId: 2 };
+    const progression = new ProgressionSystem(tracker, [first, second, third]);
+    record(tracker, true, second);
+    expect(progression.isAvailable(second)).toBe(true);
+    expect(progression.isAvailable(third)).toBe(false);
+    record(tracker, true, first);
+    expect(progression.isAvailable(third)).toBe(true);
+  });
+
   it("offers the next configured level only after success and preserves it after replay", () => {
     const tracker = new ProgressTracker();
     const progression = new ProgressionSystem(tracker, [first, second]);
