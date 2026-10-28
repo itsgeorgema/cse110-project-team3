@@ -87,11 +87,10 @@ export class LevelDataConfigFactory {
     return {
       gameName: "kinematics",
       levelId: 1,
-      problemStatementVariables: ["distance", "time"],
+      problemStatementVariables: ["displacement", "time"],
       problemStatementVariablesValues: {
         time: timeForProblem,
-        velocity: velocityForProblem,
-        distance: displacementForProblem
+        displacement: displacementForProblem
       },
       problemStatement: problemStatement,
       userInputVariables: ["velocity"],
