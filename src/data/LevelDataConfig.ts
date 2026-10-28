@@ -17,18 +17,18 @@ type GameId = "kinematics" | "netForce";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
-  public createLevelDataConfig(gameId : GameId, levelId : number) {
+  public createLevelDataConfig(gameId : GameId, levelId : number) : LevelDataConfig {
     switch (gameId) {
       case "kinematics":
         switch (levelId) {
           case 1:
-            break;
+            return this.createKinematicsLevel1LevelDataConfig();
           case 2:
-            break;
+            return this.createKinematicsLevel2LevelDataConfig();
           case 3:
-            break;
+            return this.createKinematicsLevel3LevelDataConfig();
           case 4:
-            break;
+            return this.createKinematicsLevel4LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -36,9 +36,9 @@ export class LevelDataConfigFactory {
       case "netForce":
         switch (levelId) {  
           case 1:
-            break;
+            return this.createNetForceLevel1LevelDataConfig();
           case 2:
-            break;
+            return this.createNetForceLevel2LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -47,24 +47,99 @@ export class LevelDataConfigFactory {
         throw new Error("gameId does not exist"); 
     }
   }
+
+  private createKinematicsLevel1LevelDataConfig() : LevelDataConfig {
+    return {
+      gameName: "kinematics",
+      levelId: 1,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
+
+  private createKinematicsLevel2LevelDataConfig() : LevelDataConfig {
+    // TODO Finish
+    return {
+      gameName: "kinematics",
+      levelId: 2,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
+
+  private createKinematicsLevel3LevelDataConfig() : LevelDataConfig {
+     // TODO Finish
+    return {
+      gameName: "kinematics",
+      levelId: 3,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
+
+  private createKinematicsLevel4LevelDataConfig() : LevelDataConfig {
+    // TODO Finish
+    return {
+      gameName: "kinematics",
+      levelId: 4,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
+
+  private createNetForceLevel1LevelDataConfig() : LevelDataConfig {
+    // TODO Finish
+    return {
+      gameName: "netForce",
+      levelId: 1,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
+
+  private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
+    // TODO Finish
+    return {
+      gameName: "netForce",
+      levelId: 2,
+      problemStatementVariables: [],
+      problemStatementVariablesValues: {},
+      problemStatement: "",
+      userInputVariables: [],
+      userInputVariablesUnits: {},
+      expectedUserInput: {},
+      toleranceRule: { absolute: 0.0 },
+      bounds: {}
+    };
+  }
 };
-
-/*class Level2 implements LevelDataConfig{
-    gameName = "netForce"
-    levelId = 2
-    problemStatementVariables = [...]
-    problemStatementVariablesValues // dictionary, map
-    problemStatment = `Problem statement: ${relevantVariable}`
-    userInputVariables = [...]
-    userInputVariablesUnits = [...]
-    expectedUserInput = {velocity: 12.5} // example, change
-    toleranceRule = {absolute: 0.1} // example, change
-    bounds = {velocity: { min: 0 }} // example, change
-
-    generateProblemStatement(LevelDataConfig level){
-        //wording generator
-        // calls calculateGravity, calculateNormalForce, and calculateNetForceDirectlyOpposingForces in a factory
-    }
-}*/
-
-//test bench via verification
