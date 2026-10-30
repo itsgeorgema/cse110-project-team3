@@ -200,26 +200,29 @@ export class LevelDataConfigFactory {
 
   private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
     // TODO Finish
-    // const initialVelocity = this.randomIntegerInclusive(5, 30); // meters/second
-    // const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
-    // const finalVelocity = initialVelocity + this.randomIntegerInclusive(1,5) * timeForProblem;
-    // const accelerationForProblem = PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, 0, timeForProblem); // meters/second squared
+    const mass = this.randomIntegerInclusive(5, 30); // meters/second
+    const gravitationalForce = PhysicsEngine.calculateGravity(mass)
+    const normalForce = PhysicsEngine.calculateNormalForce(mass);
+    const netForceForProblem = PhysicsEngine.calculateNetForceDirectlyOpposingForces(normalForce, gravitationalForce); // meters/second squared
 
-    // const problemStatement = `Net force is all of the forces acted upon the object. If a crate ` +
-    //                           `is resting on the ground, the upward force and downard force cancels out. ` +
-    //                           `By using net ${initialVelocity} m/s ` +
-    //                           `to this ${finalVelocity} m/s at the end in ${timeForProblem} seconds ` +
-    //                           ` what is the car's acceleration?`;
+    const problemStatement = `Net force is the sum all of the forces acted upon the object. If a crate ` +
+                              `with ${mass} is resting on the ground, the gravitational force acts on the object ` +
+                              `with ${gravitationalForce.toFixed(3)} N and the ground acts on an object with a normal force of ${normalForce.toFixed(3)} `+
+                              `N. What is the net force acting on the object?`;
     return {
       gameName: "netForce",
       levelId: 2,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
+      problemStatementVariables: ["mass", "gravitationalForce", "normalForce"],
+      problemStatementVariablesValues: {
+        mass: mass,
+        gravitationalForce: gravitationalForce,
+        normalForce: normalForce
+      },
+      problemStatement: problemStatement,
+      userInputVariables: ["netForceForProblem"],
+      userInputVariablesUnits: {"netForceForProblem": "N"},
+      expectedUserInput: {netForceForProblem: netForceForProblem},
+      toleranceRule: { absolute: 0.00001 },
       bounds: {}
     };
   }
