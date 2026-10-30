@@ -110,7 +110,7 @@ export class LevelDataConfigFactory {
 
     const problemStatement = `Displacement is velocity (speed with direction) ` +
                               `multiplied by the time taken. If a getaway car ` +
-                              `moves in ${velocityForProblem} m/s for ` +
+                              `moves away from the guards in ${velocityForProblem} m/s for ` +
                               `${timeForProblem} seconds, what is the car's displacement?`;
                              
 
@@ -138,18 +138,18 @@ export class LevelDataConfigFactory {
     const initialVelocity = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
     const finalVelocity = initialVelocity + this.randomIntegerInclusive(1,5) * timeForProblem;
-    const accelerationForProblem = PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, 0, timeForProblem); // meters/second squared
+    const accelerationForProblem = PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, timeForProblem); // meters/second squared
 
     const problemStatement = `Acceleration is the rate of change. That is, the ` +
                               `change from initial velocity to the final velocity divided ` +
-                              `by time taken. If a getaway car speeds up from ${initialVelocity} m/s ` +
-                              `to this ${finalVelocity} m/s at the end in ${timeForProblem} seconds ` +
-                              ` what is the car's acceleration?`;
+                              `by time taken. If a getaway car accelerates up from ` +
+                              `${initialVelocity} m/s to ${finalVelocity} m/s in ` +
+                              `${timeForProblem} seconds to outrun the guard, what is the car's acceleration?`;
 
     return {
       gameName: "kinematics",
       levelId: 3,
-      problemStatementVariables: [ "velocity", "time"],
+      problemStatementVariables: [ "initalVelocity", "finalVelocity", "time"],
       problemStatementVariablesValues: {
         initialVelocity: initialVelocity,
         finalVelocity: finalVelocity,
@@ -200,6 +200,16 @@ export class LevelDataConfigFactory {
 
   private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
     // TODO Finish
+    // const initialVelocity = this.randomIntegerInclusive(5, 30); // meters/second
+    // const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
+    // const finalVelocity = initialVelocity + this.randomIntegerInclusive(1,5) * timeForProblem;
+    // const accelerationForProblem = PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, 0, timeForProblem); // meters/second squared
+
+    // const problemStatement = `Net force is all of the forces acted upon the object. If a crate ` +
+    //                           `is resting on the ground, the upward force and downard force cancels out. ` +
+    //                           `By using net ${initialVelocity} m/s ` +
+    //                           `to this ${finalVelocity} m/s at the end in ${timeForProblem} seconds ` +
+    //                           ` what is the car's acceleration?`;
     return {
       gameName: "netForce",
       levelId: 2,
