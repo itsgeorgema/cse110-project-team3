@@ -101,19 +101,7 @@ export class PhysicsEngine {
     return this.multiply(velocity, time);
   }
 
-  public static calculateAcceleration(initVelocity: number, finalVelocity: number, time: number){
+  public static calculateAcceleration(initVelocity: number, finalVelocity: number, time: number) {
     return (finalVelocity - initVelocity) / time;
-  }
-
-  public static calculateGravity(mass: number, gravitationalAcceleration: number = 9.81){
-    return mass * gravitationalAcceleration; //prepare for Minigame 2, Level 2
-  }
-
-  public static calculateNormalForce(mass: number, gravitationalAcceleration: number = 9.81){
-    return mass * gravitationalAcceleration; //prepare for Minigame 2, Level 2
-  }
-
-  public static calculateNetForceDirectlyOpposingForces(normalForce: number, gravitationalForce: number){
-    return normalForce - gravitationalForce; //prepare for Minigame 2, Level 2
   }
 }
