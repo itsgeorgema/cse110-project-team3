@@ -19,7 +19,9 @@
     "test:contracts": "tsc --project tsconfig.contracts.json",
     "test:browser:types": "tsc --project tsconfig.browser.json",
     "test:smoke": "playwright test --project=chromium --grep @smoke",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:ci-policy": "node --test scripts/ci/*.test.mjs",
+    "test:coverage:changed": "node scripts/ci/changed-coverage.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

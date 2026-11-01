@@ -31,6 +31,21 @@ review the resulting diff before committing.
 See the [testing plan](docs/testing/README.md) for current coverage, issue-level
 acceptance criteria, and where to add tests as gameplay is implemented.
 
+PRs changing application code must add or update tests. Use the PR template to
+explain test evidence and whether component interactions need integration tests.
+The **PR test policy** check verifies test changes; reviewers assess their
+relevance. An exception requires a concrete rationale, the `tests-exempt` label,
+and approval of the current commit by another collaborator with write access.
+New commits invalidate that approval. Exemptions never bypass coverage checks.
+
+PRs and merge-queue runs require at least 90% coverage of changed executable lines
+in each changed model/controller/data file, in addition to whole-file thresholds.
+View changes need accompanying test changes but are not measured by Node coverage.
+To check locally, run `npm run test:coverage`, then
+`npm run test:coverage:changed -- <base-commit-sha>`. The comparison uses the merge
+base and committed `HEAD`; commit your changes first. `npm run test:ci-policy`
+tests the enforcement scripts themselves.
+
 - `npm test`: run unit tests in Node without browsers or network services.
 - `npm run test:contracts`: compile-check the parser/controller/model interfaces,
   including rejected payload shapes and readonly submissions (#25, #43).

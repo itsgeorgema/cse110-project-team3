@@ -174,3 +174,19 @@ matrix's current evidence. Do not mark future rows covered just because an
 interface compiles. Keep regression cases isolated, do not use retries to conceal
 flakiness, and investigate artifacts from failures. See the root
 [README](../../README.md) for commands, report locations, and workflow cadence.
+
+The PR test policy requires changed application files to be accompanied by test
+additions or updates under `src/**/*.test.ts`, `tests/contracts/`, or `tests/e2e/`.
+Deleting or only renaming tests does not satisfy it. Documentation-only changes
+do not need tests. A reviewer-approved `tests-exempt` exception with a specific
+rationale covers cases such as a refactor already exercised by existing tests;
+the approving reviewer must have write access and approve the current head.
+Label, description, review, and commit events reevaluate the policy.
+
+Changed-line coverage independently checks at least 90% of changed executable
+lines in each changed logic file. Comments and type-only lines have no executable
+coverage; missing coverage records fail rather than silently disappearing. These
+checks cannot prove that a test is relevant: a test-file edit alone is not enough
+for review approval. Reviewers must check failure cases, boundaries, and whether
+real component interactions are exercised. CI/configuration changes are covered
+by the repository's CODEOWNERS entries so changes to these rules receive review.
