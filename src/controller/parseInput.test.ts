@@ -51,7 +51,16 @@ describe("parseInput", () => {
   });
 
   it("rejects letters and text JavaScript would otherwise convert", () => {
-    for (const text of ["abc", "12abc", "NaN", "Infinity", "0x10", "1,000", "+5", "1e"]) {
+    for (const text of [
+      "abc",
+      "12abc",
+      "NaN",
+      "Infinity",
+      "0x10",
+      "1,000",
+      "+5",
+      "1e",
+    ]) {
       expect(parseSpeed(text), text).toBe("Use digits, like 9.8 or 3e8.");
     }
   });

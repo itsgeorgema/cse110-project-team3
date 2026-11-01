@@ -14,9 +14,17 @@ npm run dev        # http://localhost:5173
 
 Other scripts:
 
+- `npm run lint`: ESLint checks with no warnings allowed; enforces Konva imports staying in `src/view/`
+- `npm run format:check`: check formatting without changing files
+- `npm run format`: apply Prettier formatting (two spaces, configured in `.editorconfig`)
 - `npm run typecheck`: TypeScript check, no output files
 - `npm run build`: typecheck, then a production build in `dist/`
 - `npm run preview`: serve the production build
+
+Before opening a pull request, run `npm run lint`, `npm run format:check`,
+`npm run typecheck`, and `npm test`. CI checks linting and formatting on every
+pull request and push to `main` (#52). Run `npm run format` to fix formatting;
+review the resulting diff before committing.
 
 ## Deployment
 
