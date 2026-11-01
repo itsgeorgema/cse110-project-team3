@@ -46,6 +46,33 @@ answer correctness. Interface-only modules contain no executable behavior.
 The percentage excludes the view and composition root, and does not claim
 coverage of the unimplemented validator, physics, progression, or persistence.
 
+### Browser tests
+
+Install browser binaries once with `npx playwright install chromium firefox webkit`.
+On Linux, use `npx playwright install --with-deps chromium firefox webkit` to also
+install the operating-system dependencies.
+
+- `npm run test:browser:types`: typecheck browser tests and their configuration.
+- `npm run test:smoke`: two quick Chromium startup checks, at desktop and narrow
+  viewport sizes.
+- `npm run test:e2e`: all browser tests on Chromium, Firefox, and WebKit.
+
+Playwright builds the production app with the GitHub Pages repository base path,
+starts a disposable preview server on port 4173, and shuts it down afterward.
+Leave that port free. Each test receives a fresh browser context and storage.
+Tests fail on uncaught exceptions, console errors, failed requests, or HTTP errors.
+There are no automatic retries to hide intermittent failures.
+
+The current scaffold checks stage/canvas creation and dimensions, production asset
+paths, and refresh without duplicate canvases. The narrow viewport check covers
+initial layout, not live resizing or mobile-device compatibility. These tests do
+not yet exercise gameplay. Only Chromium smoke tests are intended for the fast CI
+gate; the full browser matrix belongs in scheduled/manual regression runs.
+
+After a run, use `npx playwright show-report` to inspect the HTML report. Failure
+screenshots, videos, traces, and a JUnit report are written under `test-results/`.
+Run `npx playwright show-trace <trace.zip>` to inspect a retained trace.
+
 ## Deployment
 
 GitHub Actions deploys the site to GitHub Pages on every push to `main`. The

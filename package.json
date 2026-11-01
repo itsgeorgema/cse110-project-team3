@@ -16,10 +16,15 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test:coverage": "vitest run --coverage",
-    "test:contracts": "tsc --project tsconfig.contracts.json"
+    "test:contracts": "tsc --project tsconfig.contracts.json",
+    "test:browser:types": "tsc --project tsconfig.browser.json",
+    "test:smoke": "playwright test --project=chromium --grep @smoke",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.14.0",
     "prettier": "^3.9.10",
