@@ -33,13 +33,17 @@ export class DefaultAnswerValidator implements AnswerValidator {
         (level.toleranceRule.relative ?? 0) * Math.abs(expected),
       );
       const actual = input.values[field];
-      return actual >= expected - allowedError && actual <= expected + allowedError;
+      return (
+        actual >= expected - allowedError && actual <= expected + allowedError
+      );
     });
 
     return {
       submittedAnswer: input,
       correct,
-      feedback: correct ? "Correct!" : "Not quite. Check your answers and try again.",
+      feedback: correct
+        ? "Correct!"
+        : "Not quite. Check your answers and try again.",
     };
   }
 
@@ -85,8 +89,10 @@ export class DefaultAnswerValidator implements AnswerValidator {
     };
     const { absolute, relative = 0 } = level.toleranceRule;
     if (
-      !Number.isFinite(absolute) || absolute < 0 ||
-      !Number.isFinite(relative) || relative < 0
+      !Number.isFinite(absolute) ||
+      absolute < 0 ||
+      !Number.isFinite(relative) ||
+      relative < 0
     ) {
       invalid("tolerances must be finite and nonnegative.");
     }
@@ -94,12 +100,17 @@ export class DefaultAnswerValidator implements AnswerValidator {
       level.inputVariables.length === 0 ||
       new Set(level.inputVariables).size !== level.inputVariables.length
     ) {
-      invalid("inputVariables must contain at least one field, with no duplicates.");
+      invalid(
+        "inputVariables must contain at least one field, with no duplicates.",
+      );
     }
 
     for (const field of level.inputVariables) {
       const expected = level.expectedUserInput[field];
-      if (!Object.hasOwn(level.expectedUserInput, field) || !Number.isFinite(expected)) {
+      if (
+        !Object.hasOwn(level.expectedUserInput, field) ||
+        !Number.isFinite(expected)
+      ) {
         invalid(`missing or nonfinite expected answer for ${field}.`);
       }
       if (!Number.isFinite(relative * Math.abs(expected))) {
@@ -112,7 +123,11 @@ export class DefaultAnswerValidator implements AnswerValidator {
       if (bounds?.max !== undefined && !Number.isFinite(bounds.max)) {
         invalid(`maximum for ${field} must be finite.`);
       }
-      if (bounds?.min !== undefined && bounds.max !== undefined && bounds.min > bounds.max) {
+      if (
+        bounds?.min !== undefined &&
+        bounds.max !== undefined &&
+        bounds.min > bounds.max
+      ) {
         invalid(`minimum exceeds maximum for ${field}.`);
       }
     }

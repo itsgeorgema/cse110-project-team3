@@ -22,7 +22,10 @@ The controller displays feedback and records the attempt after playback (#26).
 Example:
 
 ```ts
-import type { AnswerSubmission, LevelDataConfig } from "../src/model/AnswerValidator";
+import type {
+  AnswerSubmission,
+  LevelDataConfig,
+} from "../src/model/AnswerValidator";
 import { DefaultAnswerValidator } from "../src/model/DefaultAnswerValidator";
 
 declare const problem: LevelDataConfig;

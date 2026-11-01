@@ -80,11 +80,15 @@ describe("input validation", () => {
   });
 
   it.each([
-    [0, true], [100, true], [-0.001, false], [100.001, false],
+    [0, true],
+    [100, true],
+    [-0.001, false],
+    [100.001, false],
   ])("checks inclusive bounds for %s", (velocity, valid) => {
     const input = submission(car, { velocity });
     expect(validator.validateInput(input, car)).toBe(valid);
-    if (!valid) expect(validator.validateAnswer(input, car).correct).toBe(false);
+    if (!valid)
+      expect(validator.validateAnswer(input, car).correct).toBe(false);
   });
 
   it("checks every required field in a multi-field answer", () => {
@@ -101,8 +105,12 @@ describe("input validation", () => {
 
   it("applies bounds to later fields too", () => {
     const level = { ...force, bounds: { forceY: { max: 0 } } };
-    expect(validator.validateInput(submission(level, { forceX: -10, forceY: 1 }), level))
-      .toBe(false);
+    expect(
+      validator.validateInput(
+        submission(level, { forceX: -10, forceY: 1 }),
+        level,
+      ),
+    ).toBe(false);
   });
 
   it("ignores extra fields and preserves fixed unit labels", () => {
@@ -118,24 +126,47 @@ describe("input validation", () => {
 
 describe("answer tolerance", () => {
   it.each([
-    [12.4, true], [12.6, true], [12.399999, false], [12.600001, false],
-  ])("checks decimal absolute tolerance endpoints for %s", (velocity, correct) => {
-    expect(validator.validateAnswer(submission(car, { velocity }), car).correct)
-      .toBe(correct);
-  });
+    [12.4, true],
+    [12.6, true],
+    [12.399999, false],
+    [12.600001, false],
+  ])(
+    "checks decimal absolute tolerance endpoints for %s",
+    (velocity, correct) => {
+      expect(
+        validator.validateAnswer(submission(car, { velocity }), car).correct,
+      ).toBe(correct);
+    },
+  );
 
   it.each([
-    [-11, true], [-9, true], [-11.001, false], [-8.999, false],
-  ])("uses the magnitude of a negative expected answer: %s", (value, correct) => {
-    const level = { ...force, toleranceRule: { absolute: 0.1, relative: 0.1 } };
-    const input = submission(level, { forceX: value, forceY: 0 });
-    expect(validator.validateAnswer(input, level).correct).toBe(correct);
-  });
+    [-11, true],
+    [-9, true],
+    [-11.001, false],
+    [-8.999, false],
+  ])(
+    "uses the magnitude of a negative expected answer: %s",
+    (value, correct) => {
+      const level = {
+        ...force,
+        toleranceRule: { absolute: 0.1, relative: 0.1 },
+      };
+      const input = submission(level, { forceX: value, forceY: 0 });
+      expect(validator.validateAnswer(input, level).correct).toBe(correct);
+    },
+  );
 
-  it.each([[0.1, true], [-0.1, true], [0.100001, false]])(
+  it.each([
+    [0.1, true],
+    [-0.1, true],
+    [0.100001, false],
+  ])(
     "uses absolute tolerance when the expected answer is zero: %s",
     (forceY, correct) => {
-      const level = { ...force, toleranceRule: { absolute: 0.1, relative: 0.1 } };
+      const level = {
+        ...force,
+        toleranceRule: { absolute: 0.1, relative: 0.1 },
+      };
       const input = submission(level, { forceX: -10, forceY });
       expect(validator.validateAnswer(input, level).correct).toBe(correct);
     },
@@ -143,16 +174,24 @@ describe("answer tolerance", () => {
 
   it("chooses absolute tolerance when larger than relative tolerance", () => {
     const level = { ...car, toleranceRule: { absolute: 1, relative: 0.01 } };
-    expect(validator.validateAnswer(submission(level, { velocity: 13.5 }), level).correct)
-      .toBe(true);
+    expect(
+      validator.validateAnswer(submission(level, { velocity: 13.5 }), level)
+        .correct,
+    ).toBe(true);
   });
 
   it("requires exact answers when both tolerances are zero", () => {
     const level = { ...car, toleranceRule: { absolute: 0 } };
-    expect(validator.validateAnswer(submission(level, { velocity: 12.5 }), level).correct)
-      .toBe(true);
-    expect(validator.validateAnswer(submission(level, { velocity: 12.500000000000002 }), level).correct)
-      .toBe(false);
+    expect(
+      validator.validateAnswer(submission(level, { velocity: 12.5 }), level)
+        .correct,
+    ).toBe(true);
+    expect(
+      validator.validateAnswer(
+        submission(level, { velocity: 12.500000000000002 }),
+        level,
+      ).correct,
+    ).toBe(false);
   });
 
   it("uses updated expected answers when a problem is regenerated", () => {
@@ -166,12 +205,24 @@ describe("answer tolerance", () => {
 describe("invalid problem configuration", () => {
   const cases: [string, Partial<AnswerValidationConfig>][] = [
     ["negative absolute tolerance", { toleranceRule: { absolute: -0.1 } }],
-    ["negative relative tolerance", { toleranceRule: { absolute: 0, relative: -0.1 } }],
+    [
+      "negative relative tolerance",
+      { toleranceRule: { absolute: 0, relative: -0.1 } },
+    ],
     ["nonfinite absolute tolerance", { toleranceRule: { absolute: NaN } }],
-    ["nonfinite relative tolerance", { toleranceRule: { absolute: 0, relative: Infinity } }],
-    ["overflowing relative tolerance", { toleranceRule: { absolute: 0, relative: Number.MAX_VALUE } }],
+    [
+      "nonfinite relative tolerance",
+      { toleranceRule: { absolute: 0, relative: Infinity } },
+    ],
+    [
+      "overflowing relative tolerance",
+      { toleranceRule: { absolute: 0, relative: Number.MAX_VALUE } },
+    ],
     ["missing expected answer", { expectedUserInput: {} }],
-    ["nonfinite expected answer", { expectedUserInput: { velocity: Infinity } }],
+    [
+      "nonfinite expected answer",
+      { expectedUserInput: { velocity: Infinity } },
+    ],
     ["no required fields", { inputVariables: [] }],
     ["duplicate fields", { inputVariables: ["velocity", "velocity"] }],
     ["reversed bounds", { bounds: { velocity: { min: 10, max: 0 } } }],
@@ -182,7 +233,11 @@ describe("invalid problem configuration", () => {
   it.each(cases)("throws a developer error for %s", (_name, patch) => {
     const level = { ...car, ...patch };
     const input = submission(level, { velocity: 12.5 });
-    expect(() => validator.validateInput(input, level)).toThrow("Invalid answer validation config");
-    expect(() => validator.validateAnswer(input, level)).toThrow("Invalid answer validation config");
+    expect(() => validator.validateInput(input, level)).toThrow(
+      "Invalid answer validation config",
+    );
+    expect(() => validator.validateAnswer(input, level)).toThrow(
+      "Invalid answer validation config",
+    );
   });
 });
