@@ -77,16 +77,20 @@ Run `npx playwright show-trace <trace.zip>` to inspect a retained trace.
 
 GitHub Actions deploys the site to GitHub Pages on every push to `main`. The
 workflow installs locked dependencies, audits for critical vulnerabilities, runs
-tests, and typechecks/builds the app before deploying `dist/` to the
-`github-pages` environment. Failed checks prevent deployment.
+lint/format/type checks, contract checks, unit coverage, and Chromium smoke tests
+before deploying `dist/` to the `github-pages` environment. Failed checks prevent
+deployment. The deployed artifact is the production build that passed smoke tests;
+deployment does not rebuild it.
 
 The site will be available at https://itsgeorgema.github.io/cse110-project-team3/.
 The workflow's deployment environment also links to the published URL. To redeploy,
-open **Actions → Deploy to GitHub Pages → Run workflow** and select `main`.
+open **Actions → CI → Run workflow** and select `main`. This reruns all gates.
 Deployments are restricted to `main` and run one at a time.
 
-The build uses the base path supplied by GitHub Pages so bundled assets load
-correctly under the repository URL. Local development keeps Vite's default base.
+The tested build uses `/cse110-project-team3/` so bundled assets load correctly
+under the repository URL. If the repository is renamed or moves to a custom
+domain, update the base path in `playwright.config.ts` and its asset-path assertion
+before deploying. Local development keeps Vite's default base.
 To check a Pages-style build locally:
 
 ```sh
@@ -95,6 +99,37 @@ npm run preview -- --base /cse110-project-team3/
 ```
 
 Open http://localhost:4173/cse110-project-team3/.
+
+### GitHub Actions checks
+
+| Workflow               | Trigger                                                | Checks                                                                                                              |
+| ---------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| CI                     | Every branch push, PR, merge queue, or manual run      | Static checks → unit/contract tests and critical dependency audit → production build and Chromium smoke → `CI gate` |
+| Deploy to GitHub Pages | Called by successful CI on `main` push/manual runs     | Publishes the tested artifact from that same run                                                                    |
+| Browser regression     | Daily at 09:23 UTC or manual                           | Quality gate, then full Chromium/Firefox/WebKit matrix                                                              |
+| Security analysis      | PRs, `main` pushes, weekly Monday 08:41 UTC, or manual | CodeQL; scheduled/manual runs also audit locked dependencies                                                        |
+
+`quality.yml` contains shared checks used by CI and regression. Browser jobs wait
+for fast checks to pass; each job has a timeout, fresh hosted runner, and locked
+`npm ci` install. npm downloads are cached, not `node_modules` or browser state.
+Superseded PR/branch runs are cancelled. Main runs and Pages deployments are
+serialized without cancelling an active deployment. Fork PR tests receive no
+deployment permissions or application secrets.
+
+Coverage and smoke reports are retained as Actions artifacts for seven days;
+regression reports are retained for fourteen days, including failure traces.
+The matrix keeps running other browsers when one fails. Scheduled runs use the
+default branch and can be delayed by GitHub; manual runs can target a branch.
+Dependabot checks npm dependencies and action versions weekly, grouping Vitest
+with its coverage provider.
+
+**CI gate** fails if a required stage fails, is cancelled, or is skipped. No path
+filters omit this check. CodeQL reports findings separately from the deployment
+gate; a successful analysis means the scan ran, not that no security alerts exist.
+
+Workflow references: [GitHub reusable workflows](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows),
+[Playwright CI](https://playwright.dev/docs/ci), and
+[CodeQL configuration](https://docs.github.com/en/code-security/reference/code-scanning/workflow-configuration-options).
 
 ## Layout
 
