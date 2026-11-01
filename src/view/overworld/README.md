@@ -16,8 +16,12 @@ The `circus-preview` game ID and numbered levels are **not registered level data
 The cleared/current/locked states and progress count are sample presentation data.
 They do not calculate unlocks, persist progress, or call a controller.
 
-Clicking any marker (including a locked marker) only previews its story. Every
-launch button is disabled. Chapter navigation and the return button only scroll
+Clicking any marker only updates its story preview. For cleared levels, the
+sidebar’s View results button opens the mock Results Summary screen. Other
+levels’ launch buttons remain disabled. `ResultsSummary.ts` owns fixed
+sample accuracy values (90% and 80%) and correct-answer counts. No score is
+calculated or saved. Return buttons and Escape close the native modal, restore
+focus, and preserve the map’s scroll position. Chapter navigation and the return button only scroll
 or update the selected preview; the clown remains at the sample current node.
 
 For later integration, replace the fixture addresses with the level team's real
