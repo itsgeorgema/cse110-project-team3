@@ -188,5 +188,6 @@ lines in each changed logic file. Comments and type-only lines have no executabl
 coverage; missing coverage records fail rather than silently disappearing. These
 checks cannot prove that a test is relevant: a test-file edit alone is not enough
 for review approval. Reviewers must check failure cases, boundaries, and whether
-real component interactions are exercised. CI/configuration changes are covered
-by the repository's CODEOWNERS entries so changes to these rules receive review.
+real component interactions are exercised. Any teammate with the required review
+permissions can review gameplay, CI, and configuration changes; no files are
+reserved for designated code owners.

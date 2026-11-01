@@ -1,9 +1,0 @@
-# CI policy changes require owner review when code-owner approval is enabled.
-/.github/ @itsgeorgema
-/scripts/ci/ @itsgeorgema
-/vitest.config.ts @itsgeorgema
-/eslint.config.js @itsgeorgema
-/playwright.config.ts @itsgeorgema
-/tsconfig*.json @itsgeorgema
-/package.json @itsgeorgema
-/package-lock.json @itsgeorgema
