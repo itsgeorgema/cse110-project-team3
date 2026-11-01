@@ -1,57 +1,38 @@
 name: Deploy to GitHub Pages
 
+# Called only after CI gate; no independent push trigger can bypass validation.
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: github-pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Audit dependencies
-        run: npm audit --audit-level=critical
-      - name: Run tests
-        run: npm test
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v5
-      - name: Typecheck and build
-        env:
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-        run: npm run build -- --base "${PAGES_BASE_PATH}/"
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Download the build that passed smoke tests in this run
+        uses: actions/download-artifact@v4
+        with:
+          name: tested-site
+          path: dist
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
