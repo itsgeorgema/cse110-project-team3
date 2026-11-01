@@ -135,21 +135,28 @@ describe("PhysicsEngine.calculateVelocity", () => {
     [0, 817, 0],
     [-0, 817, 0]
   ])("calculates velocity correctly: displacement of %s meters and time of %s sec = %s m/s", (displacement, time, velocity) => {
-    expect(PhysicsEngine.divide(displacement, time)).toBeCloseTo(velocity, DECIMAL_PRECISION);
+    expect(PhysicsEngine.calculateVelocity(displacement, time)).toBeCloseTo(velocity, DECIMAL_PRECISION);
   });
 
-  it("test displacement of 0meters and time of 0sec, expect error", () => {
-    const displacement = 0;
-    const time = 0;
-    expect(() => PhysicsEngine.calculateVelocity(displacement, time)).
-      toThrow("PhysicsEngine.calculateVelocity.time must be positive. Received: 0");
-  });
-
-  it("test displacement of 516meters and time of 0sec, expect error", () => {
-    const displacement = 516;
-    const time = 0;
-    expect(() => PhysicsEngine.calculateVelocity(displacement, time)).
-      toThrow("PhysicsEngine.calculateVelocity.time must be positive. Received: 0");
+  it.each([
+    [0, 0],
+    [516, 0],
+    [516, -10],
+    [516, -13532],
+    [2432, -234251],
+    [0, -1242423],
+    [0, -0],
+    [-0, -0],
+    [-0, 0],
+    [2345325, 0],
+    [234532523, -433.1242134],
+    [0.4252345432, -0.234532523],
+    [0.2345325, -23452425.2523543],
+    [Number.MAX_VALUE, -10],
+    [Number.MIN_VALUE, -252.345]
+  ])("rejects zero or negative time correctly: displacement of %s meters and time of %s sec, expect error", (displacement, time) => {
+    expect(() => PhysicsEngine.calculateVelocity(displacement, time))
+      .toThrow(`PhysicsEngine.calculateVelocity.time must be positive. Received: ${time}`);
   });
 
   // Non-finite inputs
@@ -174,13 +181,13 @@ describe("PhysicsEngine.calculateVelocity", () => {
   // Overflow
   it.each([
     [Number.MAX_VALUE, 0.5],
-    [-Number.MAX_VALUE, -0.5],
+    [-Number.MAX_VALUE, 0.5],
     [Number.MAX_VALUE, 0.42],
     [1e300, 1e-9],
-    [-1e308, -1e-9],
+    [-1e308, 1e-9],
     [1e100, 1e-300]
   ])("rejects infinite results: %s (displacement) / %s (time)", (displacement, time) => {
-    expect(() => PhysicsEngine.divide(displacement, time))
+    expect(() => PhysicsEngine.calculateVelocity(displacement, time))
       .toThrow("PhysicsEngine.divide produced a non-finite result.");
   });
 
