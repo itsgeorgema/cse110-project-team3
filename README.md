@@ -28,6 +28,9 @@ review the resulting diff before committing.
 
 ### Fast tests and coverage
 
+See the [testing plan](docs/testing/README.md) for current coverage, issue-level
+acceptance criteria, and where to add tests as gameplay is implemented.
+
 - `npm test`: run unit tests in Node without browsers or network services.
 - `npm run test:contracts`: compile-check the parser/controller/model interfaces,
   including rejected payload shapes and readonly submissions (#25, #43).
