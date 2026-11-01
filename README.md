@@ -26,6 +26,26 @@ Before opening a pull request, run `npm run lint`, `npm run format:check`,
 pull request and push to `main` (#52). Run `npm run format` to fix formatting;
 review the resulting diff before committing.
 
+### Fast tests and coverage
+
+- `npm test`: run unit tests in Node without browsers or network services.
+- `npm run test:contracts`: compile-check the parser/controller/model interfaces,
+  including rejected payload shapes and readonly submissions (#25, #43).
+- `npm run test:coverage`: run unit tests with V8 coverage; each executable file
+  under `src/controller/`, `src/model/`, and `src/data/` must reach 90% statements,
+  branches, functions, and lines. New logic files are included even without tests.
+
+Unit tests live alongside their code as `*.test.ts`. Compile-only contract checks
+live in `tests/contracts/`; these verify TypeScript compatibility, not runtime
+validation. CI runs both and retains coverage reports for seven days. Open
+`coverage/index.html` after a local coverage run for the detailed report.
+
+Current runtime coverage is for `parseInput`: numerical syntax, finite-value
+limits, field errors, immutable inputs, game/level identity, and separation from
+answer correctness. Interface-only modules contain no executable behavior.
+The percentage excludes the view and composition root, and does not claim
+coverage of the unimplemented validator, physics, progression, or persistence.
+
 ## Deployment
 
 GitHub Actions deploys the site to GitHub Pages on every push to `main`. The

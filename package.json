@@ -14,10 +14,13 @@
     "test": "vitest run",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "test:coverage": "vitest run --coverage",
+    "test:contracts": "tsc --project tsconfig.contracts.json"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.14.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
