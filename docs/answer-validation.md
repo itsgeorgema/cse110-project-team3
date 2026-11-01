@@ -3,11 +3,11 @@
 Types: [AnswerValidator.ts](../src/model/AnswerValidator.ts).
 Implementation: [DefaultAnswerValidator.ts](../src/model/DefaultAnswerValidator.ts).
 
-| Owner | Provides |
-| --- | --- |
-| UI/controller (#25) | Parsed numerical answers and fixed unit labels |
+| Owner                   | Provides                                                           |
+| ----------------------- | ------------------------------------------------------------------ |
+| UI/controller (#25)     | Parsed numerical answers and fixed unit labels                     |
 | Physics/problem subteam | Current problem's expected answers, tolerance, and optional bounds |
-| Validator (#40) | Submitted answer, `correct`, and `feedback` |
+| Validator (#40)         | Submitted answer, `correct`, and `feedback`                        |
 
 The controller displays feedback and records the attempt after playback (#26).
 
