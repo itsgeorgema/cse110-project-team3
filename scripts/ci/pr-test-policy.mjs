@@ -27,6 +27,24 @@ export function latestReviews(reviews) {
   return [...latest.values()];
 }
 
+// Extract visible rationale text, not sanitized HTML. Reject ambiguous comments
+// rather than deleting substrings that could join into new comment delimiters.
+export function rationaleText(section) {
+  const parts = [];
+  let cursor = 0;
+  while (cursor < section.length) {
+    const start = section.indexOf("<!--", cursor);
+    const text = section.slice(cursor, start === -1 ? section.length : start);
+    if (text.includes("-->")) return "";
+    parts.push(text);
+    if (start === -1) break;
+    const end = section.indexOf("-->", start + 4);
+    if (end === -1 || section.slice(start + 4, end).includes("<!--")) return "";
+    cursor = end + 3;
+  }
+  return parts.join(" ").trim();
+}
+
 export async function enforce({ github, context, core }) {
   const { owner, repo } = context.repo;
   const pull_number = context.payload.pull_request.number;
@@ -59,10 +77,10 @@ export async function enforce({ github, context, core }) {
       'Application changes require test additions/updates. For an already-tested refactor or nonbehavioral change, explain it under "Test exemption rationale" and request a reviewer-approved tests-exempt label.',
     );
   }
-  const rationale = (pr.body ?? "")
-    .match(/## Test exemption rationale\s*\n([\s\S]*?)(?=\n## |$)/i)?.[1]
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .trim();
+  const section = (pr.body ?? "").match(
+    /## Test exemption rationale\s*\n([\s\S]*?)(?=\n## |$)/i,
+  )?.[1];
+  const rationale = rationaleText(section ?? "");
   if (!rationale || /^(?:n\/?a|none|not applicable)[.!]?$/i.test(rationale)) {
     throw new Error(
       'Add a concrete explanation under "## Test exemption rationale".',
@@ -93,7 +111,7 @@ export async function enforce({ github, context, core }) {
       data.user?.permissions?.push
     ) {
       core.notice(
-        `Test-change exemption approved at the current head by ${review.user.login}: ${rationale}`,
+        `Test-change exemption approved at the current head by ${review.user.login}. See the PR description for the rationale.`,
       );
       return;
     }

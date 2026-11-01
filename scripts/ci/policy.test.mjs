@@ -5,7 +5,48 @@ import {
   parseLcov,
   evaluateCoverage,
 } from "./changed-coverage.mjs";
-import { checkTestChanges, latestReviews, enforce } from "./pr-test-policy.mjs";
+import {
+  checkTestChanges,
+  latestReviews,
+  enforce,
+  rationaleText,
+} from "./pr-test-policy.mjs";
+
+test("rationale ignores template comments without joining surrounding fragments", () => {
+  assert.equal(
+    rationaleText("<!-- Instructions -->\nExisting tests cover this."),
+    "Existing tests cover this.",
+  );
+  assert.equal(rationaleText("<!-- Instructions -->"), "");
+  assert.equal(
+    rationaleText("before<!-- Instructions -->after"),
+    "before after",
+  );
+  assert.equal(rationaleText("<!<!-- Instructions -->--"), "<! --");
+});
+
+for (const section of [
+  "<!-- unclosed",
+  "<!-- outer <!-- inner --> rest -->",
+  "<!<!-- inner -->-->",
+]) {
+  test(`exemption rejects malformed or nested comment: ${section}`, async () => {
+    await assert.rejects(
+      enforce(apiFixture({ body: `## Test exemption rationale\n${section}` })),
+    );
+  });
+}
+
+test("exemption accepts real rationale alongside template comments without echoing it", async () => {
+  const fixture = apiFixture({
+    body: "## Test exemption rationale\n<!-- Instructions -->\nExisting tests cover <example>.",
+  });
+  const notices = [];
+  fixture.core.notice = (message) => notices.push(message);
+  await enforce(fixture);
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].includes("<example>"), false);
+});
 
 test("diff hunks handle additions, replacements, and deletion-only hunks", () => {
   assert.deepEqual(
