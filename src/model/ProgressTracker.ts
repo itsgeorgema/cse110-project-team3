@@ -20,10 +20,11 @@ export class ProgressTracker {
 
   /** A later failed replay never removes an earlier successful completion. */
   isCompleted(gameId: string, levelId: number): boolean {
-    return this.attempts.some(attempt =>
-      attempt.correct &&
-      attempt.submittedAnswer.gameId === gameId &&
-      attempt.submittedAnswer.levelId === levelId,
+    return this.attempts.some(
+      (attempt) =>
+        attempt.correct &&
+        attempt.submittedAnswer.gameId === gameId &&
+        attempt.submittedAnswer.levelId === levelId,
     );
   }
 

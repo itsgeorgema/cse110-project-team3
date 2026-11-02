@@ -3,7 +3,12 @@ import { ProgressTracker } from "./ProgressTracker";
 
 function result(correct: boolean, gameId = "launch", levelId = 1) {
   return {
-    submittedAnswer: { gameId, levelId, values: { speed: 5 }, units: { speed: "m/s" } },
+    submittedAnswer: {
+      gameId,
+      levelId,
+      values: { speed: 5 },
+      units: { speed: "m/s" },
+    },
     correct,
     feedback: correct ? "Correct" : "Try again",
   };
@@ -51,7 +56,10 @@ describe("ProgressTracker", () => {
     const tracker = new ProgressTracker();
     tracker.recordAttempt(result(false));
     tracker.recordAttempt(result(true));
-    expect(tracker.getAttempts().map(attempt => attempt.correct)).toEqual([false, true]);
+    expect(tracker.getAttempts().map((attempt) => attempt.correct)).toEqual([
+      false,
+      true,
+    ]);
   });
 
   it("preserves game and level identity in history", () => {
@@ -59,9 +67,18 @@ describe("ProgressTracker", () => {
     tracker.recordAttempt(result(true));
     tracker.recordAttempt(result(true, "collision"));
     tracker.recordAttempt(result(false, "launch", 2));
-    expect(tracker.getAttempts().map(attempt => [
-      attempt.submittedAnswer.gameId, attempt.submittedAnswer.levelId,
-    ])).toEqual([["launch", 1], ["collision", 1], ["launch", 2]]);
+    expect(
+      tracker
+        .getAttempts()
+        .map((attempt) => [
+          attempt.submittedAnswer.gameId,
+          attempt.submittedAnswer.levelId,
+        ]),
+    ).toEqual([
+      ["launch", 1],
+      ["collision", 1],
+      ["launch", 2],
+    ]);
   });
 
   it("protects history from changes to input objects and returned collections", () => {
