@@ -619,9 +619,7 @@ describe("PhysicsEngine.subtract", () => {
   });
 
   it("accepts zero minus Number.MIN_VALUE", () => {
-    expect(PhysicsEngine.subtract(0, Number.MIN_VALUE)).toBe(
-      -Number.MIN_VALUE,
-    );
+    expect(PhysicsEngine.subtract(0, Number.MIN_VALUE)).toBe(-Number.MIN_VALUE);
   });
 });
 
@@ -646,7 +644,11 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     "calculates acceleration correctly: %s to %s m/s in %s sec = %s m/s^2",
     (initialVelocity, finalVelocity, time, acceleration) => {
       expect(
-        PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, time),
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
       ).toBeCloseTo(acceleration, DECIMAL_PRECISION);
     },
   );
@@ -664,7 +666,11 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     "rejects zero or negative time: %s to %s m/s in %s sec, expect error",
     (initialVelocity, finalVelocity, time) => {
       expect(() =>
-        PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, time),
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
       ).toThrow(
         /PhysicsEngine\.calculateAcceleration\.time must be (positive|> 0)\. Received: /,
       );
@@ -688,7 +694,11 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     "rejects non-finite inputs: %s (initial velocity), %s (final velocity), %s (time)",
     (initialVelocity, finalVelocity, time) => {
       expect(() =>
-        PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, time),
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
       ).toThrow(
         /PhysicsEngine\.calculateAcceleration input variable (initial.?[vV]elocity|final.?[vV]elocity|time) must be finite/,
       );
@@ -708,7 +718,11 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     "rejects infinite results: %s to %s m/s in %s sec (thrown by %s)",
     (initialVelocity, finalVelocity, time, operation) => {
       expect(() =>
-        PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, time),
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
       ).toThrow(`PhysicsEngine.${operation} produced a non-finite result.`);
     },
   );
@@ -777,4 +791,3 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     expect(PhysicsEngine.calculateAcceleration(0, 0, Number.MIN_VALUE)).toBe(0);
   });
 });
-

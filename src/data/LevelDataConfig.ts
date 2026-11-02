@@ -97,16 +97,19 @@ export class LevelDataConfigFactory {
     };
   }
 
-  private createKinematicsLevel2LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel2LevelDataConfig(): LevelDataConfig {
     const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
-    const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+    const displacementForProblem = PhysicsEngine.calculateDisplacement(
+      velocityForProblem,
+      timeForProblem,
+    ); // meters
 
-    const problemStatement = `Displacement is velocity (speed with direction) ` +
-                              `multiplied by the time taken. If a getaway car ` +
-                              `moves away from the guards in ${velocityForProblem} m/s for ` +
-                              `${timeForProblem} seconds, what is the car's displacement?`;
-                             
+    const problemStatement =
+      `Displacement is velocity (speed with direction) ` +
+      `multiplied by the time taken. If a getaway car ` +
+      `moves away from the guards in ${velocityForProblem} m/s for ` +
+      `${timeForProblem} seconds, what is the car's displacement?`;
 
     return {
       gameName: "kinematics",
@@ -114,48 +117,54 @@ export class LevelDataConfigFactory {
       problemStatementVariables: ["velocity", "time"],
       problemStatementVariablesValues: {
         velocity: velocityForProblem,
-        time: timeForProblem
+        time: timeForProblem,
       },
       problemStatement: problemStatement,
       userInputVariables: ["displacement"],
-      userInputVariablesUnits: {displacement:"m"},
-      expectedUserInput: {displacement: displacementForProblem},
+      userInputVariablesUnits: { displacement: "m" },
+      expectedUserInput: { displacement: displacementForProblem },
       toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 }
-      }
+        velocity: { min: 0.0 },
+      },
     };
   }
 
-  private createKinematicsLevel3LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel3LevelDataConfig(): LevelDataConfig {
     const initialVelocity = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
-    const finalVelocity = initialVelocity + this.randomIntegerInclusive(1,5) * timeForProblem;
-    const accelerationForProblem = PhysicsEngine.calculateAcceleration(initialVelocity, finalVelocity, timeForProblem); // meters/second squared
+    const finalVelocity =
+      initialVelocity + this.randomIntegerInclusive(1, 5) * timeForProblem;
+    const accelerationForProblem = PhysicsEngine.calculateAcceleration(
+      initialVelocity,
+      finalVelocity,
+      timeForProblem,
+    ); // meters/second squared
 
-    const problemStatement = `Acceleration is the rate of change. That is, the ` +
-                              `change from initial velocity to the final velocity divided ` +
-                              `by time taken. If a getaway car accelerates up from ` +
-                              `${initialVelocity} m/s to ${finalVelocity} m/s in ` +
-                              `${timeForProblem} seconds to outrun the guard, what is the car's acceleration?`;
+    const problemStatement =
+      `Acceleration is the rate of change. That is, the ` +
+      `change from initial velocity to the final velocity divided ` +
+      `by time taken. If a getaway car accelerates up from ` +
+      `${initialVelocity} m/s to ${finalVelocity} m/s in ` +
+      `${timeForProblem} seconds to outrun the guard, what is the car's acceleration?`;
 
     return {
       gameName: "kinematics",
       levelId: 3,
-      problemStatementVariables: [ "initalVelocity", "finalVelocity", "time"],
+      problemStatementVariables: ["initalVelocity", "finalVelocity", "time"],
       problemStatementVariablesValues: {
         initialVelocity: initialVelocity,
         finalVelocity: finalVelocity,
-        time: timeForProblem
+        time: timeForProblem,
       },
       problemStatement: problemStatement,
       userInputVariables: ["acceleration"],
-      userInputVariablesUnits: {acceleration: "m/s^2"},
-      expectedUserInput: {acceleration: accelerationForProblem},
+      userInputVariablesUnits: { acceleration: "m/s^2" },
+      expectedUserInput: { acceleration: accelerationForProblem },
       toleranceRule: { absolute: 0.00001 }, //final?
       bounds: {
-        acceleration: {min: 0.0} //final?
-      }
+        acceleration: { min: 0.0 }, //final?
+      },
     };
   }
-};
+}

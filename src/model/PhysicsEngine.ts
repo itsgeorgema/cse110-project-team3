@@ -56,10 +56,10 @@ export class PhysicsEngine {
   }
 
   public static subtract(a: number, b: number): number {
-      this.validateNumber(a, "PhysicsEngine.subtract input variable a");
-      this.validateNumber(b, "PhysicsEngine.subtract input variable b");
+    this.validateNumber(a, "PhysicsEngine.subtract input variable a");
+    this.validateNumber(b, "PhysicsEngine.subtract input variable b");
 
-      return this.validateResult(a - b, "PhysicsEngine.subtract");
+    return this.validateResult(a - b, "PhysicsEngine.subtract");
   }
 
   public static calculateDisplacement(velocity: number, time: number) {
@@ -80,25 +80,29 @@ export class PhysicsEngine {
     return this.multiply(velocity, time);
   }
 
-    public static calculateAcceleration(initialVelocity: number, finalVelocity: number, time: number) {
-        this.validateNumber(
-        initialVelocity,
-        "PhysicsEngine.calculateAcceleration input variable initial velocity",
-        );
-        this.validateNumber(
-        finalVelocity,
-        "PhysicsEngine.calculateAcceleration input variable final velocity",
-        );
-        this.validateNumber(
-        time,
-        "PhysicsEngine.calculateAcceleration input variable time",
-        );
-        if (time <= 0) {
-        throw new RangeError(
-            `PhysicsEngine.calculateAcceleration.time must be > 0. Received: ${time}`,
-        );
-        }
-
-        return this.divide(this.subtract(finalVelocity, initialVelocity), time);
+  public static calculateAcceleration(
+    initialVelocity: number,
+    finalVelocity: number,
+    time: number,
+  ) {
+    this.validateNumber(
+      initialVelocity,
+      "PhysicsEngine.calculateAcceleration input variable initial velocity",
+    );
+    this.validateNumber(
+      finalVelocity,
+      "PhysicsEngine.calculateAcceleration input variable final velocity",
+    );
+    this.validateNumber(
+      time,
+      "PhysicsEngine.calculateAcceleration input variable time",
+    );
+    if (time <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateAcceleration.time must be > 0. Received: ${time}`,
+      );
     }
+
+    return this.divide(this.subtract(finalVelocity, initialVelocity), time);
+  }
 }
