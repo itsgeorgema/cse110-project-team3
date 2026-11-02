@@ -1,13 +1,19 @@
 import type { MapNode } from "./mapPreview.ts";
 
 /** Fixed display values only: no scoring, persistence, or progression updates. */
-const mockResults: Readonly<Record<string, { accuracy: string; correct: string }>> = {
+const mockResults: Readonly<
+  Record<string, { accuracy: string; correct: string }>
+> = {
   "dressing-room": { accuracy: "90", correct: "9 / 10" },
   backstage: { accuracy: "80", correct: "8 / 10" },
 };
 
 /** Native modal keeps focus inside the summary and leaves map scroll intact. */
-export function showResultsSummary(container: HTMLElement, node: MapNode, trigger: HTMLElement): void {
+export function showResultsSummary(
+  container: HTMLElement,
+  node: MapNode,
+  trigger: HTMLElement,
+): void {
   const result = mockResults[node.id];
   if (!result || container.querySelector(".results-screen")) return;
 
@@ -46,10 +52,14 @@ export function showResultsSummary(container: HTMLElement, node: MapNode, trigge
   const close = () => dialog.close();
   dialog.querySelector(".results-back")!.addEventListener("click", close);
   dialog.querySelector(".results-map-button")!.addEventListener("click", close);
-  dialog.addEventListener("close", () => {
-    dialog.remove();
-    trigger.focus({ preventScroll: true });
-  }, { once: true });
+  dialog.addEventListener(
+    "close",
+    () => {
+      dialog.remove();
+      trigger.focus({ preventScroll: true });
+    },
+    { once: true },
+  );
   container.append(dialog);
   dialog.showModal();
 }
