@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { ProgressTracker } from "./ProgressTracker";
+import type { LevelAddress } from "./LevelAddress.ts";
 
 function result(correct: boolean, gameId = "launch", levelId = 1) {
   return {
@@ -15,6 +16,52 @@ function result(correct: boolean, gameId = "launch", levelId = 1) {
 }
 
 describe("ProgressTracker", () => {
+  it("accepts one shared level address, including level zero", () => {
+    expectTypeOf<ProgressTracker["isCompleted"]>().parameters.toEqualTypeOf<
+      [LevelAddress]
+    >();
+    const tracker = new ProgressTracker();
+    const level = Object.freeze({ gameId: "launch", levelId: 0 });
+    expect(tracker.isCompleted(level)).toBe(false);
+    tracker.recordAttempt(result(true, level.gameId, level.levelId));
+    expect(tracker.isCompleted(level)).toBe(true);
+    expect(level).toEqual({ gameId: "launch", levelId: 0 });
+  });
+
+  it("marks completion only when a correct attempt is recorded", () => {
+    const tracker = new ProgressTracker();
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 1 })).toBe(false);
+    tracker.recordAttempt(result(false));
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 1 })).toBe(false);
+    tracker.recordAttempt(result(true));
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 1 })).toBe(true);
+    expect(
+      new ProgressTracker().isCompleted({ gameId: "launch", levelId: 1 }),
+    ).toBe(false);
+  });
+
+  it("preserves completion across successful and failed replays", () => {
+    const tracker = new ProgressTracker();
+    tracker.recordAttempt(result(true));
+    tracker.recordAttempt(result(true));
+    tracker.recordAttempt(result(false));
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 1 })).toBe(true);
+    expect(tracker.getAttempts()).toHaveLength(3);
+  });
+
+  it("keeps completion separate for each game and level", () => {
+    const tracker = new ProgressTracker();
+    tracker.recordAttempt(result(true));
+    expect(tracker.isCompleted({ gameId: "collision", levelId: 1 })).toBe(
+      false,
+    );
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 2 })).toBe(false);
+    tracker.recordAttempt(result(true, "collision"));
+    expect(tracker.isCompleted({ gameId: "collision", levelId: 1 })).toBe(true);
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 1 })).toBe(true);
+    expect(tracker.isCompleted({ gameId: "launch", levelId: 2 })).toBe(false);
+  });
+
   it("starts empty and keeps state separate between sessions", () => {
     const tracker = new ProgressTracker();
     expect(tracker.getAttempts()).toEqual([]);

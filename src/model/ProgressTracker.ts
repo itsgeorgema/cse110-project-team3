@@ -1,4 +1,5 @@
 import type { AnswerValidationResult } from "./AnswerValidator";
+import type { LevelAddress } from "./LevelAddress.ts";
 
 /** Session-only state. The controller records each result once, after playback. */
 export class ProgressTracker {
@@ -16,6 +17,16 @@ export class ProgressTracker {
       feedback: result.feedback,
     });
     this.attempts.push(snapshot);
+  }
+
+  /** A later failed replay never removes an earlier successful completion. */
+  isCompleted(level: LevelAddress): boolean {
+    return this.attempts.some(
+      (attempt) =>
+        attempt.correct &&
+        attempt.submittedAnswer.gameId === level.gameId &&
+        attempt.submittedAnswer.levelId === level.levelId,
+    );
   }
 
   getAttempts(): readonly AnswerValidationResult[] {
