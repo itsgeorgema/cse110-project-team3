@@ -30,7 +30,6 @@ export class LevelDataConfigFactory {
           default:
             throw new Error("levelId does not exist");
         }
-        break;
       default:
         throw new Error("gameId does not exist");
     }
