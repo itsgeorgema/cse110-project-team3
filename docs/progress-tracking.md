@@ -19,7 +19,13 @@ tracking and progression.
 returns `undefined` for missing/unknown identities or the final level, and rejects
 duplicate game/level pairs. The order is copied to prevent caller mutation.
 
+`isAvailable(level: LevelAddress)` makes the first configured level available
+initially. An uncompleted level requires every earlier level to be completed;
+already completed levels remain replayable even if an earlier level is incomplete.
+Unknown or missing addresses are unavailable. Failed attempts do not remove
+earned availability. These queries do not record attempts or mutate progress.
+
 This is an implementation proposal for controller review, not a claim that the
-interfaces have been agreed with its owner. Availability and controller integration
-will follow in separate PRs.
+interfaces have been agreed with its owner. Controller integration
+will follow in a separate PR.
 Persistence, drafts, scoring, and skill checks are deferred.
