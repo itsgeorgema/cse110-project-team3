@@ -1,4 +1,4 @@
-# Session progress (#41), steps 1–2
+# Session progress and next-level selection (#41)
 
 `ProgressTracker` reuses `AnswerValidationResult` from the current validation
 contract. Level identity is the pair `(gameId, levelId)`.
@@ -13,7 +13,12 @@ contract. Level identity is the pair `(gameId, levelId)`.
 - `getAttempts()` returns an immutable snapshot of history. Submitted values and
   units are copied so later edits cannot rewrite history.
 
+`ProgressionSystem` uses a caller-supplied level order and the tracker’s
+`isCompleted` query. It returns the next configured level only after completion,
+returns `undefined` for missing/unknown identities or the final level, and rejects
+duplicate game/level pairs. The order is copied to prevent caller mutation.
+
 This is an implementation proposal for controller review, not a claim that the
-interfaces have been agreed with its owner. Level ordering,
-availability, and controller integration will follow in separate PRs.
+interfaces have been agreed with its owner. Availability and controller integration
+will follow in separate PRs.
 Persistence, drafts, scoring, and skill checks are deferred.
