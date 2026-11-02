@@ -2,6 +2,28 @@ import { describe, it, expect, vi } from "vitest";
 import { LevelDataConfigFactory } from "./LevelDataConfig";
 import type { LevelDataConfig } from "./LevelDataConfig";
 
+type GameId = "kinematics" | "netForce";
+
+describe("createLevelDataConfig should handle invalid inputs", () => {
+  it("createLevelDataConfig for nonExistent game, level 1 doesn't work", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "nonExistent";
+    const levelId = 1;
+    expect(() =>
+      levelDataConfigFactory.createLevelDataConfig(gameId as GameId, levelId),
+    ).toThrow("gameId does not exist");
+  });
+
+  it("createLevelDataConfig for kinematics game, level 10 doesn't work", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "kinematics";
+    const levelId = 10;
+    expect(() =>
+      levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
+    ).toThrow("levelId does not exist");
+  });
+});
+
 describe("createLevelDataConfig for kinematics game, level 1", () => {
   const expectValidKinematicsLevel1Problem = (
     levelDataConfig: LevelDataConfig,
