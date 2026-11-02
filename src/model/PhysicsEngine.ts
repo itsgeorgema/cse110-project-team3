@@ -92,8 +92,8 @@ export class PhysicsEngine {
   }
 
   public static calculateDisplacement(velocity: number, time: number) {
-    this.validateNumber(velocity, "PhysicsEngine.calculateVelocity input variable velocity");
-    this.validateNumber(time, "PhysicsEngine.calculateVelocity input variable time");
+    this.validateNumber(velocity, "PhysicsEngine.calculateDisplacement input variable velocity");
+    this.validateNumber(time, "PhysicsEngine.calculateDisplacement input variable time");
     if (time < 0) {
       throw new RangeError(`PhysicsEngine.calculateDisplacement.time must be >= 0. Received: ${time}`);
     }
