@@ -5,6 +5,7 @@ import type { ProgressTracker } from "../model/ProgressTracker";
 export class ProgressionSystem {
   private readonly levels: readonly LevelAddress[];
   private readonly tracker: Pick<ProgressTracker, "isCompleted">;
+  private readonly positions = new Map<string, Map<number, number>>();
 
   constructor(
     tracker: Pick<ProgressTracker, "isCompleted">,
@@ -12,23 +13,18 @@ export class ProgressionSystem {
   ) {
     this.tracker = tracker;
     this.levels = levels.map((level) => Object.freeze({ ...level }));
-    const seen = new Map<string, Set<number>>();
-    for (const level of this.levels) {
-      const ids = seen.get(level.gameId) ?? new Set<number>();
+    this.levels.forEach((level, index) => {
+      const ids = this.positions.get(level.gameId) ?? new Map<number, number>();
       if (ids.has(level.levelId))
         throw new Error("Duplicate game and level in progression order");
-      ids.add(level.levelId);
-      seen.set(level.gameId, ids);
-    }
+      ids.set(level.levelId, index);
+      this.positions.set(level.gameId, ids);
+    });
   }
 
   /** Completed levels remain replayable; new levels require all earlier levels. */
   isAvailable(current: LevelAddress): boolean {
-    if (!current || !current.gameId || current.levelId == null) return false;
-    const index = this.levels.findIndex(
-      (level) =>
-        level.gameId === current.gameId && level.levelId === current.levelId,
-    );
+    const index = this.indexOf(current);
     if (index < 0) return false;
     return (
       this.tracker.isCompleted(current) ||
@@ -39,16 +35,23 @@ export class ProgressionSystem {
   }
 
   getNextLevel(current: LevelAddress): LevelAddress | undefined {
-    if (!current || !current.gameId || current.levelId == null)
-      return undefined;
-    const index = this.levels.findIndex(
-      (level) =>
-        level.gameId === current.gameId && level.levelId === current.levelId,
-    );
+    const index = this.indexOf(current);
     if (index < 0 || !this.tracker.isCompleted(current)) {
       return undefined;
     }
     if (index >= this.levels.length - 1) return undefined;
     return this.levels[index + 1];
+  }
+
+  private indexOf(current: LevelAddress): number {
+    if (
+      current === null ||
+      current === undefined ||
+      !current.gameId ||
+      current.levelId === null ||
+      current.levelId === undefined
+    )
+      return -1;
+    return this.positions.get(current.gameId)?.get(current.levelId) ?? -1;
   }
 }
