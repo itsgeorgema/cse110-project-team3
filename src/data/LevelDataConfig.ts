@@ -27,22 +27,6 @@ export class LevelDataConfigFactory {
         switch (levelId) {
           case 1:
             return this.createKinematicsLevel1LevelDataConfig();
-          case 2:
-            return this.createKinematicsLevel2LevelDataConfig();
-          case 3:
-            return this.createKinematicsLevel3LevelDataConfig();
-          case 4:
-            return this.createKinematicsLevel4LevelDataConfig();
-          default:
-            throw new Error("levelId does not exist");
-        }
-        break;
-      case "netForce":
-        switch (levelId) {
-          case 1:
-            return this.createNetForceLevel1LevelDataConfig();
-          case 2:
-            return this.createNetForceLevel2LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -107,86 +91,6 @@ export class LevelDataConfigFactory {
       bounds: {
         velocity: { min: 0.0 },
       },
-    };
-  }
-
-  private createKinematicsLevel2LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "kinematics",
-      levelId: 2,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {},
-    };
-  }
-
-  private createKinematicsLevel3LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "kinematics",
-      levelId: 3,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {},
-    };
-  }
-
-  private createKinematicsLevel4LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "kinematics",
-      levelId: 4,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {},
-    };
-  }
-
-  private createNetForceLevel1LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "netForce",
-      levelId: 1,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {},
-    };
-  }
-
-  private createNetForceLevel2LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "netForce",
-      levelId: 2,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {},
     };
   }
 }
