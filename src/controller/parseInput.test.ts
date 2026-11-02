@@ -16,6 +16,93 @@ function parseSpeed(text: string): number | string {
 }
 
 describe("parseInput", () => {
+  it.each([
+    ["0", 0],
+    ["-0", -0],
+    ["12.", 12],
+    ["1e+3", 1000],
+    ["\t\n2.5\r\n", 2.5],
+    ["1.7976931348623157e308", Number.MAX_VALUE],
+    ["5e-324", Number.MIN_VALUE],
+  ])("accepts finite decimal input %j", (text, expected) => {
+    expect(parseSpeed(text)).toBe(expected);
+  });
+
+  it.each([
+    "0b10",
+    "0o10",
+    "1_000",
+    "12 m/s",
+    "1 2",
+    "1\n2",
+    "1.2.3",
+    "--2",
+    ".",
+    "true",
+    "null",
+    "１２",
+    "<script>alert(1)</script>",
+  ])("rejects non-decimal input %j", (text) => {
+    expect(parseSpeed(text)).toBe("Use digits, like 9.8 or 3e8.");
+  });
+
+  it("reports every invalid field without exposing partial parsed values", () => {
+    expect(
+      parseInput(raw({ speed: "", angle: "1e999", time: "5" }), {
+        inputVariables: ["speed", "angle", "time"],
+      }),
+    ).toEqual({
+      ok: false,
+      errors: {
+        speed: "Enter a number.",
+        angle: "That number is too large.",
+      },
+    });
+  });
+
+  it("does not mutate raw fields or the level's input list", () => {
+    const fields = Object.freeze({ speed: " 5 ", angle: "45" });
+    const input = Object.freeze(raw(fields));
+    const level = Object.freeze({
+      inputVariables: Object.freeze(["speed", "angle"]),
+    });
+    expect(parseInput(input, level)).toEqual({
+      ok: true,
+      input: { gameId: "car", levelId: 1, values: { speed: 5, angle: 45 } },
+    });
+    expect(input.fields).toEqual({ speed: " 5 ", angle: "45" });
+    expect(level.inputVariables).toEqual(["speed", "angle"]);
+  });
+
+  it("keeps games with the same level number distinct and calls independent", () => {
+    const first = parseInput(raw({ speed: "5" }), oneField);
+    const second = parseInput(
+      { gameId: "netForce", levelId: 1, fields: { force: "20" } },
+      { inputVariables: ["force"] },
+    );
+    expect(first).toEqual({
+      ok: true,
+      input: { gameId: "car", levelId: 1, values: { speed: 5 } },
+    });
+    expect(second).toEqual({
+      ok: true,
+      input: { gameId: "netForce", levelId: 1, values: { force: 20 } },
+    });
+  });
+
+  it("leaves bounds and answer correctness to the validator", () => {
+    const level = {
+      inputVariables: ["speed"],
+      expectedUserInput: { speed: 10 },
+      toleranceRule: { absolute: 0.1 },
+      bounds: { speed: { min: 0, max: 100 } },
+    };
+    expect(parseInput(raw({ speed: "-20" }), level)).toEqual({
+      ok: true,
+      input: { gameId: "car", levelId: 1, values: { speed: -20 } },
+    });
+  });
+
   it("accepts integers, decimals and negatives", () => {
     expect(parseSpeed("12")).toBe(12);
     expect(parseSpeed("9.8")).toBe(9.8);
@@ -51,7 +138,16 @@ describe("parseInput", () => {
   });
 
   it("rejects letters and text JavaScript would otherwise convert", () => {
-    for (const text of ["abc", "12abc", "NaN", "Infinity", "0x10", "1,000", "+5", "1e"]) {
+    for (const text of [
+      "abc",
+      "12abc",
+      "NaN",
+      "Infinity",
+      "0x10",
+      "1,000",
+      "+5",
+      "1e",
+    ]) {
       expect(parseSpeed(text), text).toBe("Use digits, like 9.8 or 3e8.");
     }
   });

@@ -17,22 +17,6 @@ export class PhysicsEngine {
     return result;
   }
 
-  // Addition
-  public static add(a: number, b: number): number {
-    this.validateNumber(a, "PhysicsEngine.add input variable a");
-    this.validateNumber(b, "PhysicsEngine.add input variable b");
-
-    return this.validateResult(a + b, "PhysicsEngine.add");
-  }
-
-  // Subtraction
-  public static subtract(a: number, b: number): number {
-    this.validateNumber(a, "PhysicsEngine.subtract input variable a");
-    this.validateNumber(b, "PhysicsEngine.subtract input variable b");
-
-    return this.validateResult(a - b, "PhysicsEngine.subtract");
-  }
-
   // Multiplication
   public static multiply(a: number, b: number): number {
     this.validateNumber(a, "PhysicsEngine.multiply input variable a");
@@ -53,49 +37,37 @@ export class PhysicsEngine {
     return this.validateResult(a / b, "PhysicsEngine.divide");
   }
 
-  // Square root
-  public static sqrt(a: number): number {
-    this.validateNumber(a, "PhysicsEngine.sqrt input variable a");
-
-    if (a < 0) {
-      throw new RangeError(
-        `PhysicsEngine.sqrt: Cannot calculate the real square root of a ` +
-        `negative number. Received input variable a: ${a}`
-      );
-    }
-
-    return this.validateResult(Math.sqrt(a),"PhysicsEngine.sqrt");
-  }
-
-  // Sine (input in radians)
-  public static sin(angle: number): number {
-    this.validateNumber(angle, "PhysicsEngine.sin input Angle");
-
-    return this.validateResult(Math.sin(angle), "PhysicsEngine.sin");
-  }
-
-  // Cosine (input in radians)
-  public static cos(angle: number): number {
-    this.validateNumber(angle, "PhysicsEngine.cos input Angle");
-
-    return this.validateResult(Math.cos(angle), "PhysicsEngine.cos");
-  }
-
   public static calculateVelocity(displacement: number, time: number) {
-    this.validateNumber(displacement, "PhysicsEngine.calculateVelocity input variable displacement");
-    this.validateNumber(time, "PhysicsEngine.calculateVelocity input variable time");
+    this.validateNumber(
+      displacement,
+      "PhysicsEngine.calculateVelocity input variable displacement",
+    );
+    this.validateNumber(
+      time,
+      "PhysicsEngine.calculateVelocity input variable time",
+    );
     if (time <= 0) {
-      throw new RangeError(`PhysicsEngine.calculateVelocity.time must be positive. Received: ${time}`);
+      throw new RangeError(
+        `PhysicsEngine.calculateVelocity.time must be positive. Received: ${time}`,
+      );
     }
 
     return this.divide(displacement, time);
   }
 
   public static calculateDisplacement(velocity: number, time: number) {
-    this.validateNumber(velocity, "PhysicsEngine.calculateVelocity input variable velocity");
-    this.validateNumber(time, "PhysicsEngine.calculateVelocity input variable time");
+    this.validateNumber(
+      velocity,
+      "PhysicsEngine.calculateDisplacement input variable velocity",
+    );
+    this.validateNumber(
+      time,
+      "PhysicsEngine.calculateDisplacement input variable time",
+    );
     if (time < 0) {
-      throw new RangeError(`PhysicsEngine.calculateDisplacement.time must be >= 0. Received: ${time}`);
+      throw new RangeError(
+        `PhysicsEngine.calculateDisplacement.time must be >= 0. Received: ${time}`,
+      );
     }
 
     return this.multiply(velocity, time);

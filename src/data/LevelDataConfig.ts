@@ -5,7 +5,7 @@ export interface LevelDataConfig {
   readonly gameName: string;
   readonly levelId: number;
   readonly problemStatementVariables: readonly string[];
-  readonly problemStatementVariablesValues: Readonly<Record<string, number>>,
+  readonly problemStatementVariablesValues: Readonly<Record<string, number>>;
   readonly problemStatement: string; // Problem statement in form `${relevantVariable}`
   readonly userInputVariables: readonly string[];
   readonly userInputVariablesUnits: Readonly<Record<string, string>>;
@@ -18,7 +18,10 @@ type GameId = "kinematics" | "netForce";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
-  public createLevelDataConfig(gameId : GameId, levelId : number) : LevelDataConfig {
+  public createLevelDataConfig(
+    gameId: GameId,
+    levelId: number,
+  ): LevelDataConfig {
     switch (gameId) {
       case "kinematics":
         switch (levelId) {
@@ -28,24 +31,11 @@ export class LevelDataConfigFactory {
             return this.createKinematicsLevel2LevelDataConfig();
           case 3:
             return this.createKinematicsLevel3LevelDataConfig();
-          case 4:
-            return this.createKinematicsLevel4LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
-        break;
-      case "netForce":
-        switch (levelId) {  
-          case 1:
-            return this.createNetForceLevel1LevelDataConfig();
-          case 2:
-            return this.createNetForceLevel2LevelDataConfig();
-          default:
-            throw new Error("levelId does not exist");
-        }
-        break;
       default:
-        throw new Error("gameId does not exist"); 
+        throw new Error("gameId does not exist");
     }
   }
 
@@ -72,17 +62,21 @@ export class LevelDataConfigFactory {
     return randomOffset + min;
   }
 
-  private createKinematicsLevel1LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel1LevelDataConfig(): LevelDataConfig {
     const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
-    const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+    const displacementForProblem = PhysicsEngine.calculateDisplacement(
+      velocityForProblem,
+      timeForProblem,
+    ); // meters
 
-    const problemStatement = `Velocity is displacement (the change in ` +
-                              `position from start to finish) divided by the ` +
-                              `time taken. If a getaway car moves ` +
-                              `${displacementForProblem} meters straight ` +
-                              `toward the backstage gate in ${timeForProblem} ` +
-                              `seconds, what is the car's velocity?`;
+    const problemStatement =
+      `Velocity is displacement (the change in ` +
+      `position from start to finish) divided by the ` +
+      `time taken. If a getaway car moves ` +
+      `${displacementForProblem} meters straight ` +
+      `toward the backstage gate in ${timeForProblem} ` +
+      `seconds, what is the car's velocity?`;
 
     return {
       gameName: "kinematics",
@@ -90,7 +84,7 @@ export class LevelDataConfigFactory {
       problemStatementVariables: ["displacement", "time"],
       problemStatementVariablesValues: {
         time: timeForProblem,
-        displacement: displacementForProblem
+        displacement: displacementForProblem,
       },
       problemStatement: problemStatement,
       userInputVariables: ["velocity"],
@@ -98,8 +92,8 @@ export class LevelDataConfigFactory {
       expectedUserInput: { velocity: velocityForProblem },
       toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 }
-      }
+        velocity: { min: 0.0 },
+      },
     };
   }
 
@@ -126,15 +120,14 @@ export class LevelDataConfigFactory {
       userInputVariables: ["displacement"],
       userInputVariablesUnits: {displacement:"m"},
       expectedUserInput: {displacement: displacementForProblem},
-      toleranceRule: { absolute: 0.00001 }, //final?
+      toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 } //final?
+        velocity: { min: 0.0 }
       }
     };
   }
 
   private createKinematicsLevel3LevelDataConfig() : LevelDataConfig {
-     // TODO Finish
     const initialVelocity = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
     const finalVelocity = initialVelocity + this.randomIntegerInclusive(1,5) * timeForProblem;
@@ -163,54 +156,6 @@ export class LevelDataConfigFactory {
       bounds: {
         acceleration: {min: 0.0} //final?
       }
-    };
-  }
-
-  private createKinematicsLevel4LevelDataConfig() : LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "kinematics",
-      levelId: 4,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {}
-    };
-  }
-
-  private createNetForceLevel1LevelDataConfig() : LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "netForce",
-      levelId: 1,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {}
-    };
-  }
-
-  private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
-    // TODO Finish
-    return {
-      gameName: "netForce",
-      levelId: 2,
-      problemStatementVariables: [],
-      problemStatementVariablesValues: {},
-      problemStatement: "",
-      userInputVariables: [],
-      userInputVariablesUnits: {},
-      expectedUserInput: {},
-      toleranceRule: { absolute: 0.0 },
-      bounds: {}
     };
   }
 };

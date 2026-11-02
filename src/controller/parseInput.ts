@@ -5,7 +5,10 @@ import type {
 import type { RawInput } from "./GameCommands.ts";
 
 /** An AnswerSubmission before the controller adds units from the level. */
-export type ParsedInput = Pick<AnswerSubmission, "gameId" | "levelId" | "values">;
+export type ParsedInput = Pick<
+  AnswerSubmission,
+  "gameId" | "levelId" | "values"
+>;
 
 export type ParseResult =
   | { readonly ok: true; readonly input: ParsedInput }
