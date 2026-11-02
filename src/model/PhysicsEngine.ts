@@ -17,22 +17,6 @@ export class PhysicsEngine {
     return result;
   }
 
-  // Addition
-  public static add(a: number, b: number): number {
-    this.validateNumber(a, "PhysicsEngine.add input variable a");
-    this.validateNumber(b, "PhysicsEngine.add input variable b");
-
-    return this.validateResult(a + b, "PhysicsEngine.add");
-  }
-
-  // Subtraction
-  public static subtract(a: number, b: number): number {
-    this.validateNumber(a, "PhysicsEngine.subtract input variable a");
-    this.validateNumber(b, "PhysicsEngine.subtract input variable b");
-
-    return this.validateResult(a - b, "PhysicsEngine.subtract");
-  }
-
   // Multiplication
   public static multiply(a: number, b: number): number {
     this.validateNumber(a, "PhysicsEngine.multiply input variable a");
@@ -51,34 +35,6 @@ export class PhysicsEngine {
     }
 
     return this.validateResult(a / b, "PhysicsEngine.divide");
-  }
-
-  // Square root
-  public static sqrt(a: number): number {
-    this.validateNumber(a, "PhysicsEngine.sqrt input variable a");
-
-    if (a < 0) {
-      throw new RangeError(
-        `PhysicsEngine.sqrt: Cannot calculate the real square root of a ` +
-          `negative number. Received input variable a: ${a}`,
-      );
-    }
-
-    return this.validateResult(Math.sqrt(a), "PhysicsEngine.sqrt");
-  }
-
-  // Sine (input in radians)
-  public static sin(angle: number): number {
-    this.validateNumber(angle, "PhysicsEngine.sin input Angle");
-
-    return this.validateResult(Math.sin(angle), "PhysicsEngine.sin");
-  }
-
-  // Cosine (input in radians)
-  public static cos(angle: number): number {
-    this.validateNumber(angle, "PhysicsEngine.cos input Angle");
-
-    return this.validateResult(Math.cos(angle), "PhysicsEngine.cos");
   }
 
   public static calculateVelocity(displacement: number, time: number) {
