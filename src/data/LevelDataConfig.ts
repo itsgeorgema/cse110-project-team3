@@ -5,7 +5,7 @@ export interface LevelDataConfig {
   readonly gameName: string;
   readonly levelId: number;
   readonly problemStatementVariables: readonly string[];
-  readonly problemStatementVariablesValues: Readonly<Record<string, number>>,
+  readonly problemStatementVariablesValues: Readonly<Record<string, number>>;
   readonly problemStatement: string; // Problem statement in form `${relevantVariable}`
   readonly userInputVariables: readonly string[];
   readonly userInputVariablesUnits: Readonly<Record<string, string>>;
@@ -18,7 +18,10 @@ type GameId = "kinematics" | "netForce";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
-  public createLevelDataConfig(gameId : GameId, levelId : number) : LevelDataConfig {
+  public createLevelDataConfig(
+    gameId: GameId,
+    levelId: number,
+  ): LevelDataConfig {
     switch (gameId) {
       case "kinematics":
         switch (levelId) {
@@ -35,7 +38,7 @@ export class LevelDataConfigFactory {
         }
         break;
       case "netForce":
-        switch (levelId) {  
+        switch (levelId) {
           case 1:
             return this.createNetForceLevel1LevelDataConfig();
           case 2:
@@ -45,7 +48,7 @@ export class LevelDataConfigFactory {
         }
         break;
       default:
-        throw new Error("gameId does not exist"); 
+        throw new Error("gameId does not exist");
     }
   }
 
@@ -72,17 +75,21 @@ export class LevelDataConfigFactory {
     return randomOffset + min;
   }
 
-  private createKinematicsLevel1LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel1LevelDataConfig(): LevelDataConfig {
     const velocityForProblem = this.randomIntegerInclusive(5, 30); // meters/second
     const timeForProblem = this.randomIntegerInclusive(2, 7); // seconds
-    const displacementForProblem = PhysicsEngine.calculateDisplacement(velocityForProblem, timeForProblem); // meters
+    const displacementForProblem = PhysicsEngine.calculateDisplacement(
+      velocityForProblem,
+      timeForProblem,
+    ); // meters
 
-    const problemStatement = `Velocity is displacement (the change in ` +
-                              `position from start to finish) divided by the ` +
-                              `time taken. If a getaway car moves ` +
-                              `${displacementForProblem} meters straight ` +
-                              `toward the backstage gate in ${timeForProblem} ` +
-                              `seconds, what is the car's velocity?`;
+    const problemStatement =
+      `Velocity is displacement (the change in ` +
+      `position from start to finish) divided by the ` +
+      `time taken. If a getaway car moves ` +
+      `${displacementForProblem} meters straight ` +
+      `toward the backstage gate in ${timeForProblem} ` +
+      `seconds, what is the car's velocity?`;
 
     return {
       gameName: "kinematics",
@@ -90,7 +97,7 @@ export class LevelDataConfigFactory {
       problemStatementVariables: ["displacement", "time"],
       problemStatementVariablesValues: {
         time: timeForProblem,
-        displacement: displacementForProblem
+        displacement: displacementForProblem,
       },
       problemStatement: problemStatement,
       userInputVariables: ["velocity"],
@@ -98,12 +105,12 @@ export class LevelDataConfigFactory {
       expectedUserInput: { velocity: velocityForProblem },
       toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 }
-      }
+        velocity: { min: 0.0 },
+      },
     };
   }
 
-  private createKinematicsLevel2LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel2LevelDataConfig(): LevelDataConfig {
     // TODO Finish
     return {
       gameName: "kinematics",
@@ -115,12 +122,12 @@ export class LevelDataConfigFactory {
       userInputVariablesUnits: {},
       expectedUserInput: {},
       toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      bounds: {},
     };
   }
 
-  private createKinematicsLevel3LevelDataConfig() : LevelDataConfig {
-     // TODO Finish
+  private createKinematicsLevel3LevelDataConfig(): LevelDataConfig {
+    // TODO Finish
     return {
       gameName: "kinematics",
       levelId: 3,
@@ -131,11 +138,11 @@ export class LevelDataConfigFactory {
       userInputVariablesUnits: {},
       expectedUserInput: {},
       toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      bounds: {},
     };
   }
 
-  private createKinematicsLevel4LevelDataConfig() : LevelDataConfig {
+  private createKinematicsLevel4LevelDataConfig(): LevelDataConfig {
     // TODO Finish
     return {
       gameName: "kinematics",
@@ -147,11 +154,11 @@ export class LevelDataConfigFactory {
       userInputVariablesUnits: {},
       expectedUserInput: {},
       toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      bounds: {},
     };
   }
 
-  private createNetForceLevel1LevelDataConfig() : LevelDataConfig {
+  private createNetForceLevel1LevelDataConfig(): LevelDataConfig {
     // TODO Finish
     return {
       gameName: "netForce",
@@ -163,11 +170,11 @@ export class LevelDataConfigFactory {
       userInputVariablesUnits: {},
       expectedUserInput: {},
       toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      bounds: {},
     };
   }
 
-  private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
+  private createNetForceLevel2LevelDataConfig(): LevelDataConfig {
     // TODO Finish
     return {
       gameName: "netForce",
@@ -179,7 +186,7 @@ export class LevelDataConfigFactory {
       userInputVariablesUnits: {},
       expectedUserInput: {},
       toleranceRule: { absolute: 0.0 },
-      bounds: {}
+      bounds: {},
     };
   }
-};
+}

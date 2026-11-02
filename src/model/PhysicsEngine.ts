@@ -60,11 +60,11 @@ export class PhysicsEngine {
     if (a < 0) {
       throw new RangeError(
         `PhysicsEngine.sqrt: Cannot calculate the real square root of a ` +
-        `negative number. Received input variable a: ${a}`
+          `negative number. Received input variable a: ${a}`,
       );
     }
 
-    return this.validateResult(Math.sqrt(a),"PhysicsEngine.sqrt");
+    return this.validateResult(Math.sqrt(a), "PhysicsEngine.sqrt");
   }
 
   // Sine (input in radians)
@@ -82,20 +82,36 @@ export class PhysicsEngine {
   }
 
   public static calculateVelocity(displacement: number, time: number) {
-    this.validateNumber(displacement, "PhysicsEngine.calculateVelocity input variable displacement");
-    this.validateNumber(time, "PhysicsEngine.calculateVelocity input variable time");
+    this.validateNumber(
+      displacement,
+      "PhysicsEngine.calculateVelocity input variable displacement",
+    );
+    this.validateNumber(
+      time,
+      "PhysicsEngine.calculateVelocity input variable time",
+    );
     if (time <= 0) {
-      throw new RangeError(`PhysicsEngine.calculateVelocity.time must be positive. Received: ${time}`);
+      throw new RangeError(
+        `PhysicsEngine.calculateVelocity.time must be positive. Received: ${time}`,
+      );
     }
 
     return this.divide(displacement, time);
   }
 
   public static calculateDisplacement(velocity: number, time: number) {
-    this.validateNumber(velocity, "PhysicsEngine.calculateDisplacement input variable velocity");
-    this.validateNumber(time, "PhysicsEngine.calculateDisplacement input variable time");
+    this.validateNumber(
+      velocity,
+      "PhysicsEngine.calculateDisplacement input variable velocity",
+    );
+    this.validateNumber(
+      time,
+      "PhysicsEngine.calculateDisplacement input variable time",
+    );
     if (time < 0) {
-      throw new RangeError(`PhysicsEngine.calculateDisplacement.time must be >= 0. Received: ${time}`);
+      throw new RangeError(
+        `PhysicsEngine.calculateDisplacement.time must be >= 0. Received: ${time}`,
+      );
     }
 
     return this.multiply(velocity, time);
