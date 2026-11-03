@@ -151,7 +151,7 @@ export class LevelDataConfigFactory {
     return {
       gameName: "kinematics",
       levelId: 3,
-      problemStatementVariables: ["initalVelocity", "finalVelocity", "time"],
+      problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
       problemStatementVariablesValues: {
         initialVelocity: initialVelocity,
         finalVelocity: finalVelocity,
