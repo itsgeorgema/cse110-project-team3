@@ -27,13 +27,10 @@ export class LevelDataConfigFactory {
         switch (levelId) {
           case 1:
             return this.createKinematicsLevel1LevelDataConfig();
-<<<<<<< HEAD
           case 2:
             return this.createKinematicsLevel2LevelDataConfig();
           case 3:
             return this.createKinematicsLevel3LevelDataConfig();
-=======
->>>>>>> origin/main
           default:
             throw new Error("levelId does not exist");
         }
