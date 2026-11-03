@@ -7,7 +7,12 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-async function expectMap(page: Page, expectedCurrent = 3, expectedCleared = 2) {
+async function expectMap(
+  page: Page,
+  expectedCurrent = 3,
+  expectedCleared = 2,
+  expectComingSoon = true,
+) {
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(
     page.getByRole("heading", { name: "The Great Escape" }),
@@ -21,9 +26,14 @@ async function expectMap(page: Page, expectedCurrent = 3, expectedCleared = 2) {
   await expect(
     page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("button", { name: "Level coming soon" }),
-  ).toBeDisabled();
+  if (expectComingSoon) {
+    await expect(
+      page.getByRole("button", { name: "Level coming soon" }),
+    ).toBeDisabled();
+  }
+  await expect(page.getByText("Saved progress", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(page.getByRole("progressbar")).toHaveAttribute(
     "value",
     String(expectedCleared),
@@ -109,7 +119,9 @@ for (const viewport of [
       await dialog.getByRole("button", { name: /Return to story map/ }).click();
       await expect(dialog).toHaveCount(0);
       await expect(trigger).toBeFocused();
-      expect(await map.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+      expect(await map.evaluate((element) => element.scrollTop)).toBe(
+        scrollTop,
+      );
       await trigger.click();
       await expect(dialog).toHaveCount(1);
       await page.keyboard.press("Escape");
@@ -125,7 +137,7 @@ test("refresh restores the selected level", async ({ page }) => {
     .getByRole("button", { name: /Level 2: Backstage breakout/ })
     .click();
   await page.reload();
-  await expectMap(page, 2, 2);
+  await expectMap(page, 2, 2, false);
 });
 
 test("saved completions restore the map state and journey count", async ({

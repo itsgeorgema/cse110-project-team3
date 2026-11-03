@@ -22,17 +22,25 @@ try {
   // Keep the map usable with session-only progress when storage is unavailable.
 }
 
+// Seed the preview's sample completion state so it survives the first selection
+// save, just like progress loaded from an existing save.
+if (
+  savedProgress.completedLevels.length === 0 &&
+  savedProgress.currentLevel === null
+) {
+  savedProgress = {
+    ...savedProgress,
+    completedLevels: previewNodes
+      .filter((node) => node.initialState === "cleared")
+      .map((node) => node.level),
+  };
+}
+
 const knownLevels = new Set(
   previewNodes.map((node) => `${node.level.gameId}:${node.level.levelId}`),
 );
-const hasSavedProgress =
-  savedProgress.completedLevels.length > 0 || savedProgress.currentLevel !== null;
 const completedLevels = new Set(
-  (hasSavedProgress
-    ? savedProgress.completedLevels
-    : previewNodes
-        .filter((node) => node.initialState === "cleared")
-        .map((node) => node.level))
+  savedProgress.completedLevels
     .filter((level) => knownLevels.has(`${level.gameId}:${level.levelId}`))
     .map((level) => `${level.gameId}:${level.levelId}`),
 );

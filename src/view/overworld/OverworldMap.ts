@@ -75,9 +75,11 @@ export class OverworldMap {
   }
 
   private render(): void {
-    const { nodes, current, completedCount: cleared } = getMapProgress(
-      this.completedLevels,
-    );
+    const {
+      nodes,
+      current,
+      completedCount: cleared,
+    } = getMapProgress(this.completedLevels);
     const selected =
       nodes.find(
         (node) =>
@@ -89,7 +91,7 @@ export class OverworldMap {
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
-          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><span class="sample-note">Saved progress</span><button class="reset-progress" type="button">Reset progress</button></div>
+          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><button class="reset-progress" type="button">Reset progress</button></div>
           <nav class="chapter-nav" aria-label="Story chapters">${chapters.map((chapter, index) => `<button class="chapter-link" data-chapter="${index}"><span class="chapter-number">0${index + 1}</span><span><strong>${chapter.title}</strong><small>${index === 0 ? "The story begins" : "Further down the road"}</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("")}</nav>
           <button class="return-button" type="button">◎ &nbsp; Back to your chapter</button>
         </aside>
