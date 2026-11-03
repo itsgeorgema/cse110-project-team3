@@ -1,36 +1,36 @@
-# Overworld story map (UI preview)
+# Overworld preview implementation
 
-`OverworldMap` is mounted by `src/main.ts`. It uses native HTML for accessible
-controls and SVG for the illustrated scenery and route. The existing Konva stage
-is unchanged and is not mounted on this UI-only screen.
+This guide describes the implementation details that should stay synchronized
+with changes to the overworld view. The broader architectural context is in
+[`docs/architecture.md`](../../../docs/architecture.md); design behavior and
+scope are recorded in [`docs/overworld-preview.md`](../../../docs/overworld-preview.md).
 
-`mapPreview.ts` owns the presentation fixtures:
+## Rendering and fixtures
 
-- `previewNodes`: stable marker IDs, positions on a 680 × 1770 reference map,
-  story copy, chapter membership, and placeholder `LevelAddress` values.
-- `previewConnections`: explicit pairs of connected marker IDs. Both the path
-  and markers use the same coordinates, so they remain aligned when resized.
-- `chapters`: chapter labels and scroll destinations.
+- `OverworldMap.ts` renders native HTML controls and inline SVG scenery and route
+  lines. It derives cleared/current/locked display state from completed IDs and
+  the fixture order. It does not call `ProgressionSystem` or a game controller.
+- `mapPreview.ts` owns node IDs, placeholder `circus-preview` addresses, story
+  copy, chapter membership, positions on a 680 × 1770 reference map, and route
+  connections. These addresses are not registered game levels.
+- `ResultsSummary.ts` shows fixed sample accuracy and answer counts for two
+  nodes. It does not calculate or persist scores.
+- The existing `KonvaStage` is not mounted on the story map.
 
-The `circus-preview` game ID and numbered levels are **not registered level data**.
-The cleared/current/locked states and progress count are sample presentation data.
-They do not calculate unlocks, persist progress, or call a controller.
+The current app seeds sample completions on an empty save. Selecting a map
+marker saves its address; reset clears saved state and restores fixture defaults.
+Other markers have disabled launch buttons. The clown is static artwork. Level
+launch, movement, adjacency enforcement, and traversal are not implemented.
 
-Clicking any marker only updates its story preview. For cleared levels, the
-sidebar’s View results button opens the mock Results Summary screen. Other
-levels’ launch buttons remain disabled. `ResultsSummary.ts` owns fixed
-sample accuracy values (90% and 80%) and correct-answer counts. No score is
-calculated or saved. Return buttons and Escape close the native modal, restore
-focus, and preserve the map’s scroll position. Chapter navigation and the return button only scroll
-or update the selected preview; the clown remains at the sample current node.
+## UI behavior to preserve
 
-For later integration, replace the fixture addresses with the level team's real
-addresses and supply states from ProgressionSystem. Wire level selection through
-GameCommands only when implementing the traversal ticket. Walking frames,
-OverworldAnimation, movement input, and adjacency/unlock enforcement are outside
-this UI implementation. The static decorative clown is not a walk animation.
+The map scroll region is keyboard-focusable and markers are native buttons with
+descriptive accessible labels. The layout moves from three columns to one on
+narrow screens; motion must respect `prefers-reduced-motion`. The results modal
+must close with Escape and its buttons, restore focus to its trigger, and leave
+the map scroll position intact.
 
-The layout adapts from three columns to a single column on phones. The map is a
-keyboard-focusable scroll region; its markers are native buttons with selected
-states and descriptive labels. Decorative motion respects reduced-motion settings.
-Typography uses Google Fonts with local serif/sans-serif fallbacks.
+Update this guide and the relevant tests in the same pull request when fixture
+shape, rendering behavior, interactions, persistence wiring, or accessibility
+behavior changes. Browser coverage lives in `tests/e2e/`; view unit tests live
+beside this code.

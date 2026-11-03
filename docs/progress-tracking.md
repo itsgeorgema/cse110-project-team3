@@ -1,5 +1,11 @@
 # Session progress and next-level selection (#41)
 
+This note documents the implemented `ProgressTracker` and `ProgressionSystem`
+contracts. They are independently tested services; the current preview does
+not use them. In particular, completion is not yet wired from answer playback
+to persistent storage. Treat integration behavior as future work until that
+flow is implemented and reviewed.
+
 `ProgressTracker` reuses `AnswerValidationResult` from the current validation
 contract. The shared `LevelAddress` record carries the pair `(gameId, levelId)` throughout
 tracking and progression.
@@ -14,8 +20,9 @@ tracking and progression.
 - `getAttempts()` returns an immutable snapshot of history. Submitted values and
   units are copied so later edits cannot rewrite history.
 
-`ProgressionSystem` accepts and returns `LevelAddress` records, using a caller-supplied level order and the tracker’s
-`isCompleted` query. It returns the next configured level only after completion,
+`ProgressionSystem` accepts and returns `LevelAddress` records, using a
+caller-supplied level order and the tracker's `isCompleted` query. It returns
+the next configured level only after completion,
 returns `undefined` for missing/unknown identities or the final level, and rejects
 duplicate game/level pairs. The order is copied to prevent caller mutation.
 
@@ -25,7 +32,6 @@ already completed levels remain replayable even if an earlier level is incomplet
 Unknown or missing addresses are unavailable. Failed attempts do not remove
 earned availability. These queries do not record attempts or mutate progress.
 
-This is an implementation proposal for controller review, not a claim that the
-interfaces have been agreed with its owner. Controller integration
-will follow in a separate PR.
-Persistence, drafts, scoring, and skill checks are deferred.
+The behaviors above are implemented and covered by unit tests. They do not
+describe a controller integration proposal. Persistence, drafts, scoring, and
+skill checks are separate concerns and are not provided by these services.

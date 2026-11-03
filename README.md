@@ -153,11 +153,15 @@ Workflow references: [GitHub reusable workflows](https://docs.github.com/en/acti
 
 ## Layout
 
-`src/` mirrors the layers in our architecture doc's static view. Each folder's README lists the
-classes that live there.
+`src/` is organized by current responsibility. The
+[docs folder](docs/README.md) contains the current architecture, implemented
+design notes, and testing guidance. Source-folder READMEs provide short local
+orientation. Implementation guides that need to change alongside code live
+beside that code, including the [overworld view](src/view/overworld/README.md)
+and [GitHub workflows](.github/workflows/README.md).
 
-- `src/view/`: what the player sees and touches
-- `src/controller/`: level and attempt lifecycle
+- `src/view/`: current story-map preview and rendering code
+- `src/controller/`: parsing, command interfaces, and progression service
 - `src/model/`: logic and records, no rendering
 - `src/data/`: level definitions and saved progress
 - `src/main.ts`: builds the objects and wires them together
