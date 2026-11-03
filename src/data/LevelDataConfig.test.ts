@@ -323,4 +323,162 @@ describe("createLevelDataConfig for kinematics game, level 2", () => {
     });
   });
 });
-//
+
+describe("createLevelDataConfig for kinematics game, level 3", () => {
+  const expectValidKinematicsLevel3Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract initial velocity, final velocity, and time from the problem statement.
+    const initialVelocityMatch = problemStatement.match(/from\s+(\d+)\s+m\/s/);
+    const finalVelocityMatch = problemStatement.match(/to\s+(\d+)\s+m\/s/);
+    const timeMatch = problemStatement.match(/in\s+(\d+)\s+seconds/);
+
+    expect(initialVelocityMatch).not.toBeNull();
+    expect(finalVelocityMatch).not.toBeNull();
+    expect(timeMatch).not.toBeNull();
+
+    const initialVelocity = Number(initialVelocityMatch?.[1]);
+    const finalVelocity = Number(finalVelocityMatch?.[1]);
+    const time = Number(timeMatch?.[1]);
+    const acceleration = expectedUserInput.acceleration;
+
+    // Validate initial velocity.
+    expect(Number.isInteger(initialVelocity)).toBe(true);
+    expect(initialVelocity).toBeGreaterThanOrEqual(5);
+    expect(initialVelocity).toBeLessThanOrEqual(30);
+
+    // Validate time.
+    expect(Number.isInteger(time)).toBe(true);
+    expect(time).toBeGreaterThanOrEqual(2);
+    expect(time).toBeLessThanOrEqual(7);
+
+    // Validate final velocity (the car speeds up, so it exceeds the initial velocity).
+    expect(Number.isInteger(finalVelocity)).toBe(true);
+    expect(finalVelocity).toBeGreaterThan(initialVelocity);
+
+    // Validate acceleration (a whole number from 1 to 5 m/s^2).
+    expect(Number.isInteger(acceleration)).toBe(true);
+    expect(acceleration).toBeGreaterThanOrEqual(1);
+    expect(acceleration).toBeLessThanOrEqual(5);
+
+    // Validate mathematical consistency.
+    expect((finalVelocity - initialVelocity) % time).toBe(0);
+    expect((finalVelocity - initialVelocity) / time).toBe(acceleration);
+
+    // Validate problem statement variables.
+    expect(problemStatementVariablesValues).toEqual({
+      initialVelocity,
+      finalVelocity,
+      time,
+    });
+
+    // Validate problem statement formatting.
+
+    // Ensure there are no consecutive whitespace characters.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+
+    // Ensure the problem statement has no leading or trailing whitespace.
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+
+    // Ensure there is no whitespace before punctuation.
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^Acceleration is the rate of change\. That is, the change from initial velocity to the final velocity divided by time taken\. If a getaway car accelerates up from \d+ m\/s to \d+ m\/s in \d+ seconds to outrun the guard, what is the car's acceleration\?$/,
+    );
+
+    // Ensure extracted values match the configuration.
+    expect(problemStatement).toContain(`${initialVelocity} m/s`);
+    expect(problemStatement).toContain(`${finalVelocity} m/s`);
+    expect(problemStatement).toContain(`${time} seconds`);
+
+    // Validate answer configuration.
+    expect(expectedUserInput).toEqual({
+      acceleration,
+    });
+  };
+
+  it("deterministic test: should generate valid and correctly formatted calculate acceleration from velocities and time problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "kinematics";
+    const levelId = 3;
+
+    // Fix Math.random() to return 0.5 three times in a row
+    // See LevelDataConfigFactory.randomIntegerInclusive() for implementation
+    // of random integer generator for problem
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0.5) // initial velocity = Math.floor(0.5 * (30 - 5 + 1)) + 5 = 18
+      .mockReturnValueOnce(0.5) // time = Math.floor(0.5 * (7 - 2 + 1)) + 2 = 5
+      .mockReturnValueOnce(0.5); // acceleration = Math.floor(0.5 * (5 - 1 + 1)) + 1 = 3
+
+    // Final velocity is then 18 + 3 * 5 = 33, so the expected acceleration is 3.
+
+    try {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+
+      const { initialVelocity, finalVelocity, time } =
+        levelDataConfig.problemStatementVariablesValues;
+      expect(initialVelocity).toBe(18);
+      expect(finalVelocity).toBe(33);
+      expect(time).toBe(5);
+      expect(levelDataConfig.expectedUserInput.acceleration).toBe(3);
+
+      expectValidKinematicsLevel3Problem(levelDataConfig);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("randomized tests (1000): should generate valid and correctly formatted calculate acceleration from velocities and time problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "kinematics";
+    const levelId = 3;
+
+    // Generate multiple configurations to cover random values.
+    for (let i = 0; i < 1000; i++) {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+      expectValidKinematicsLevel3Problem(levelDataConfig);
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "kinematics";
+    const levelId = 3;
+    const config = levelDataConfigFactory.createLevelDataConfig(
+      gameId,
+      levelId,
+    );
+
+    expect(config).toMatchObject({
+      gameName: "kinematics",
+      levelId: 3,
+      problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
+      userInputVariables: ["acceleration"],
+      userInputVariablesUnits: {
+        acceleration: "m/s^2",
+      },
+      toleranceRule: {
+        absolute: 0.00001,
+      },
+      bounds: {
+        acceleration: {
+          min: 0.0,
+        },
+      },
+    });
+  });
+});
