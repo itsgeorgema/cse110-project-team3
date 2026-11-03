@@ -42,20 +42,30 @@ const star =
 /** UI-only map. Markers preview stories; the View results button opens mock results. */
 export class OverworldMap {
   private readonly container: HTMLDivElement;
-  private readonly completedLevels: ReadonlySet<string>;
+  private readonly completedLevels: Set<string>;
+  private currentLevel: MapNode["level"] | null;
+  private readonly saveCurrentLevel: (level: MapNode["level"]) => void;
+  private readonly resetSavedProgress: () => void;
 
   constructor(
     container: HTMLDivElement,
     completedLevels?: ReadonlySet<string>,
+    currentLevel: MapNode["level"] | null = null,
+    saveCurrentLevel: (level: MapNode["level"]) => void = () => {},
+    resetSavedProgress: () => void = () => {},
   ) {
     this.container = container;
-    this.completedLevels =
+    this.completedLevels = new Set(
       completedLevels ??
-      new Set(
-        previewNodes
-          .filter((node) => node.initialState === "cleared")
-          .map((node) => `${node.level.gameId}:${node.level.levelId}`),
-      );
+        new Set(
+          previewNodes
+            .filter((node) => node.initialState === "cleared")
+            .map((node) => `${node.level.gameId}:${node.level.levelId}`),
+        ),
+    );
+    this.currentLevel = currentLevel;
+    this.saveCurrentLevel = saveCurrentLevel;
+    this.resetSavedProgress = resetSavedProgress;
     this.render();
   }
 
@@ -65,12 +75,18 @@ export class OverworldMap {
       current,
       completedCount: cleared,
     } = getMapProgress(this.completedLevels);
+    const selected =
+      nodes.find(
+        (node) =>
+          node.level.gameId === this.currentLevel?.gameId &&
+          node.level.levelId === this.currentLevel.levelId,
+      ) ?? current;
     this.container.innerHTML = `
       <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="preview-badge">Story map</span></header>
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
-          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><span class="sample-note">Saved progress</span></div>
+          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><span class="sample-note">Saved progress</span><button class="reset-progress" type="button">Reset progress</button></div>
           <nav class="chapter-nav" aria-label="Story chapters">${chapters.map((chapter, index) => `<button class="chapter-link" data-chapter="${index}"><span class="chapter-number">0${index + 1}</span><span><strong>${chapter.title}</strong><small>${index === 0 ? "The story begins" : "Further down the road"}</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("")}</nav>
           <button class="return-button" type="button">◎ &nbsp; Back to your chapter</button>
         </aside>
@@ -88,7 +104,7 @@ export class OverworldMap {
                   return `<path class="route-bed" d="${path}"/><path class="route ${from.state === "cleared" ? "traveled" : ""}" d="${path}"/>`;
                 })
                 .join("")}</svg>
-              ${nodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.state === "current" ? "you are here" : node.state}. Preview story." aria-pressed="${node.id === current.id}">${node.state === "current" ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : '<span aria-hidden="true">03</span>'}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
+              ${nodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.state === "current" ? "you are here" : node.state}. Preview story." aria-pressed="${node.id === selected.id}">${node.state === "current" ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : '<span aria-hidden="true">03</span>'}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
               <div class="map-ending"><span aria-hidden="true">✦</span> THE WORLD IS BIGGER THAN THE BIG TOP.</div>
             </div>
           </div>
@@ -96,12 +112,14 @@ export class OverworldMap {
         </section>
         <aside class="story-preview" aria-label="Selected level story" aria-live="polite"></aside>
       </main>`;
-    this.showPreview(current);
+    this.showPreview(selected);
     this.container
       .querySelectorAll<HTMLButtonElement>("[data-node]")
       .forEach((button) => {
         button.addEventListener("click", () => {
           const node = nodes.find((item) => item.id === button.dataset.node)!;
+          this.currentLevel = node.level;
+          this.saveCurrentLevel(node.level);
           this.container
             .querySelectorAll("[data-node]")
             .forEach((marker) =>
@@ -124,6 +142,14 @@ export class OverworldMap {
         this.container
           .querySelector<HTMLButtonElement>(`[data-node="${current.id}"]`)!
           .click();
+      });
+    this.container
+      .querySelector<HTMLButtonElement>(".reset-progress")!
+      .addEventListener("click", () => {
+        this.resetSavedProgress();
+        this.completedLevels.clear();
+        this.currentLevel = null;
+        this.render();
       });
   }
 

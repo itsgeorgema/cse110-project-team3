@@ -120,15 +120,16 @@ for (const viewport of [
   });
 }
 
-test("refresh rebuilds one map with the initial selection", async ({
-  page,
-}) => {
+test("refresh restores the selected level", async ({ page }) => {
   await page.goto("./");
   await page
     .getByRole("button", { name: /Level 2: Backstage breakout/ })
     .click();
   await page.reload();
-  await expectMap(page);
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
+  await expect(
+    page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("saved completions restore the map state and journey count", async ({
@@ -151,4 +152,31 @@ test("saved completions restore the map state and journey count", async ({
   await expect(
     page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
   ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("selected level restores after refresh and reset clears saved progress", async ({
+  page,
+}) => {
+  await page.goto("./");
+  const selected = page.getByRole("button", {
+    name: /Level 3: Under the big top/,
+  });
+  await selected.click();
+  await page.reload();
+  const restored = page.getByRole("button", {
+    name: /Level 3: Under the big top/,
+  });
+  await expect(restored).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("heading", { name: "Under the big top" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Reset progress" }).click();
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
+  await expect(
+    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(
+    await page.evaluate(() => localStorage.getItem("escape-route-progress")),
+  ).toBeNull();
 });

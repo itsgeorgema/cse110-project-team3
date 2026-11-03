@@ -195,6 +195,21 @@ progress::-moz-progress-bar {
   color: #a6b7b3;
 }
 
+.reset-progress {
+  border: 0;
+  padding: 5px 0;
+  background: transparent;
+  color: #a6b7b3;
+  font-size: 10px;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reset-progress:hover {
+  color: #e5e9e0;
+}
+
 .chapter-nav {
   border-top: 1px solid #2c3d42;
 }

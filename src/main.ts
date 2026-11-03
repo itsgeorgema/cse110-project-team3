@@ -9,11 +9,17 @@ const container = document.querySelector<HTMLDivElement>("#app");
 if (!container) {
   throw new Error('index.html is missing <div id="app">');
 }
-let savedProgress: SaveData;
+let saveManager: SaveManager | undefined;
+let savedProgress: SaveData = {
+  schemaVersion: 1,
+  completedLevels: [],
+  currentLevel: null,
+};
 try {
-  savedProgress = new SaveManager(window.localStorage).load();
+  saveManager = new SaveManager(window.localStorage);
+  savedProgress = saveManager.load();
 } catch {
-  savedProgress = { schemaVersion: 1 as const, completedLevels: [] };
+  // Keep the map usable with session-only progress when storage is unavailable.
 }
 const knownLevels = new Set(
   previewNodes.map((node) => `${node.level.gameId}:${node.level.levelId}`),
@@ -23,4 +29,35 @@ const completedLevels = new Set(
     .filter((level) => knownLevels.has(`${level.gameId}:${level.levelId}`))
     .map((level) => `${level.gameId}:${level.levelId}`),
 );
-new OverworldMap(container, completedLevels);
+const validCurrentLevel =
+  savedProgress.currentLevel &&
+  knownLevels.has(
+    `${savedProgress.currentLevel.gameId}:${savedProgress.currentLevel.levelId}`,
+  )
+    ? savedProgress.currentLevel
+    : null;
+new OverworldMap(
+  container,
+  completedLevels,
+  validCurrentLevel,
+  (level) => {
+    savedProgress = { ...savedProgress, currentLevel: level };
+    try {
+      saveManager?.save(savedProgress.completedLevels, level);
+    } catch {
+      // The current selection still works for this session without storage.
+    }
+  },
+  () => {
+    savedProgress = {
+      schemaVersion: 1,
+      completedLevels: [],
+      currentLevel: null,
+    };
+    try {
+      saveManager?.reset();
+    } catch {
+      // Reset the visible session even when browser storage is unavailable.
+    }
+  },
+);

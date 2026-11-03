@@ -6,6 +6,7 @@ function memoryStorage(initial: Record<string, string> = {}) {
   return {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
   };
 }
 
@@ -14,16 +15,20 @@ describe("SaveManager", () => {
     expect(new SaveManager(memoryStorage()).load()).toEqual({
       schemaVersion: 1,
       completedLevels: [],
+      currentLevel: null,
     });
   });
 
   it("round trips completed levels and copies loaded addresses", () => {
     const storage = memoryStorage();
     const manager = new SaveManager(storage);
-    manager.save([
-      { gameId: "carKinematics", levelId: 1 },
+    manager.save(
+      [
+        { gameId: "carKinematics", levelId: 1 },
+        { gameId: "netForce", levelId: 2 },
+      ],
       { gameId: "netForce", levelId: 2 },
-    ]);
+    );
 
     const loaded = manager.load();
     expect(loaded).toEqual({
@@ -32,6 +37,7 @@ describe("SaveManager", () => {
         { gameId: "carKinematics", levelId: 1 },
         { gameId: "netForce", levelId: 2 },
       ],
+      currentLevel: { gameId: "netForce", levelId: 2 },
     });
     expect(loaded.completedLevels[0]).not.toBe(
       JSON.parse(storage.getItem("escape-route-progress")!).completedLevels[0],
@@ -54,6 +60,11 @@ describe("SaveManager", () => {
       completedLevels: [{ gameId: "game", levelId: 1.5 }],
     }),
     JSON.stringify({ schemaVersion: 1, completedLevels: "invalid" }),
+    JSON.stringify({
+      schemaVersion: 1,
+      completedLevels: [],
+      currentLevel: { gameId: "", levelId: 1 },
+    }),
   ])("treats invalid saved data as empty: %s", (serialized) => {
     const manager = new SaveManager(
       memoryStorage({ "escape-route-progress": serialized }),
@@ -63,10 +74,12 @@ describe("SaveManager", () => {
 
   it("uses the configured storage key", () => {
     const manager = new SaveManager(memoryStorage(), "test-progress");
-    manager.save([{ gameId: "game", levelId: 0 }]);
-    expect(manager.load().completedLevels).toEqual([
-      { gameId: "game", levelId: 0 },
-    ]);
+    manager.save([{ gameId: "game", levelId: 0 }], null);
+    expect(manager.load()).toEqual({
+      schemaVersion: 1,
+      completedLevels: [{ gameId: "game", levelId: 0 }],
+      currentLevel: null,
+    });
   });
 
   it("does not swallow storage access failures", () => {
@@ -77,9 +90,44 @@ describe("SaveManager", () => {
       setItem: () => {
         throw new Error("storage unavailable");
       },
+      removeItem: () => {
+        throw new Error("storage unavailable");
+      },
     };
     const manager = new SaveManager(storage);
     expect(() => manager.load()).toThrow("storage unavailable");
-    expect(() => manager.save([])).toThrow("storage unavailable");
+    expect(() => manager.save([], null)).toThrow("storage unavailable");
+    expect(() => manager.reset()).toThrow("storage unavailable");
+  });
+
+  it("loads the previous versioned shape with no current selection", () => {
+    const manager = new SaveManager(
+      memoryStorage({
+        "escape-route-progress": JSON.stringify({
+          schemaVersion: 1,
+          completedLevels: [{ gameId: "game", levelId: 1 }],
+        }),
+      }),
+    );
+    expect(manager.load()).toEqual({
+      schemaVersion: 1,
+      completedLevels: [{ gameId: "game", levelId: 1 }],
+      currentLevel: null,
+    });
+  });
+
+  it("removes saved progress on reset", () => {
+    const storage = memoryStorage();
+    const manager = new SaveManager(storage);
+    manager.save([{ gameId: "game", levelId: 1 }], {
+      gameId: "game",
+      levelId: 1,
+    });
+    manager.reset();
+    expect(manager.load()).toEqual({
+      schemaVersion: 1,
+      completedLevels: [],
+      currentLevel: null,
+    });
   });
 });

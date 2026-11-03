@@ -4,4 +4,5 @@ import type { LevelAddress } from "../model/LevelAddress.ts";
 export interface SaveData {
   readonly schemaVersion: 1;
   readonly completedLevels: readonly LevelAddress[];
+  readonly currentLevel: LevelAddress | null;
 }
