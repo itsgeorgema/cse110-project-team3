@@ -12,7 +12,7 @@ export interface MapNode {
   readonly chapter: number;
   readonly x: number;
   readonly y: number;
-  readonly state: "cleared" | "current" | "locked";
+  readonly initialState: "cleared" | "current" | "locked";
 }
 
 export const chapters = [
@@ -44,88 +44,87 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 240,
     y: 210,
-    state: "cleared",
+    initialState: "cleared",
   },
   {
     id: "backstage",
     level: { gameId: "circus-preview", levelId: 2 },
     title: "Backstage breakout",
-    subtitle: "Find your momentum",
+    subtitle: "The plan takes shape",
     story:
-      "The audience is still cheering. Slip past the props and follow the sliver of moonlight beneath the backstage door.",
+      "Past the props and painted scenery, you find the one thing no one thought to lock away: a way out.",
     chapter: 0,
     x: 430,
     y: 380,
-    state: "cleared",
+    initialState: "cleared",
   },
   {
     id: "big-top",
     level: { gameId: "circus-preview", levelId: 3 },
     title: "Under the big top",
-    subtitle: "A leap of faith",
+    subtitle: "The final act begins",
     story:
-      "An empty ring. A rope overhead. The only way out is through the place you’ve always called home. Take a breath. This next act is yours.",
+      "The ring is empty, the spotlights are dark, and the tent flap is only a few brave steps away.",
     chapter: 0,
     x: 280,
     y: 565,
-    state: "current",
+    initialState: "current",
   },
   {
     id: "midway",
     level: { gameId: "circus-preview", levelId: 4 },
     title: "Midnight midway",
-    subtitle: "Past the sleeping stalls",
+    subtitle: "Beyond the bright lights",
     story:
-      "The midway has fallen quiet. Between the shuttered stalls, a forgotten trail leads away from the ringmaster’s lights.",
+      "The midway sleeps beneath a sky full of stars. Somewhere ahead, the road leaves the circus behind.",
     chapter: 1,
     x: 420,
     y: 830,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "wheel",
     level: { gameId: "circus-preview", levelId: 5 },
-    title: "The last ride",
-    subtitle: "A different perspective",
+    title: "The quiet wheel",
+    subtitle: "A different kind of high",
     story:
-      "Above the rooftops, the old wheel turns in the wind. From up there, you might just see a way beyond the circus walls.",
+      "From the top of the silent Ferris wheel, the whole world seems to wait just beyond the gates.",
     chapter: 1,
     x: 245,
     y: 1030,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "fence",
     level: { gameId: "circus-preview", levelId: 6 },
-    title: "Beyond the fence",
-    subtitle: "So close to freedom",
+    title: "Past the last fence",
+    subtitle: "The world opens up",
     story:
-      "The fence is taller than you remember. But you’ve come too far to turn back now. The night is on your side.",
+      "One final fence stands between the life you knew and the open road. Dawn is close now.",
     chapter: 2,
     x: 410,
     y: 1400,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "dawn",
     level: { gameId: "circus-preview", levelId: 7 },
-    title: "Hello, horizon",
-    subtitle: "Your own next act",
+    title: "A new day",
+    subtitle: "Freedom, at last",
     story:
-      "The first light spills across an open road. No spotlight. No script. Just you, and a whole world waiting.",
+      "The sun rises over a world with no call time, no painted smile, and no one telling you where to go.",
     chapter: 2,
     x: 280,
     y: 1610,
-    state: "locked",
+    initialState: "locked",
   },
 ];
 
-/** Explicit layout graph; no unlock or traversal rules are inferred here. */
-export const previewConnections: readonly (readonly [string, string])[] = [
+export const previewConnections = [
   ["dressing-room", "backstage"],
   ["backstage", "big-top"],
   ["big-top", "midway"],
   ["midway", "wheel"],
   ["wheel", "fence"],
   ["fence", "dawn"],
-];
+] as const;
