@@ -1,6 +1,6 @@
 /**
- * Proposed validation contracts for #40. See docs/answer-validation.md for more information.
- * No validator implementation is provided in this change.
+ * Validation contracts for #40. See docs/answer-validation.md for more information.
+ * DefaultAnswerValidator provides the implementation.
  */
 
 /** The AnswerSubmission proposed in #25. */
