@@ -21,12 +21,12 @@ async function expectMap(page: Page) {
     7,
   );
   await expect(
-    page.getByRole("button", { name: /Level 3: Under the big top/ }),
+    page.getByRole("button", { name: /Level 1: The dressing room/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
     page.getByRole("button", { name: "Level coming soon" }),
   ).toBeDisabled();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "2");
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
 }
 
@@ -75,6 +75,18 @@ for (const viewport of [
     test("completed level results close by button or Escape and restore focus", async ({
       page,
     }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "escape-route-progress",
+          JSON.stringify({
+            schemaVersion: 1,
+            completedLevels: [
+              { gameId: "circus-preview", levelId: 1 },
+              { gameId: "circus-preview", levelId: 2 },
+            ],
+          }),
+        );
+      });
       await page.goto("./");
       await page
         .getByRole("button", { name: /Level 1: The dressing room/ })
@@ -108,7 +120,7 @@ for (const viewport of [
   });
 }
 
-test("refresh rebuilds one map with the initial sample selection", async ({
+test("refresh rebuilds one map with the initial selection", async ({
   page,
 }) => {
   await page.goto("./");
@@ -117,4 +129,26 @@ test("refresh rebuilds one map with the initial sample selection", async ({
     .click();
   await page.reload();
   await expectMap(page);
+});
+
+test("saved completions restore the map state and journey count", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "escape-route-progress",
+      JSON.stringify({
+        schemaVersion: 1,
+        completedLevels: [{ gameId: "circus-preview", levelId: 1 }],
+      }),
+    );
+  });
+  await page.goto("./");
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "1");
+  await expect(
+    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+  ).toHaveClass(/cleared/);
+  await expect(
+    page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
+  ).toHaveAttribute("aria-pressed", "true");
 });

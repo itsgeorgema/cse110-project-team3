@@ -1,8 +1,6 @@
 import type { LevelAddress } from "../../model/LevelAddress.ts";
 
-/** Presentation fixtures only. These addresses are placeholders, not registered levels.
- * Replace the states with ProgressionSystem output when integrating gameplay.
- */
+/** Presentation fixtures only. Addresses remain placeholders until levels exist. */
 export interface MapNode {
   readonly id: string;
   readonly level: LevelAddress;
@@ -12,7 +10,7 @@ export interface MapNode {
   readonly chapter: number;
   readonly x: number;
   readonly y: number;
-  readonly state: "cleared" | "current" | "locked";
+  readonly initialState: "cleared" | "current" | "locked";
 }
 
 export const chapters = [
@@ -44,7 +42,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 240,
     y: 210,
-    state: "cleared",
+    initialState: "cleared",
   },
   {
     id: "backstage",
@@ -56,7 +54,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 430,
     y: 380,
-    state: "cleared",
+    initialState: "cleared",
   },
   {
     id: "big-top",
@@ -68,7 +66,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 280,
     y: 565,
-    state: "current",
+    initialState: "current",
   },
   {
     id: "midway",
@@ -80,7 +78,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 1,
     x: 420,
     y: 830,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "wheel",
@@ -92,7 +90,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 1,
     x: 245,
     y: 1030,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "fence",
@@ -104,7 +102,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 2,
     x: 410,
     y: 1400,
-    state: "locked",
+    initialState: "locked",
   },
   {
     id: "dawn",
@@ -116,7 +114,7 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 2,
     x: 280,
     y: 1610,
-    state: "locked",
+    initialState: "locked",
   },
 ];
 

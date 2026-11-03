@@ -2,6 +2,38 @@ import { showResultsSummary } from "./ResultsSummary.ts";
 import { chapters, previewConnections, previewNodes } from "./mapPreview.ts";
 import type { MapNode } from "./mapPreview.ts";
 
+type ProgressMapNode = MapNode & {
+  readonly state: "cleared" | "current" | "locked";
+};
+
+export function getMapProgress(completedLevels: ReadonlySet<string>) {
+  const nodes = previewNodes.map((node, index) => {
+    const key = `${node.level.gameId}:${node.level.levelId}`;
+    const completed = completedLevels.has(key);
+    const allEarlierCompleted = previewNodes
+      .slice(0, index)
+      .every((previous) =>
+        completedLevels.has(
+          `${previous.level.gameId}:${previous.level.levelId}`,
+        ),
+      );
+    return {
+      ...node,
+      state: completed
+        ? ("cleared" as const)
+        : allEarlierCompleted
+          ? ("current" as const)
+          : ("locked" as const),
+    };
+  });
+  return {
+    nodes,
+    completedCount: nodes.filter((node) => node.state === "cleared").length,
+    current:
+      nodes.find((node) => node.state === "current") ?? nodes[nodes.length - 1],
+  };
+}
+
 const lock =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>';
 const star =
@@ -10,23 +42,35 @@ const star =
 /** UI-only map. Markers preview stories; the View results button opens mock results. */
 export class OverworldMap {
   private readonly container: HTMLDivElement;
+  private readonly completedLevels: ReadonlySet<string>;
 
-  constructor(container: HTMLDivElement) {
+  constructor(
+    container: HTMLDivElement,
+    completedLevels?: ReadonlySet<string>,
+  ) {
     this.container = container;
+    this.completedLevels =
+      completedLevels ??
+      new Set(
+        previewNodes
+          .filter((node) => node.initialState === "cleared")
+          .map((node) => `${node.level.gameId}:${node.level.levelId}`),
+      );
     this.render();
   }
 
   private render(): void {
-    const current = previewNodes.find((node) => node.state === "current")!;
-    const cleared = previewNodes.filter(
-      (node) => node.state === "cleared",
-    ).length;
+    const {
+      nodes,
+      current,
+      completedCount: cleared,
+    } = getMapProgress(this.completedLevels);
     this.container.innerHTML = `
       <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="preview-badge">Story map</span></header>
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
-          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${previewNodes.length} cleared</span></span></div><progress value="${cleared}" max="${previewNodes.length}">${cleared} of ${previewNodes.length} cleared</progress><span class="sample-note">Sample progress</span></div>
+          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><span class="sample-note">Saved progress</span></div>
           <nav class="chapter-nav" aria-label="Story chapters">${chapters.map((chapter, index) => `<button class="chapter-link" data-chapter="${index}"><span class="chapter-number">0${index + 1}</span><span><strong>${chapter.title}</strong><small>${index === 0 ? "The story begins" : "Further down the road"}</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("")}</nav>
           <button class="return-button" type="button">◎ &nbsp; Back to your chapter</button>
         </aside>
@@ -38,13 +82,13 @@ export class OverworldMap {
               ${chapters.map((chapter, index) => `<div id="chapter-${index}" class="chapter-heading" style="top:${chapter.y + 36}px"><span>CHAPTER 0${index + 1}</span><h2>${chapter.title}</h2><p>${chapter.subtitle}</p></div>`).join("")}
               <svg class="route-lines" viewBox="0 0 680 1770" preserveAspectRatio="none" aria-hidden="true">${previewConnections
                 .map(([fromId, toId]) => {
-                  const from = previewNodes.find((node) => node.id === fromId)!;
-                  const to = previewNodes.find((node) => node.id === toId)!;
+                  const from = nodes.find((node) => node.id === fromId)!;
+                  const to = nodes.find((node) => node.id === toId)!;
                   const path = `M ${from.x} ${from.y} C ${from.x} ${from.y + 110}, ${to.x} ${to.y - 110}, ${to.x} ${to.y}`;
                   return `<path class="route-bed" d="${path}"/><path class="route ${from.state === "cleared" ? "traveled" : ""}" d="${path}"/>`;
                 })
                 .join("")}</svg>
-              ${previewNodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.state === "current" ? "you are here" : node.state}. Preview story." aria-pressed="${node.id === current.id}">${node.state === "current" ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : '<span aria-hidden="true">03</span>'}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
+              ${nodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.state === "current" ? "you are here" : node.state}. Preview story." aria-pressed="${node.id === current.id}">${node.state === "current" ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : '<span aria-hidden="true">03</span>'}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
               <div class="map-ending"><span aria-hidden="true">✦</span> THE WORLD IS BIGGER THAN THE BIG TOP.</div>
             </div>
           </div>
@@ -57,9 +101,7 @@ export class OverworldMap {
       .querySelectorAll<HTMLButtonElement>("[data-node]")
       .forEach((button) => {
         button.addEventListener("click", () => {
-          const node = previewNodes.find(
-            (item) => item.id === button.dataset.node,
-          )!;
+          const node = nodes.find((item) => item.id === button.dataset.node)!;
           this.container
             .querySelectorAll("[data-node]")
             .forEach((marker) =>
@@ -94,7 +136,7 @@ export class OverworldMap {
     });
   }
 
-  private showPreview(node: MapNode): void {
+  private showPreview(node: ProgressMapNode): void {
     this.container.querySelector(".story-preview")!.innerHTML = `
       <div class="preview-illustration" aria-hidden="true"><svg viewBox="0 0 260 180"><circle cx="192" cy="40" r="22" fill="#e9d9a8"/><path d="M0 145Q65 108 130 142T260 134V180H0" fill="#28474b"/><path d="M45 126 130 46 215 126Z" fill="#d9bd8c"/><path d="m130 46-28 80h56Z" fill="#a95841"/><path d="M55 126h150v42H55Z" fill="#bd7653"/><path d="M109 168v-36q21-27 42 0v36" fill="#162c34"/><path d="M130 46V20l28 9-28 9" fill="#bc7050"/><path d="M28 168h205" stroke="#e1ce9b" opacity=".4"/><g fill="#e9d9a8"><circle cx="36" cy="45" r="1.5"/><circle cx="76" cy="26" r="1"/><circle cx="223" cy="85" r="1.5"/></g></svg><span>TALES FROM THE CIRCUS</span></div>
       <div class="preview-copy"><div class="eyebrow">CHAPTER 0${node.chapter + 1} <span> / </span> LEVEL 0${node.level.levelId}</div><h2>${node.title}</h2><p class="preview-subtitle">${node.subtitle}</p><div class="story-divider"></div><p class="story-text">${node.story}</p><div class="level-status ${node.state}">${node.state === "locked" ? lock : '<span aria-hidden="true">' + (node.state === "cleared" ? "✓" : "◎") + "</span>"}<span>${node.state === "locked" ? "An undiscovered part of your story" : node.state === "cleared" ? "A little closer to freedom" : "This is where we left off"}</span></div>${node.state === "cleared" ? '<button class="results-preview-button" type="button">View results <span aria-hidden="true">↗</span></button>' : `<button class="play-placeholder" disabled>${node.state === "locked" ? "Chapter locked" : "Level coming soon"}${lock}</button>`}<p class="preview-disclaimer">A glimpse of the journey. Playable levels are on their way.</p></div>`;
