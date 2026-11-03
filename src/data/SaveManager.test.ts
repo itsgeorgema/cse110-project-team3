@@ -130,4 +130,21 @@ describe("SaveManager", () => {
       currentLevel: null,
     });
   });
+
+  it("records a newly completed level without duplicates or losing selection", () => {
+    const storage = memoryStorage();
+    const manager = new SaveManager(storage);
+    const first = { gameId: "game", levelId: 1 };
+    const second = { gameId: "game", levelId: 2 };
+    manager.save([first], second);
+
+    manager.recordCompletedLevel(second);
+    manager.recordCompletedLevel(second);
+
+    expect(manager.load()).toEqual({
+      schemaVersion: 1,
+      completedLevels: [first, second],
+      currentLevel: second,
+    });
+  });
 });

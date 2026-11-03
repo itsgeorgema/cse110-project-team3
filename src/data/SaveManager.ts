@@ -49,6 +49,20 @@ export class SaveManager {
     this.storage.setItem(this.storageKey, JSON.stringify(data));
   }
 
+  /** Call after a level's successful completion event to persist its address. */
+  recordCompletedLevel(level: LevelAddress): void {
+    const current = this.load();
+    const alreadyCompleted = current.completedLevels.some(
+      (completed) =>
+        completed.gameId === level.gameId &&
+        completed.levelId === level.levelId,
+    );
+    const completedLevels = alreadyCompleted
+      ? current.completedLevels
+      : [...current.completedLevels, level];
+    this.save(completedLevels, current.currentLevel);
+  }
+
   reset(): void {
     this.storage.removeItem(this.storageKey);
   }
