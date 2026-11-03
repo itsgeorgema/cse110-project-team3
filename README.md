@@ -81,11 +81,13 @@ Leave that port free. Each test receives a fresh browser context and storage.
 Tests fail on uncaught exceptions, console errors, failed requests, or HTTP errors.
 There are no automatic retries to hide intermittent failures.
 
-The current scaffold checks stage/canvas creation and dimensions, production asset
-paths, and refresh without duplicate canvases. The narrow viewport check covers
-initial layout, not live resizing or mobile-device compatibility. These tests do
-not yet exercise gameplay. Only Chromium smoke tests are intended for the fast CI
-gate; the full browser matrix belongs in scheduled/manual regression runs.
+The browser suite checks the overworld preview at desktop and narrow viewport
+sizes: production asset paths, sample progress, story selection, disabled level
+launches, results dialogs, focus restoration, and refresh. Google Fonts CSS is
+stubbed to exercise local font fallbacks without an external network dependency;
+application assets still load normally. These tests do not exercise gameplay,
+live resizing, or real mobile devices. Only Chromium startup smoke tests run in
+the fast CI gate; the full browser matrix runs on scheduled/manual regression.
 
 After a run, use `npx playwright show-report` to inspect the HTML report. Failure
 screenshots, videos, traces, and a JUnit report are written under `test-results/`.
