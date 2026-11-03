@@ -28,6 +28,7 @@ async function expectMap(page: Page) {
   ).toBeDisabled();
   await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
+  await expect(page.locator(".map-node.current .node-circle")).toHaveText("01");
 }
 
 for (const viewport of [
@@ -152,6 +153,7 @@ test("saved completions restore the map state and journey count", async ({
   await expect(
     page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
   ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".map-node.current .node-circle")).toHaveText("02");
 });
 
 test("selected level restores after refresh and reset clears saved progress", async ({
