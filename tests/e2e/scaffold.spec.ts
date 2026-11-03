@@ -1,15 +1,18 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
 
-// Test the documented font fallback without depending on Google's availability.
-// All application assets still load normally and remain subject to health checks.
 test.beforeEach(async ({ page }) => {
   await page.route("https://fonts.googleapis.com/**", (route) =>
     route.fulfill({ contentType: "text/css", body: "" }),
   );
 });
 
-async function expectMap(page: Page) {
+async function expectMap(
+  page: Page,
+  expectedCurrent = 3,
+  expectedCleared = 2,
+  expectComingSoon = true,
+) {
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(
     page.getByRole("heading", { name: "The Great Escape" }),
@@ -21,12 +24,20 @@ async function expectMap(page: Page) {
     7,
   );
   await expect(
-    page.getByRole("button", { name: /Level 3: Under the big top/ }),
+    page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("button", { name: "Level coming soon" }),
-  ).toBeDisabled();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "2");
+  if (expectComingSoon) {
+    await expect(
+      page.getByRole("button", { name: "Level coming soon" }),
+    ).toBeDisabled();
+  }
+  await expect(page.getByText("Saved progress", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("progressbar")).toHaveAttribute(
+    "value",
+    String(expectedCleared),
+  );
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
 }
 
@@ -75,6 +86,18 @@ for (const viewport of [
     test("completed level results close by button or Escape and restore focus", async ({
       page,
     }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "escape-route-progress",
+          JSON.stringify({
+            schemaVersion: 1,
+            completedLevels: [
+              { gameId: "circus-preview", levelId: 1 },
+              { gameId: "circus-preview", levelId: 2 },
+            ],
+          }),
+        );
+      });
       await page.goto("./");
       await page
         .getByRole("button", { name: /Level 1: The dressing room/ })
@@ -108,13 +131,55 @@ for (const viewport of [
   });
 }
 
-test("refresh rebuilds one map with the initial sample selection", async ({
-  page,
-}) => {
+test("refresh restores the selected level", async ({ page }) => {
   await page.goto("./");
   await page
     .getByRole("button", { name: /Level 2: Backstage breakout/ })
     .click();
   await page.reload();
-  await expectMap(page);
+  await expectMap(page, 2, 2, false);
+});
+
+test("saved completions restore the map state and journey count", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "escape-route-progress",
+      JSON.stringify({
+        schemaVersion: 1,
+        completedLevels: [{ gameId: "circus-preview", levelId: 1 }],
+      }),
+    );
+  });
+  await page.goto("./");
+  await expectMap(page, 2, 1);
+  await expect(
+    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+  ).toHaveClass(/cleared/);
+  await expect(page.locator(".map-node.current .node-circle")).toHaveText("02");
+});
+
+test("selected level restores after refresh and reset clears saved progress", async ({
+  page,
+}) => {
+  await page.goto("./");
+  const selected = page.getByRole("button", {
+    name: /Level 3: Under the big top/,
+  });
+  await selected.click();
+  await page.reload();
+  const restored = page.getByRole("button", {
+    name: /Level 3: Under the big top/,
+  });
+  await expect(restored).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("heading", { name: "Under the big top" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Reset progress" }).click();
+  await expectMap(page, 1, 0);
+  expect(
+    await page.evaluate(() => localStorage.getItem("escape-route-progress")),
+  ).toBeNull();
 });
