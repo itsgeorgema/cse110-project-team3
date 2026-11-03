@@ -1,15 +1,13 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
 
-// Test the documented font fallback without depending on Google's availability.
-// All application assets still load normally and remain subject to health checks.
 test.beforeEach(async ({ page }) => {
   await page.route("https://fonts.googleapis.com/**", (route) =>
     route.fulfill({ contentType: "text/css", body: "" }),
   );
 });
 
-async function expectMap(page: Page) {
+async function expectMap(page: Page, expectedCurrent = 3, expectedCleared = 2) {
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(
     page.getByRole("heading", { name: "The Great Escape" }),
@@ -21,14 +19,16 @@ async function expectMap(page: Page) {
     7,
   );
   await expect(
-    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+    page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
     page.getByRole("button", { name: "Level coming soon" }),
   ).toBeDisabled();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
+  await expect(page.getByRole("progressbar")).toHaveAttribute(
+    "value",
+    String(expectedCleared),
+  );
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
-  await expect(page.locator(".map-node.current .node-circle")).toHaveText("01");
 }
 
 for (const viewport of [
@@ -109,9 +109,7 @@ for (const viewport of [
       await dialog.getByRole("button", { name: /Return to story map/ }).click();
       await expect(dialog).toHaveCount(0);
       await expect(trigger).toBeFocused();
-      expect(await map.evaluate((element) => element.scrollTop)).toBe(
-        scrollTop,
-      );
+      expect(await map.evaluate((element) => element.scrollTop)).toBe(scrollTop);
       await trigger.click();
       await expect(dialog).toHaveCount(1);
       await page.keyboard.press("Escape");
@@ -127,10 +125,7 @@ test("refresh restores the selected level", async ({ page }) => {
     .getByRole("button", { name: /Level 2: Backstage breakout/ })
     .click();
   await page.reload();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
-  await expect(
-    page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expectMap(page, 2, 2);
 });
 
 test("saved completions restore the map state and journey count", async ({
@@ -146,13 +141,10 @@ test("saved completions restore the map state and journey count", async ({
     );
   });
   await page.goto("./");
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "1");
+  await expectMap(page, 2, 1);
   await expect(
     page.getByRole("button", { name: /Level 1: The dressing room/ }),
   ).toHaveClass(/cleared/);
-  await expect(
-    page.getByRole("button", { name: /Level 2: Backstage breakout/ }),
-  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".map-node.current .node-circle")).toHaveText("02");
 });
 
@@ -174,10 +166,7 @@ test("selected level restores after refresh and reset clears saved progress", as
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Reset progress" }).click();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
-  await expect(
-    page.getByRole("button", { name: /Level 1: The dressing room/ }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expectMap(page, 1, 0);
   expect(
     await page.evaluate(() => localStorage.getItem("escape-route-progress")),
   ).toBeNull();

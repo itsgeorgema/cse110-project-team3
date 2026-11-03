@@ -1,4 +1,12 @@
-import type { MapNode } from "./mapPreview.ts";
+import type { LevelAddress } from "../../model/LevelAddress.ts";
+
+type ResultsNode = {
+  readonly id: string;
+  readonly level: LevelAddress;
+  readonly title: string;
+  readonly story: string;
+  readonly chapter: number;
+};
 
 /** Fixed display values only: no scoring, persistence, or progression updates. */
 const mockResults: Readonly<
@@ -11,7 +19,7 @@ const mockResults: Readonly<
 /** Native modal keeps focus inside the summary and leaves map scroll intact. */
 export function showResultsSummary(
   container: HTMLElement,
-  node: MapNode,
+  node: ResultsNode,
   trigger: HTMLElement,
 ): void {
   const result = mockResults[node.id];

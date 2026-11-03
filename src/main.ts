@@ -21,11 +21,18 @@ try {
 } catch {
   // Keep the map usable with session-only progress when storage is unavailable.
 }
+
 const knownLevels = new Set(
   previewNodes.map((node) => `${node.level.gameId}:${node.level.levelId}`),
 );
+const hasSavedProgress =
+  savedProgress.completedLevels.length > 0 || savedProgress.currentLevel !== null;
 const completedLevels = new Set(
-  savedProgress.completedLevels
+  (hasSavedProgress
+    ? savedProgress.completedLevels
+    : previewNodes
+        .filter((node) => node.initialState === "cleared")
+        .map((node) => node.level))
     .filter((level) => knownLevels.has(`${level.gameId}:${level.levelId}`))
     .map((level) => `${level.gameId}:${level.levelId}`),
 );
@@ -36,6 +43,7 @@ const validCurrentLevel =
   )
     ? savedProgress.currentLevel
     : null;
+
 new OverworldMap(
   container,
   completedLevels,

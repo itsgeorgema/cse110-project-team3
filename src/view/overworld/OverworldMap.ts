@@ -2,12 +2,12 @@ import { showResultsSummary } from "./ResultsSummary.ts";
 import { chapters, previewConnections, previewNodes } from "./mapPreview.ts";
 import type { MapNode } from "./mapPreview.ts";
 
-type ProgressMapNode = MapNode & {
+type ProgressMapNode = Omit<MapNode, "initialState"> & {
   readonly state: "cleared" | "current" | "locked";
 };
 
 export function getMapProgress(completedLevels: ReadonlySet<string>) {
-  const nodes = previewNodes.map((node, index) => {
+  const nodes: ProgressMapNode[] = previewNodes.map((node, index) => {
     const key = `${node.level.gameId}:${node.level.levelId}`;
     const completed = completedLevels.has(key);
     const allEarlierCompleted = previewNodes
@@ -18,7 +18,14 @@ export function getMapProgress(completedLevels: ReadonlySet<string>) {
         ),
       );
     return {
-      ...node,
+      id: node.id,
+      level: node.level,
+      title: node.title,
+      subtitle: node.subtitle,
+      story: node.story,
+      chapter: node.chapter,
+      x: node.x,
+      y: node.y,
       state: completed
         ? ("cleared" as const)
         : allEarlierCompleted
@@ -57,11 +64,9 @@ export class OverworldMap {
     this.container = container;
     this.completedLevels = new Set(
       completedLevels ??
-        new Set(
-          previewNodes
-            .filter((node) => node.initialState === "cleared")
-            .map((node) => `${node.level.gameId}:${node.level.levelId}`),
-        ),
+        previewNodes
+          .filter((node) => node.initialState === "cleared")
+          .map((node) => `${node.level.gameId}:${node.level.levelId}`),
     );
     this.currentLevel = currentLevel;
     this.saveCurrentLevel = saveCurrentLevel;
@@ -70,11 +75,9 @@ export class OverworldMap {
   }
 
   private render(): void {
-    const {
-      nodes,
-      current,
-      completedCount: cleared,
-    } = getMapProgress(this.completedLevels);
+    const { nodes, current, completedCount: cleared } = getMapProgress(
+      this.completedLevels,
+    );
     const selected =
       nodes.find(
         (node) =>
@@ -130,11 +133,11 @@ export class OverworldMap {
       });
     this.container
       .querySelectorAll<HTMLButtonElement>("[data-chapter]")
-      .forEach((button) => {
+      .forEach((button) =>
         button.addEventListener("click", () =>
           this.scrollTo(chapters[Number(button.dataset.chapter)].y),
-        );
-      });
+        ),
+      );
     this.container
       .querySelector(".return-button")!
       .addEventListener("click", () => {
