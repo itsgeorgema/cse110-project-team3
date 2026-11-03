@@ -510,3 +510,284 @@ describe("PhysicsEngine.calculateDisplacement", () => {
     expect(PhysicsEngine.calculateDisplacement(0, Number.MAX_VALUE)).toBe(0);
   });
 });
+
+describe("PhysicsEngine.subtract", () => {
+  // Normal behavior
+  it.each([
+    [10, 2, 8],
+    [-10, 2, -12],
+    [-10, -2, -8],
+    [2, 10, -8],
+    [5, 1, 4],
+    [-5, 1, -6],
+    [300, 2, 298],
+    [2562, 32, 2530],
+    [2562, -32, 2594],
+    [152526, 2434, 150092],
+    [-152526, 2434, -154960],
+    [-152526, -2434, -150092],
+    [1832649, 343, 1832306],
+    [-1832649, 5343, -1837992],
+    [70290108, 278929, 70011179],
+    [-70290108, 278929, -70569037],
+    [0, 3252, -3252],
+    [-0, 635498352.24234, -635498352.24234],
+    [242.34522, 0, 242.34522],
+    [-3629.2342, 0, -3629.2342],
+    [2.5, 2, 0.5],
+    [-2.5, 2, -4.5],
+    [0.3, 0.1, 0.2],
+    [322.4353, 2342.355, -2019.9197],
+    [322.4353, -2342.355, 2664.7903],
+    [15252.2349141, 92347.8250721, -77095.590158],
+    [0.72421, 0.684893, 0.039317],
+    [0.72421, -0.684893, 1.409103],
+    [-0.121519, 0.425828, -0.547347],
+    [7, 7, 0],
+  ])(
+    "subtracts numbers correctly / within error margin: %s - %s = %s",
+    (a, b, c) => {
+      expect(PhysicsEngine.subtract(a, b)).toBeCloseTo(c, DECIMAL_PRECISION);
+    },
+  );
+
+  // Non-finite inputs
+  it.each([
+    [NaN, 2],
+    [10, NaN],
+    [Infinity, 2],
+    [-Infinity, 2],
+    [10, Infinity],
+    [10, -Infinity],
+    [Infinity, Infinity],
+    [Infinity, NaN],
+    [NaN, Infinity],
+    [Infinity, -Infinity],
+    [-Infinity, -Infinity],
+    [NaN, NaN],
+  ])("rejects non-finite inputs: %s - %s", (a, b) => {
+    expect(() => PhysicsEngine.subtract(a, b)).toThrow(
+      /PhysicsEngine\.subtract input variable (a|b) must be finite/,
+    );
+  });
+
+  // Overflow
+  it.each([
+    [Number.MAX_VALUE, -Number.MAX_VALUE],
+    [-Number.MAX_VALUE, Number.MAX_VALUE],
+    [1e308, -1e308],
+    [-1e308, 1e308],
+    [1.5e308, -1.5e308],
+  ])("rejects infinite results: %s - %s", (a, b) => {
+    expect(() => PhysicsEngine.subtract(a, b)).toThrow(
+      "PhysicsEngine.subtract produced a non-finite result.",
+    );
+  });
+
+  // Runtime type validation
+  it.each([
+    ["10", 2],
+    [10, "2"],
+    [null, 2],
+    [10, null],
+    [undefined, 2],
+    [10, undefined],
+    [true, 2],
+    ["3343.3a", "4543.a"],
+    ["343432.aa", 3343.335],
+    [[], 2],
+    [{}, 2],
+    [[], {}],
+    [[], []],
+  ])("rejects invalid runtime types: %s and %s", (a, b) => {
+    expect(() => PhysicsEngine.subtract(a as number, b as number)).toThrow(
+      /PhysicsEngine\.subtract input variable (a|b) must be a number/,
+    );
+  });
+
+  // Boundary values
+  it("accepts Number.MAX_VALUE minus zero", () => {
+    expect(PhysicsEngine.subtract(Number.MAX_VALUE, 0)).toBe(Number.MAX_VALUE);
+  });
+
+  it("returns zero when Number.MAX_VALUE is subtracted from itself", () => {
+    expect(PhysicsEngine.subtract(Number.MAX_VALUE, Number.MAX_VALUE)).toBe(0);
+  });
+
+  it("returns zero when Number.MIN_VALUE is subtracted from itself", () => {
+    expect(PhysicsEngine.subtract(Number.MIN_VALUE, Number.MIN_VALUE)).toBe(0);
+  });
+
+  it("accepts zero minus Number.MIN_VALUE", () => {
+    expect(PhysicsEngine.subtract(0, Number.MIN_VALUE)).toBe(-Number.MIN_VALUE);
+  });
+});
+
+describe("PhysicsEngine.calculateAcceleration", () => {
+  // Normal behavior
+  it.each([
+    [10, 30, 5, 4],
+    [30, 10, 5, -4],
+    [10, 10, 5, 0],
+    [0, 100, 10, 10],
+    [-10, 10, 4, 5],
+    [-20, -5, 3, 5],
+    [0, 9.81, 1, 9.81],
+    [5, 7.5, 2.5, 1],
+    [0, 1, 3, 0.3333333333],
+    [0.5, 0.75, 0.25, 1],
+    [100, 0, 4, -25],
+    [-0, 5, 5, 1],
+    [12, 47, 7, 5],
+    [-30, -50, 2, -10],
+  ])(
+    "calculates acceleration correctly: %s to %s m/s in %s sec = %s m/s^2",
+    (initialVelocity, finalVelocity, time, acceleration) => {
+      expect(
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
+      ).toBeCloseTo(acceleration, DECIMAL_PRECISION);
+    },
+  );
+
+  // Zero or negative time
+  it.each([
+    [10, 30, 0],
+    [10, 30, -5],
+    [0, 0, 0],
+    [10, 30, -0],
+    [10, 30, -0.001],
+    [Number.MAX_VALUE, 0, -10],
+    [10, 30, -Number.MAX_VALUE],
+  ])(
+    "rejects zero or negative time: %s to %s m/s in %s sec, expect error",
+    (initialVelocity, finalVelocity, time) => {
+      expect(() =>
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
+      ).toThrow(
+        /PhysicsEngine\.calculateAcceleration\.time must be (positive|> 0)\. Received: /,
+      );
+    },
+  );
+
+  // Non-finite inputs
+  it.each([
+    [NaN, 30, 5],
+    [10, NaN, 5],
+    [10, 30, NaN],
+    [Infinity, 30, 5],
+    [-Infinity, 30, 5],
+    [10, Infinity, 5],
+    [10, -Infinity, 5],
+    [10, 30, Infinity],
+    [10, 30, -Infinity],
+    [NaN, NaN, NaN],
+    [Infinity, Infinity, Infinity],
+  ])(
+    "rejects non-finite inputs: %s (initial velocity), %s (final velocity), %s (time)",
+    (initialVelocity, finalVelocity, time) => {
+      expect(() =>
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
+      ).toThrow(
+        /PhysicsEngine\.calculateAcceleration input variable (initial.?[vV]elocity|final.?[vV]elocity|time) must be finite/,
+      );
+    },
+  );
+
+  // Overflow
+  it.each([
+    [-Number.MAX_VALUE, Number.MAX_VALUE, 1, "subtract"],
+    [Number.MAX_VALUE, -Number.MAX_VALUE, 1, "subtract"],
+    [1e308, -1e308, 1, "subtract"],
+    [0, Number.MAX_VALUE, 0.5, "divide"],
+    [0, -Number.MAX_VALUE, 0.5, "divide"],
+    [0, 1e300, 1e-9, "divide"],
+    [0, 10, Number.MIN_VALUE, "divide"],
+  ])(
+    "rejects infinite results: %s to %s m/s in %s sec (thrown by %s)",
+    (initialVelocity, finalVelocity, time, operation) => {
+      expect(() =>
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity,
+          finalVelocity,
+          time,
+        ),
+      ).toThrow(`PhysicsEngine.${operation} produced a non-finite result.`);
+    },
+  );
+
+  // Runtime type validation
+  it.each([
+    ["10", 30, 5],
+    [10, "30", 5],
+    [10, 30, "5"],
+    [null, 30, 5],
+    [10, null, 5],
+    [10, 30, null],
+    [undefined, 30, 5],
+    [10, undefined, 5],
+    [10, 30, undefined],
+    [true, 30, 5],
+    ["3343.3a", "4543.a", "5"],
+    [[], 30, 5],
+    [{}, 30, 5],
+    [10, [], 5],
+    [10, 30, {}],
+    [[], {}, []],
+  ])(
+    "rejects invalid runtime types: %s, %s, and %s",
+    (initialVelocity, finalVelocity, time) => {
+      expect(() =>
+        PhysicsEngine.calculateAcceleration(
+          initialVelocity as number,
+          finalVelocity as number,
+          time as number,
+        ),
+      ).toThrow(
+        /PhysicsEngine\.calculateAcceleration input variable (initial.?[vV]elocity|final.?[vV]elocity|time) must be a number/,
+      );
+    },
+  );
+
+  // Boundary values
+  it("returns zero when Number.MAX_VALUE velocity does not change", () => {
+    expect(
+      PhysicsEngine.calculateAcceleration(
+        Number.MAX_VALUE,
+        Number.MAX_VALUE,
+        1,
+      ),
+    ).toBe(0);
+  });
+
+  it("accepts a change of Number.MAX_VALUE m/s in 1 sec", () => {
+    expect(PhysicsEngine.calculateAcceleration(0, Number.MAX_VALUE, 1)).toBe(
+      Number.MAX_VALUE,
+    );
+  });
+
+  it("accepts Number.MAX_VALUE m/s change in Number.MAX_VALUE sec", () => {
+    expect(
+      PhysicsEngine.calculateAcceleration(
+        0,
+        Number.MAX_VALUE,
+        Number.MAX_VALUE,
+      ),
+    ).toBe(1);
+  });
+
+  it("accepts no velocity change over Number.MIN_VALUE sec", () => {
+    expect(PhysicsEngine.calculateAcceleration(0, 0, Number.MIN_VALUE)).toBe(0);
+  });
+});
