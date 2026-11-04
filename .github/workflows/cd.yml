@@ -23,7 +23,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download the build that passed smoke tests in this run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: tested-site
           path: dist
