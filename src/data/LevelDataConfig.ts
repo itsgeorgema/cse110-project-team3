@@ -2,12 +2,12 @@ import type { ToleranceRule, AnswerBounds } from "../model/AnswerValidator";
 import { PhysicsEngine } from "../model/PhysicsEngine";
 
 export interface LevelDataConfig {
-  readonly gameName: string;
+  readonly gameId: string;
   readonly levelId: number;
   readonly problemStatementVariables: readonly string[];
   readonly problemStatementVariablesValues: Readonly<Record<string, number>>;
   readonly problemStatement: string; // Problem statement in form `${relevantVariable}`
-  readonly userInputVariables: readonly string[];
+  readonly inputVariables: readonly string[];
   readonly userInputVariablesUnits: Readonly<Record<string, string>>;
   readonly expectedUserInput: Readonly<Record<string, number>>;
   readonly toleranceRule: ToleranceRule;
@@ -79,7 +79,7 @@ export class LevelDataConfigFactory {
       `seconds, what is the car's velocity?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 1,
       problemStatementVariables: ["displacement", "time"],
       problemStatementVariablesValues: {
@@ -87,7 +87,7 @@ export class LevelDataConfigFactory {
         displacement: displacementForProblem,
       },
       problemStatement: problemStatement,
-      userInputVariables: ["velocity"],
+      inputVariables: ["velocity"],
       userInputVariablesUnits: { velocity: "m/s" },
       expectedUserInput: { velocity: velocityForProblem },
       toleranceRule: { absolute: 0.00001 },
@@ -112,7 +112,7 @@ export class LevelDataConfigFactory {
       `${timeForProblem} seconds, what is the car's displacement?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 2,
       problemStatementVariables: ["velocity", "time"],
       problemStatementVariablesValues: {
@@ -120,7 +120,7 @@ export class LevelDataConfigFactory {
         time: timeForProblem,
       },
       problemStatement: problemStatement,
-      userInputVariables: ["displacement"],
+      inputVariables: ["displacement"],
       userInputVariablesUnits: { displacement: "m" },
       expectedUserInput: { displacement: displacementForProblem },
       toleranceRule: { absolute: 0.00001 },
@@ -149,7 +149,7 @@ export class LevelDataConfigFactory {
       `${timeForProblem} seconds to outrun the guard, what is the car's acceleration?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 3,
       problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
       problemStatementVariablesValues: {
@@ -158,7 +158,7 @@ export class LevelDataConfigFactory {
         time: timeForProblem,
       },
       problemStatement: problemStatement,
-      userInputVariables: ["acceleration"],
+      inputVariables: ["acceleration"],
       userInputVariablesUnits: { acceleration: "m/s^2" },
       expectedUserInput: { acceleration: accelerationForProblem },
       toleranceRule: { absolute: 0.00001 }, //final?
