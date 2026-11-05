@@ -1,7 +1,7 @@
 import type { LevelAddress } from "../model/LevelAddress.ts";
 
 export interface RawInput extends LevelAddress {
-  /** Exactly what the player typed, keyed by LevelDataConfig.inputVariables. */
+  /** Exactly what the player typed, keyed by LevelDataConfig.userInputVariables. */
   readonly fields: Readonly<Record<string, string>>;
 }
 
