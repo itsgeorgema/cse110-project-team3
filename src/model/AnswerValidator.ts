@@ -3,6 +3,8 @@
  * DefaultAnswerValidator provides the implementation.
  */
 
+import type { LevelDataConfig } from "../data/LevelDataConfig";
+
 /** The AnswerSubmission proposed in #25. */
 export interface AnswerSubmission {
   readonly gameId: string;
@@ -23,28 +25,18 @@ export interface AnswerBounds {
 }
 
 /**
- * Minimal LevelDataConfig stub for interface review.
- * The physics/problem subteam will extend the full problem configuration.
+ * Only the problem fields needed by the validator, taken from LevelDataConfig.
+ * Bounds stay optional here so a level without limits can still be validated.
  */
-export interface LevelDataConfig {
-  readonly gameId: string;
-  readonly levelId: number;
-  readonly inputVariables: readonly string[];
-  readonly expectedUserInput: Readonly<Record<string, number>>;
-  readonly toleranceRule: ToleranceRule;
-  readonly bounds?: Readonly<Record<string, AnswerBounds>>;
-}
-
-/** Only the problem fields needed by the validator. */
 export type AnswerValidationConfig = Pick<
   LevelDataConfig,
   | "gameId"
   | "levelId"
-  | "inputVariables"
+  | "userInputVariables"
   | "expectedUserInput"
   | "toleranceRule"
-  | "bounds"
->;
+> &
+  Partial<Pick<LevelDataConfig, "bounds">>;
 
 /** Proposed validation fields of AttemptResult; no simulation outcome is added. */
 export interface AnswerValidationResult {
