@@ -158,7 +158,7 @@ describe("createLevelDataConfig for kinematics game, level 1", () => {
       gameId: "kinematics",
       levelId: 1,
       problemStatementVariables: ["displacement", "time"],
-      inputVariables: ["velocity"],
+      userInputVariables: ["velocity"],
       userInputVariablesUnits: {
         velocity: "m/s",
       },
@@ -308,7 +308,7 @@ describe("createLevelDataConfig for kinematics game, level 2", () => {
       gameId: "kinematics",
       levelId: 2,
       problemStatementVariables: ["velocity", "time"],
-      inputVariables: ["displacement"],
+      userInputVariables: ["displacement"],
       userInputVariablesUnits: {
         displacement: "m",
       },
@@ -467,7 +467,7 @@ describe("createLevelDataConfig for kinematics game, level 3", () => {
       gameId: "kinematics",
       levelId: 3,
       problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
-      inputVariables: ["acceleration"],
+      userInputVariables: ["acceleration"],
       userInputVariablesUnits: {
         acceleration: "m/s^2",
       },
