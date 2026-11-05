@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { RawInput } from "./GameCommands.ts";
 import { parseInput } from "./parseInput.ts";
 
-const oneField = { inputVariables: ["speed"] };
-const twoFields = { inputVariables: ["speed", "angle"] };
+const oneField = { userInputVariables: ["speed"] };
+const twoFields = { userInputVariables: ["speed", "angle"] };
 
 function raw(fields: Record<string, string>): RawInput {
   return { gameId: "car", levelId: 1, fields };
@@ -49,7 +49,7 @@ describe("parseInput", () => {
   it("reports every invalid field without exposing partial parsed values", () => {
     expect(
       parseInput(raw({ speed: "", angle: "1e999", time: "5" }), {
-        inputVariables: ["speed", "angle", "time"],
+        userInputVariables: ["speed", "angle", "time"],
       }),
     ).toEqual({
       ok: false,
@@ -64,21 +64,21 @@ describe("parseInput", () => {
     const fields = Object.freeze({ speed: " 5 ", angle: "45" });
     const input = Object.freeze(raw(fields));
     const level = Object.freeze({
-      inputVariables: Object.freeze(["speed", "angle"]),
+      userInputVariables: Object.freeze(["speed", "angle"]),
     });
     expect(parseInput(input, level)).toEqual({
       ok: true,
       input: { gameId: "car", levelId: 1, values: { speed: 5, angle: 45 } },
     });
     expect(input.fields).toEqual({ speed: " 5 ", angle: "45" });
-    expect(level.inputVariables).toEqual(["speed", "angle"]);
+    expect(level.userInputVariables).toEqual(["speed", "angle"]);
   });
 
   it("keeps games with the same level number distinct and calls independent", () => {
     const first = parseInput(raw({ speed: "5" }), oneField);
     const second = parseInput(
       { gameId: "netForce", levelId: 1, fields: { force: "20" } },
-      { inputVariables: ["force"] },
+      { userInputVariables: ["force"] },
     );
     expect(first).toEqual({
       ok: true,
@@ -92,7 +92,7 @@ describe("parseInput", () => {
 
   it("leaves bounds and answer correctness to the validator", () => {
     const level = {
-      inputVariables: ["speed"],
+      userInputVariables: ["speed"],
       expectedUserInput: { speed: 10 },
       toleranceRule: { absolute: 0.1 },
       bounds: { speed: { min: 0, max: 100 } },
