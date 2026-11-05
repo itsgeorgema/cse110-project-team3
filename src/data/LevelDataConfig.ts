@@ -7,7 +7,7 @@ export interface LevelDataConfig {
   readonly problemStatementVariables: readonly string[];
   readonly problemStatementVariablesValues: Readonly<Record<string, number>>;
   readonly problemStatement: string; // Problem statement in form `${relevantVariable}`
-  readonly inputVariables: readonly string[];
+  readonly userInputVariables: readonly string[];
   readonly userInputVariablesUnits: Readonly<Record<string, string>>;
   readonly expectedUserInput: Readonly<Record<string, number>>;
   readonly toleranceRule: ToleranceRule;
@@ -87,7 +87,7 @@ export class LevelDataConfigFactory {
         displacement: displacementForProblem,
       },
       problemStatement: problemStatement,
-      inputVariables: ["velocity"],
+      userInputVariables: ["velocity"],
       userInputVariablesUnits: { velocity: "m/s" },
       expectedUserInput: { velocity: velocityForProblem },
       toleranceRule: { absolute: 0.00001 },
@@ -120,7 +120,7 @@ export class LevelDataConfigFactory {
         time: timeForProblem,
       },
       problemStatement: problemStatement,
-      inputVariables: ["displacement"],
+      userInputVariables: ["displacement"],
       userInputVariablesUnits: { displacement: "m" },
       expectedUserInput: { displacement: displacementForProblem },
       toleranceRule: { absolute: 0.00001 },
@@ -158,7 +158,7 @@ export class LevelDataConfigFactory {
         time: timeForProblem,
       },
       problemStatement: problemStatement,
-      inputVariables: ["acceleration"],
+      userInputVariables: ["acceleration"],
       userInputVariablesUnits: { acceleration: "m/s^2" },
       expectedUserInput: { acceleration: accelerationForProblem },
       toleranceRule: { absolute: 0.00001 }, //final?
