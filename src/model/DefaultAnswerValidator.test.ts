@@ -9,7 +9,7 @@ const validator = new DefaultAnswerValidator();
 const car: AnswerValidationConfig = {
   gameId: "carKinematics",
   levelId: 1,
-  inputVariables: ["velocity"],
+  userInputVariables: ["velocity"],
   expectedUserInput: { velocity: 12.5 },
   toleranceRule: { absolute: 0.1 },
   bounds: { velocity: { min: 0, max: 100 } },
@@ -17,7 +17,7 @@ const car: AnswerValidationConfig = {
 const force: AnswerValidationConfig = {
   gameId: "netForce",
   levelId: 1,
-  inputVariables: ["forceX", "forceY"],
+  userInputVariables: ["forceX", "forceY"],
   expectedUserInput: { forceX: -10, forceY: 0 },
   toleranceRule: { absolute: 0.1 },
 };
@@ -41,7 +41,7 @@ describe.each([car, force])("$gameId", (level) => {
   });
 
   it("rejects a wrong answer even when other fields are correct", () => {
-    const field = level.inputVariables[0];
+    const field = level.userInputVariables[0];
     const input = submission(level, {
       ...level.expectedUserInput,
       [field]: level.expectedUserInput[field] + 1,
@@ -55,14 +55,14 @@ describe.each([car, force])("$gameId", (level) => {
     expect(validator.validateInput(input, level)).toBe(false);
     expect(validator.validateAnswer(input, level)).toMatchObject({
       correct: false,
-      feedback: expect.stringContaining(level.inputVariables[0]),
+      feedback: expect.stringContaining(level.userInputVariables[0]),
     });
   });
 
   it.each([NaN, Infinity, -Infinity])("rejects nonfinite input %s", (value) => {
     const input = submission(level, {
       ...level.expectedUserInput,
-      [level.inputVariables[0]]: value,
+      [level.userInputVariables[0]]: value,
     });
     expect(validator.validateInput(input, level)).toBe(false);
     expect(validator.validateAnswer(input, level).correct).toBe(false);
@@ -223,8 +223,8 @@ describe("invalid problem configuration", () => {
       "nonfinite expected answer",
       { expectedUserInput: { velocity: Infinity } },
     ],
-    ["no required fields", { inputVariables: [] }],
-    ["duplicate fields", { inputVariables: ["velocity", "velocity"] }],
+    ["no required fields", { userInputVariables: [] }],
+    ["duplicate fields", { userInputVariables: ["velocity", "velocity"] }],
     ["reversed bounds", { bounds: { velocity: { min: 10, max: 0 } } }],
     ["nonfinite minimum", { bounds: { velocity: { min: NaN } } }],
     ["nonfinite maximum", { bounds: { velocity: { max: Infinity } } }],

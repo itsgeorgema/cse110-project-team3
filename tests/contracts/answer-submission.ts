@@ -10,9 +10,10 @@ import type {
 import type {
   AnswerSubmission,
   AnswerValidator,
+  AnswerValidationConfig,
   AnswerValidationResult,
-  LevelDataConfig,
 } from "../../src/model/AnswerValidator.ts";
+import type { LevelDataConfig } from "../../src/data/LevelDataConfig.ts";
 import type { LevelAddress } from "../../src/model/LevelAddress.ts";
 
 // Compile-only boundary checks for #25 and #43, not a fake validator implementation.
@@ -35,9 +36,19 @@ expectTypeOf<
 expectTypeOf<
   AnswerValidationResult["submittedAnswer"]
 >().toEqualTypeOf<AnswerSubmission>();
-expectTypeOf<LevelDataConfig["inputVariables"]>().toEqualTypeOf<
+expectTypeOf<LevelDataConfig["userInputVariables"]>().toEqualTypeOf<
   readonly string[]
 >();
+// #75: a generated level goes to the validator as-is; bounds stay optional there.
+expectTypeOf<LevelDataConfig>().toExtend<AnswerValidationConfig>();
+const withoutBounds: AnswerValidationConfig = {
+  gameId: "kinematics",
+  levelId: 1,
+  userInputVariables: ["velocity"],
+  expectedUserInput: { velocity: 10 },
+  toleranceRule: { absolute: 0 },
+};
+void withoutBounds;
 
 declare const parsed: ParsedInput;
 declare const submission: AnswerSubmission;

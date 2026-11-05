@@ -26,7 +26,7 @@ export class DefaultAnswerValidator implements AnswerValidator {
     }
 
     // Check each submitted answer with the configured tolerance.
-    const correct = level.inputVariables.every((field) => {
+    const correct = level.userInputVariables.every((field) => {
       const expected = level.expectedUserInput[field];
       const allowedError = Math.max(
         level.toleranceRule.absolute,
@@ -61,7 +61,7 @@ export class DefaultAnswerValidator implements AnswerValidator {
       return "This answer does not match the current game and level.";
     }
 
-    for (const field of level.inputVariables) {
+    for (const field of level.userInputVariables) {
       if (!Object.hasOwn(input.values, field)) {
         return `Enter an answer for ${field}.`;
       }
@@ -97,15 +97,15 @@ export class DefaultAnswerValidator implements AnswerValidator {
       invalid("tolerances must be finite and nonnegative.");
     }
     if (
-      level.inputVariables.length === 0 ||
-      new Set(level.inputVariables).size !== level.inputVariables.length
+      level.userInputVariables.length === 0 ||
+      new Set(level.userInputVariables).size !== level.userInputVariables.length
     ) {
       invalid(
-        "inputVariables must contain at least one field, with no duplicates.",
+        "userInputVariables must contain at least one field, with no duplicates.",
       );
     }
 
-    for (const field of level.inputVariables) {
+    for (const field of level.userInputVariables) {
       const expected = level.expectedUserInput[field];
       if (
         !Object.hasOwn(level.expectedUserInput, field) ||

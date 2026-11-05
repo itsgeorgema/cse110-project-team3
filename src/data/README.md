@@ -1,11 +1,15 @@
 # `src/data/`
 
-This layer owns saved progress data and its browser-storage adapter. The level
-catalog and game-ready `LevelDataConfig` definitions described in early design
-views are not implemented in this directory yet.
+This layer owns level definitions, saved progress data, and its browser-storage
+adapter. A full level catalog and level loading are not implemented yet.
 
 ## Implemented files
 
+- [`LevelDataConfig.ts`](./LevelDataConfig.ts) defines the one level shape
+  (`gameId`, `levelId`, problem text, `userInputVariables` and their units,
+  expected answers, tolerance, bounds). `LevelDataConfigFactory` generates the
+  kinematics levels 1–3 with random values. The validator's
+  `AnswerValidationConfig` is derived from this type (#75).
 - [`SaveData.ts`](./SaveData.ts) defines the version 1 save shape: completed
   `LevelAddress` values and the current selection.
 - [`SaveManager.ts`](./SaveManager.ts) loads, validates, copies, saves, and

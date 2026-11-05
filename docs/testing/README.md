@@ -129,10 +129,10 @@ unit tests. This table records acceptance evidence, not administrator setup step
    units, problem text, expected values, and animation registry agree. A fixture
    cannot replace checking the shipped level catalog.
 
-Until level schemas are agreed, do not turn example issue snippets into a runtime
-API: the issues use `gameName`, `gameId`, `kinematics`, and `carKinematics`
-inconsistently. Resolve the canonical vocabulary with the feature implementation,
-then validate the entire level catalog and unique compound addresses in CI.
+Level configs use one shape, `LevelDataConfig` in `src/data/LevelDataConfig.ts`
+(#75): `gameId` (for example `kinematics`), `levelId`, `userInputVariables`, and
+`userInputVariablesUnits`. Once a level catalog exists, validate all of it and
+unique compound addresses in CI.
 
 For answer comparison, use the agreed rule in
 [answer-validation.md](../answer-validation.md): allowed error is

@@ -155,7 +155,7 @@ describe("createLevelDataConfig for kinematics game, level 1", () => {
     );
 
     expect(config).toMatchObject({
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 1,
       problemStatementVariables: ["displacement", "time"],
       userInputVariables: ["velocity"],
@@ -305,7 +305,7 @@ describe("createLevelDataConfig for kinematics game, level 2", () => {
     );
 
     expect(config).toMatchObject({
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 2,
       problemStatementVariables: ["velocity", "time"],
       userInputVariables: ["displacement"],
@@ -464,7 +464,7 @@ describe("createLevelDataConfig for kinematics game, level 3", () => {
     );
 
     expect(config).toMatchObject({
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 3,
       problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
       userInputVariables: ["acceleration"],

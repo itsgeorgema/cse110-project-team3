@@ -2,7 +2,7 @@ import type { ToleranceRule, AnswerBounds } from "../model/AnswerValidator";
 import { PhysicsEngine } from "../model/PhysicsEngine";
 
 export interface LevelDataConfig {
-  readonly gameName: string;
+  readonly gameId: string;
   readonly levelId: number;
   readonly problemStatementVariables: readonly string[];
   readonly problemStatementVariablesValues: Readonly<Record<string, number>>;
@@ -79,7 +79,7 @@ export class LevelDataConfigFactory {
       `seconds, what is the car's velocity?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 1,
       problemStatementVariables: ["displacement", "time"],
       problemStatementVariablesValues: {
@@ -112,7 +112,7 @@ export class LevelDataConfigFactory {
       `${timeForProblem} seconds, what is the car's displacement?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 2,
       problemStatementVariables: ["velocity", "time"],
       problemStatementVariablesValues: {
@@ -149,7 +149,7 @@ export class LevelDataConfigFactory {
       `${timeForProblem} seconds to outrun the guard, what is the car's acceleration?`;
 
     return {
-      gameName: "kinematics",
+      gameId: "kinematics",
       levelId: 3,
       problemStatementVariables: ["initialVelocity", "finalVelocity", "time"],
       problemStatementVariablesValues: {
