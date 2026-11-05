@@ -1,7 +1,5 @@
-import type {
-  AnswerSubmission,
-  LevelDataConfig,
-} from "../model/AnswerValidator.ts";
+import type { LevelDataConfig } from "../data/LevelDataConfig.ts";
+import type { AnswerSubmission } from "../model/AnswerValidator.ts";
 import type { RawInput } from "./GameCommands.ts";
 
 /** An AnswerSubmission before the controller adds units from the level. */
@@ -12,7 +10,7 @@ export type ParsedInput = Pick<
 
 export type ParseResult =
   | { readonly ok: true; readonly input: ParsedInput }
-  /** One message per rejected field, keyed by inputVariables. */
+  /** One message per rejected field, keyed by userInputVariables. */
   | { readonly ok: false; readonly errors: Readonly<Record<string, string>> };
 
 /** Optional minus, digits with an optional decimal point, optional exponent: 9.8, -0.5, 3e8. */
@@ -24,12 +22,12 @@ const NUMBER_PATTERN = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  */
 export function parseInput(
   raw: RawInput,
-  level: Pick<LevelDataConfig, "inputVariables">,
+  level: Pick<LevelDataConfig, "userInputVariables">,
 ): ParseResult {
   const values: Record<string, number> = {};
   const errors: Record<string, string> = {};
 
-  for (const name of level.inputVariables) {
+  for (const name of level.userInputVariables) {
     const text = (raw.fields[name] ?? "").trim();
     if (text === "") {
       errors[name] = "Enter a number.";
