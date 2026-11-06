@@ -167,4 +167,33 @@ export class LevelDataConfigFactory {
       },
     };
   }
+
+    private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
+    // TODO Finish
+    const mass = this.randomIntegerInclusive(5, 30); // meters/second
+    const gravitationalForce = PhysicsEngine.multiply(mass, 9.81);
+    const normalForce = PhysicsEngine.multiply(mass, this.randomIntegerInclusive(5, 30));
+    const netForceForProblem = gravitationalForce + normalForce; // meters/second squared
+
+    const problemStatement = `Net force is the sum all of the forces acted upon the object. If a crate ` +
+                              `with ${mass} is resting on the ground, the gravitational force acts on the object ` +
+                              `with ${gravitationalForce.toFixed(3)} N and the ground acts on an object with a normal force of ${normalForce.toFixed(3)} `+
+                              `N. What is the net force acting on the object given that the acceleration from gravity is 9.81 m/s^2?`;
+    return {
+      gameId: "netForce",
+      levelId: 2,
+      problemStatementVariables: ["mass", "gravitationalForce", "normalForce"],
+      problemStatementVariablesValues: {
+        mass: mass,
+        gravitationalForce: gravitationalForce,
+        normalForce: normalForce
+      },
+      problemStatement: problemStatement,
+      userInputVariables: ["netForceForProblem"],
+      userInputVariablesUnits: {"netForceForProblem": "N"},
+      expectedUserInput: {netForceForProblem: netForceForProblem},
+      toleranceRule: { absolute: 0.00001 },
+      bounds: {}
+    };
+  }
 }
