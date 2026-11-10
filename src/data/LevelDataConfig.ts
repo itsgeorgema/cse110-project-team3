@@ -34,6 +34,17 @@ export class LevelDataConfigFactory {
           default:
             throw new Error("levelId does not exist");
         }
+      case "netForce":
+        switch (levelId) {
+          // case 1:
+          //   return this.createNetForceLevel1LevelDataConfig();
+          case 2:
+            return this.createNetForceLevel2LevelDataConfig();
+          // case 3:
+          //   return this.createKinematicsLevel3LevelDataConfig();
+          default:
+            throw new Error("levelId does not exist");
+        }
       default:
         throw new Error("gameId does not exist");
     }
@@ -168,36 +179,42 @@ export class LevelDataConfigFactory {
     };
   }
 
-    private createNetForceLevel2LevelDataConfig() : LevelDataConfig {
+  private createNetForceLevel2LevelDataConfig(): LevelDataConfig {
     // TODO Finish
-    const gravitationalAcceleration = 9.81 // m/s^2
+    const gravitationalAcceleration = 9.81; // m/s^2
     const mass = this.randomIntegerInclusive(5, 30); // meters/second
-    const gravitationalForce = PhysicsEngine.multiply(mass, gravitationalAcceleration); //graviational acceleration is m/s^2
-    const normalForce = PhysicsEngine.multiply(mass, this.randomIntegerInclusive(5, 30));
-    const netForceForProblem = PhysicsEngine.calculateNetForce(gravitationalForce, normalForce) // meters/second squared
+    const gravitationalForce = PhysicsEngine.calculateForce(
+      mass,
+      gravitationalAcceleration,
+    ); //graviational acceleration is m/s^2
+    const normalForce = gravitationalForce;
+    const netForce = PhysicsEngine.calculateNetForce(
+      normalForce,
+      gravitationalForce,
+    ); // meters/second squared
 
-  const problemStatement =
-    `Net force is the sum of all the forces acting on an object. ` +
-    `A crate with a mass of ${mass} kg rests on the ground. ` +
-    `Given that the acceleration from gravity is ${gravitationalAcceleration} m/s^2, ` +
-    `what are the gravitational force on the crate, the normal force from the ground, ` +
-    `and the net force acting on the crate?`;
+    const problemStatement =
+      `Net force is the sum of all the forces acting on an object. ` +
+      `A crate with a mass of ${mass} kg rests on the ground. ` +
+      `Given that the acceleration from gravity is ${gravitationalAcceleration} m/s^2, ` +
+      `what are the gravitational force on the crate, the normal force from the ground, ` +
+      `and the net force acting on the crate?`;
 
-  return {
-    gameId: "netForce",
-    levelId: 2,
-    problemStatementVariables: ["mass", "gravitationalAcceleration"],
-    problemStatementVariablesValues: { mass, gravitationalAcceleration },
-    problemStatement,
-    userInputVariables: ["gravitationalForce", "normalForce", "netForce"],
-    userInputVariablesUnits: {
-      gravitationalForce: "N",
-      normalForce: "N",
-      netForce: "N",
-    },
-    expectedUserInput: { gravitationalForce, normalForce, netForceForProblem },
-    toleranceRule: { absolute: 0.00001 },
-    bounds: { gravitationalForce: { min: 0.0 }, normalForce: { min: 0.0 } },
-  };
+    return {
+      gameId: "netForce",
+      levelId: 2,
+      problemStatementVariables: ["mass", "gravitationalAcceleration"],
+      problemStatementVariablesValues: { mass, gravitationalAcceleration },
+      problemStatement,
+      userInputVariables: ["gravitationalForce", "normalForce", "netForce"],
+      userInputVariablesUnits: {
+        gravitationalForce: "N",
+        normalForce: "N",
+        netForce: "N",
+      },
+      expectedUserInput: { gravitationalForce, normalForce, netForce },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { gravitationalForce: { min: 0.0 }, normalForce: { min: 0.0 } },
+    };
   }
 }

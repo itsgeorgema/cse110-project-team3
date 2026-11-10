@@ -22,6 +22,15 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
       levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
     ).toThrow("levelId does not exist");
   });
+
+  it("createLevelDataConfig for netForce game, level 10 doesn't work", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "netForce";
+    const levelId = 10;
+    expect(() =>
+      levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
+    ).toThrow("levelId does not exist");
+  });
 });
 
 describe("createLevelDataConfig for kinematics game, level 1", () => {
@@ -484,7 +493,9 @@ describe("createLevelDataConfig for kinematics game, level 3", () => {
 });
 
 describe("createLevelDataConfig for net force game, level 2", () => {
-  const expectValidNetForceLevel2Problem = (levelDataConfig: LevelDataConfig) => {
+  const expectValidNetForceLevel2Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
     const {
       problemStatement,
       problemStatementVariablesValues,
@@ -513,10 +524,7 @@ describe("createLevelDataConfig for net force game, level 2", () => {
     expect(gravitationalAcceleration).toBe(9.81);
 
     // Validate physical consistency for a crate resting on level ground.
-    expect(gravitationalForce).toBeCloseTo(
-      mass * gravitationalAcceleration,
-    
-    );
+    expect(gravitationalForce).toBeCloseTo(mass * gravitationalAcceleration);
     expect(normalForce).toBe(gravitationalForce);
     expect(netForce).toBe(0);
 
@@ -577,13 +585,10 @@ describe("createLevelDataConfig for net force game, level 2", () => {
         levelDataConfig.problemStatementVariablesValues;
       expect(mass).toBe(18);
       expect(gravitationalAcceleration).toBe(9.81);
-      expect(
-        levelDataConfig.expectedUserInput.gravitationalForce,
-      ).toBeCloseTo(176.58);
-      expect(levelDataConfig.expectedUserInput.normalForce).toBeCloseTo(
+      expect(levelDataConfig.expectedUserInput.gravitationalForce).toBeCloseTo(
         176.58,
-        
       );
+      expect(levelDataConfig.expectedUserInput.normalForce).toBeCloseTo(176.58);
       expect(levelDataConfig.expectedUserInput.netForce).toBe(0);
 
       expectValidNetForceLevel2Problem(levelDataConfig);
