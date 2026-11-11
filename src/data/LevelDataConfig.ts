@@ -36,12 +36,10 @@ export class LevelDataConfigFactory {
         }
       case "netForce":
         switch (levelId) {
-          // case 1:
-          //   return this.createNetForceLevel1LevelDataConfig();
-          case 2:
+          
+          case 1:
             return this.createNetForceLevel2LevelDataConfig();
-          // case 3:
-          //   return this.createKinematicsLevel3LevelDataConfig();
+
           default:
             throw new Error("levelId does not exist");
         }
