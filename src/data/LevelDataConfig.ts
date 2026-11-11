@@ -36,7 +36,7 @@ export class LevelDataConfigFactory {
         }
       case "netForce":
         switch (levelId) {
-          case 1:
+          case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
           default:
