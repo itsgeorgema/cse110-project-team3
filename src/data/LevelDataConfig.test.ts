@@ -547,7 +547,7 @@ describe("createLevelDataConfig for net force game, level 2", () => {
 
     // Validate problem statement wording and structure.
     expect(problemStatement).toMatch(
-      /^Net force is the vector sum of all the forces acting on an object\. A crate with a mass of \d+ kg rests on the ground\. Given that the acceleration from gravity is 9\.81 m\/s\^2, what are the gravitational force on the crate, the normal force from the ground, and the net force acting on the crate\?$/,
+      /^Net force is the vector sum of all forces acting on an object\. A crate with a mass of \d+ kg rests on the ground\. Given that the acceleration from gravity is 9\.81 m\/s\^2, what are the gravitational force on the crate, the normal force from the ground, and the net force acting on the crate\?$/,
     );
 
     // Ensure extracted values match the configuration.
