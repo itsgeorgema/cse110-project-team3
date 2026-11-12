@@ -177,9 +177,8 @@ export class LevelDataConfigFactory {
   }
 
   private createNetForceLevel2LevelDataConfig(): LevelDataConfig {
-    // TODO Finish
     const gravitationalAcceleration = 9.81; // m/s^2
-    const mass = this.randomIntegerInclusive(5, 30); // meters/second
+    const mass = this.randomIntegerInclusive(5, 30); // kg
     const gravitationalForce = PhysicsEngine.calculateForce(
       mass,
       gravitationalAcceleration,
@@ -188,10 +187,10 @@ export class LevelDataConfigFactory {
     const netForce = PhysicsEngine.calculateNetForce(
       normalForce,
       gravitationalForce,
-    ); // meters/second squared
+    ); // Newtons (N)
 
     const problemStatement =
-      `Net force is the sum of all the forces acting on an object. ` +
+      `Net force is the vector sum of all forces acting on an object. ` +
       `A crate with a mass of ${mass} kg rests on the ground. ` +
       `Given that the acceleration from gravity is ${gravitationalAcceleration} m/s^2, ` +
       `what are the gravitational force on the crate, the normal force from the ground, ` +
