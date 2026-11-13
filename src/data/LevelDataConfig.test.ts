@@ -22,6 +22,15 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
       levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
     ).toThrow("levelId does not exist");
   });
+
+  it("createLevelDataConfig for netForce game, level 10 doesn't work", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "netForce";
+    const levelId = 10;
+    expect(() =>
+      levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
+    ).toThrow("levelId does not exist");
+  });
 });
 
 describe("createLevelDataConfig for kinematics game, level 1", () => {
@@ -478,6 +487,156 @@ describe("createLevelDataConfig for kinematics game, level 3", () => {
         acceleration: {
           min: 0.0,
         },
+      },
+    });
+  });
+});
+
+describe("createLevelDataConfig for net force game, level 2", () => {
+  const expectValidNetForceLevel2Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract mass and gravitational acceleration from the problem statement.
+    const massMatch = problemStatement.match(/mass of (\d+) kg/);
+    const gravityMatch = problemStatement.match(
+      /gravity is (\d+(?:\.\d+)?) m\/s\^2/,
+    );
+
+    expect(massMatch).not.toBeNull();
+    expect(gravityMatch).not.toBeNull();
+
+    const mass = Number(massMatch?.[1]);
+    const gravitationalAcceleration = Number(gravityMatch?.[1]);
+    const { gravitationalForce, normalForce, netForce } = expectedUserInput;
+
+    // Validate mass.
+    expect(Number.isInteger(mass)).toBe(true);
+    expect(mass).toBeGreaterThanOrEqual(5);
+    expect(mass).toBeLessThanOrEqual(30);
+
+    // Validate gravitational acceleration.
+    expect(gravitationalAcceleration).toBe(9.81);
+
+    // Validate physical consistency for a crate resting on level ground.
+    expect(gravitationalForce).toBeCloseTo(mass * gravitationalAcceleration);
+    expect(normalForce).toBe(gravitationalForce);
+    expect(netForce).toBe(0);
+
+    // Validate problem statement variables.
+    expect(problemStatementVariablesValues).toEqual({
+      mass,
+      gravitationalAcceleration,
+    });
+
+    // Validate problem statement formatting.
+
+    // Ensure there are no consecutive whitespace characters.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+
+    // Ensure the problem statement has no leading or trailing whitespace.
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+
+    // Ensure there is no whitespace before punctuation.
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^Net force is the vector sum of all forces acting on an object\. A crate with a mass of \d+ kg rests on the ground\. Given that the acceleration from gravity is 9\.81 m\/s\^2, what are the gravitational force on the crate, the normal force from the ground, and the net force acting on the crate\?$/,
+    );
+
+    // Ensure extracted values match the configuration.
+    expect(problemStatement).toContain(`${mass} kg`);
+    expect(problemStatement).toContain(`${gravitationalAcceleration} m/s^2`);
+
+    // Validate answer configuration: the student answers all three forces.
+    expect(Object.keys(expectedUserInput).sort()).toEqual([
+      "gravitationalForce",
+      "netForce",
+      "normalForce",
+    ]);
+  };
+
+  it("deterministic test: should generate valid and correctly formatted calculate gravitational, normal, and net force problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "netForce";
+    const levelId = 2;
+
+    // Fix Math.random() to return 0.5 once
+    // See LevelDataConfigFactory.randomIntegerInclusive() for implementation
+    // of random integer generator for problem
+    vi.spyOn(Math, "random").mockReturnValueOnce(0.5); // mass = Math.floor(0.5 * (30 - 5 + 1)) + 5 = 18
+
+    // Gravitational force is then 18 * 9.81 = 176.58 N, the normal force is
+    // also 176.58 N, so the net force is 0 N.
+
+    try {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+
+      const { mass, gravitationalAcceleration } =
+        levelDataConfig.problemStatementVariablesValues;
+      expect(mass).toBe(18);
+      expect(gravitationalAcceleration).toBe(9.81);
+      expect(levelDataConfig.expectedUserInput.gravitationalForce).toBeCloseTo(
+        176.58,
+      );
+      expect(levelDataConfig.expectedUserInput.normalForce).toBeCloseTo(176.58);
+      expect(levelDataConfig.expectedUserInput.netForce).toBe(0);
+
+      expectValidNetForceLevel2Problem(levelDataConfig);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("randomized tests (1000): should generate valid and correctly formatted calculate gravitational, normal, and net force problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "netForce";
+    const levelId = 2;
+
+    // Generate multiple configurations to cover random values.
+    for (let i = 0; i < 1000; i++) {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+      expectValidNetForceLevel2Problem(levelDataConfig);
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+    const gameId = "netForce";
+    const levelId = 2;
+    const config = levelDataConfigFactory.createLevelDataConfig(
+      gameId,
+      levelId,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "netForce",
+      levelId: 2,
+      problemStatementVariables: ["mass", "gravitationalAcceleration"],
+      userInputVariables: ["gravitationalForce", "normalForce", "netForce"],
+      userInputVariablesUnits: {
+        gravitationalForce: "N",
+        normalForce: "N",
+        netForce: "N",
+      },
+      toleranceRule: {
+        absolute: 0.00001,
+      },
+      bounds: {
+        gravitationalForce: { min: 0.0 },
+        normalForce: { min: 0.0 },
       },
     });
   });

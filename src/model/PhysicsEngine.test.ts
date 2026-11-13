@@ -791,3 +791,292 @@ describe("PhysicsEngine.calculateAcceleration", () => {
     expect(PhysicsEngine.calculateAcceleration(0, 0, Number.MIN_VALUE)).toBe(0);
   });
 });
+
+describe("PhysicsEngine.calculateForce", () => {
+  // Normal behavior (force = mass * acceleration)
+  it.each([
+    [10, 2, 20],
+    [10, -2, -20],
+    [5, 1, 5],
+    [300, 2, 600],
+    [2562, 32, 81984],
+    [2562, -32, -81984],
+    [152526, 2434, 371248284],
+    [1832649, 343, 628598607],
+    [70290108, 278929, 19605949534332],
+    [0.5, 4, 2],
+    [2.5, 2, 5],
+    [322.4353, 2342.355, 755257.9371315],
+    [322.4353, -2342.355, -755257.9371315],
+    [0.72421, 0.684893, 0.49600636],
+    [0.72421, -0.684893, -0.49600636],
+    [0.121519, 0.425828, 0.05174619],
+    // Weight of a crate on Earth (acceleration from gravity of 9.81 m/s^2)
+    [5, 9.81, 49.05],
+    [18, 9.81, 176.58],
+    [30, 9.81, 294.3],
+    [7, 9.81, 68.67],
+    // No acceleration means no force
+    [10, 0, 0],
+    [242.34522, 0, 0],
+  ])(
+    "calculates force correctly: mass of %s kg and acceleration of %s m/s^2 = %s N",
+    (mass, acceleration, force) => {
+      expect(PhysicsEngine.calculateForce(mass, acceleration)).toBeCloseTo(
+        force,
+        DECIMAL_PRECISION,
+      );
+    },
+  );
+
+  // Zero or negative mass
+  it.each([
+    [0, 0],
+    [0, 9.81],
+    [-0, 9.81],
+    [-1, 9.81],
+    [-50, 9.81],
+    [-1e300, 9.81],
+    [-Number.MAX_VALUE, 2],
+  ])(
+    "rejects zero or negative mass: mass of %s kg and acceleration of %s m/s^2, expect error",
+    (mass, acceleration) => {
+      expect(() => PhysicsEngine.calculateForce(mass, acceleration)).toThrow(
+        /PhysicsEngine\.calculateForce\.mass must be (positive|> 0)\. Received: /,
+      );
+    },
+  );
+
+  // Non-finite inputs
+  it.each([
+    [NaN, 2],
+    [10, NaN],
+    [Infinity, 2],
+    [-Infinity, 2],
+    [10, Infinity],
+    [10, -Infinity],
+    [Infinity, Infinity],
+    [Infinity, NaN],
+    [NaN, Infinity],
+    [Infinity, -Infinity],
+    [-Infinity, -Infinity],
+    [NaN, NaN],
+  ])(
+    "rejects non-finite inputs: %s (mass) and %s (acceleration)",
+    (mass, acceleration) => {
+      expect(() => PhysicsEngine.calculateForce(mass, acceleration)).toThrow(
+        /PhysicsEngine\.calculateForce input variable (mass|acceleration) must be finite/,
+      );
+    },
+  );
+
+  // Overflow (the error comes from PhysicsEngine.multiply)
+  it.each([
+    [Number.MAX_VALUE, 2],
+    [Number.MAX_VALUE, -2],
+    [1e300, 1e100],
+    [1e308, 10],
+    [1e200, 1e200],
+  ])(
+    "rejects infinite results: %s (mass) and %s (acceleration)",
+    (mass, acceleration) => {
+      expect(() => PhysicsEngine.calculateForce(mass, acceleration)).toThrow(
+        "PhysicsEngine.multiply produced a non-finite result.",
+      );
+    },
+  );
+
+  // Runtime type validation
+  it.each([
+    ["10", 2],
+    [10, "2"],
+    [null, 2],
+    [10, null],
+    [undefined, 2],
+    [10, undefined],
+    [true, 2],
+    ["3343.3a", "4543.a"],
+    ["343432.aa", 3343.335],
+    [[], 2],
+    [{}, 2],
+    [[], {}],
+    [[], []],
+  ])(
+    "rejects invalid runtime types: %s (mass) and %s (acceleration)",
+    (mass, acceleration) => {
+      expect(() =>
+        PhysicsEngine.calculateForce(mass as number, acceleration as number),
+      ).toThrow(
+        /PhysicsEngine\.calculateForce input variable (mass|acceleration) must be a number/,
+      );
+    },
+  );
+
+  // Boundary values
+  it("accepts a Number.MAX_VALUE mass with an acceleration of 1 m/s^2", () => {
+    expect(PhysicsEngine.calculateForce(Number.MAX_VALUE, 1)).toBe(
+      Number.MAX_VALUE,
+    );
+  });
+
+  it("returns zero when a Number.MAX_VALUE mass has no acceleration", () => {
+    expect(PhysicsEngine.calculateForce(Number.MAX_VALUE, 0)).toBe(0);
+  });
+
+  it("accepts a Number.MIN_VALUE mass with an acceleration of 1 m/s^2", () => {
+    expect(PhysicsEngine.calculateForce(Number.MIN_VALUE, 1)).toBe(
+      Number.MIN_VALUE,
+    );
+  });
+
+  it("accepts a Number.MIN_VALUE mass with a negative acceleration", () => {
+    expect(PhysicsEngine.calculateForce(Number.MIN_VALUE, -1)).toBe(
+      -Number.MIN_VALUE,
+    );
+  });
+});
+
+describe("PhysicsEngine.calculateNetForce", () => {
+  // Normal behavior (net force = normal force - gravitational force)
+  it.each([
+    [10, 2, 8],
+    [-10, 2, -12],
+    [-10, -2, -8],
+    [2, 10, -8],
+    [5, 1, 4],
+    [-5, 1, -6],
+    [300, 2, 298],
+    [2562, 32, 2530],
+    [2562, -32, 2594],
+    [152526, 2434, 150092],
+    [-152526, 2434, -154960],
+    [-152526, -2434, -150092],
+    [1832649, 343, 1832306],
+    [-1832649, 5343, -1837992],
+    [70290108, 278929, 70011179],
+    [-70290108, 278929, -70569037],
+    [0, 3252, -3252],
+    [-0, 635498352.24234, -635498352.24234],
+    [242.34522, 0, 242.34522],
+    [-3629.2342, 0, -3629.2342],
+    [2.5, 2, 0.5],
+    [-2.5, 2, -4.5],
+    [0.3, 0.1, 0.2],
+    [322.4353, 2342.355, -2019.9197],
+    [322.4353, -2342.355, 2664.7903],
+    [15252.2349141, 92347.8250721, -77095.590158],
+    [0.72421, 0.684893, 0.039317],
+    [0.72421, -0.684893, 1.409103],
+    [-0.121519, 0.425828, -0.547347],
+    [7, 7, 0],
+    // Crate at rest: the normal force balances the weight
+    [176.58, 176.58, 0],
+    [294.3, 294.3, 0],
+    // Forces that do not cancel, so a flipped sign would fail
+    [50, 49, 1],
+    [49, 50, -1],
+    [0, 176.58, -176.58],
+  ])(
+    "calculates net force correctly: normal force of %s N and gravitational force of %s N = %s N",
+    (normalForce, gravitationalForce, netForce) => {
+      expect(
+        PhysicsEngine.calculateNetForce(normalForce, gravitationalForce),
+      ).toBeCloseTo(netForce, DECIMAL_PRECISION);
+    },
+  );
+
+  // Non-finite inputs
+  it.each([
+    [NaN, 2],
+    [10, NaN],
+    [Infinity, 2],
+    [-Infinity, 2],
+    [10, Infinity],
+    [10, -Infinity],
+    [Infinity, Infinity],
+    [Infinity, NaN],
+    [NaN, Infinity],
+    [Infinity, -Infinity],
+    [-Infinity, -Infinity],
+    [NaN, NaN],
+  ])(
+    "rejects non-finite inputs: %s (normal force) and %s (gravitational force)",
+    (normalForce, gravitationalForce) => {
+      expect(() =>
+        PhysicsEngine.calculateNetForce(normalForce, gravitationalForce),
+      ).toThrow(
+        /PhysicsEngine\.calculateNetForce input variable (normal.?[fF]orce|gravitational.?[fF]orce) must be finite/,
+      );
+    },
+  );
+
+  // Overflow (the error comes from PhysicsEngine.subtract)
+  it.each([
+    [Number.MAX_VALUE, -Number.MAX_VALUE],
+    [-Number.MAX_VALUE, Number.MAX_VALUE],
+    [1e308, -1e308],
+    [-1e308, 1e308],
+    [1.5e308, -1.5e308],
+  ])(
+    "rejects infinite results: %s (normal force) and %s (gravitational force)",
+    (normalForce, gravitationalForce) => {
+      expect(() =>
+        PhysicsEngine.calculateNetForce(normalForce, gravitationalForce),
+      ).toThrow("PhysicsEngine.subtract produced a non-finite result.");
+    },
+  );
+
+  // Runtime type validation
+  it.each([
+    ["10", 2],
+    [10, "2"],
+    [null, 2],
+    [10, null],
+    [undefined, 2],
+    [10, undefined],
+    [true, 2],
+    ["3343.3a", "4543.a"],
+    ["343432.aa", 3343.335],
+    [[], 2],
+    [{}, 2],
+    [[], {}],
+    [[], []],
+  ])(
+    "rejects invalid runtime types: %s (normal force) and %s (gravitational force)",
+    (normalForce, gravitationalForce) => {
+      expect(() =>
+        PhysicsEngine.calculateNetForce(
+          normalForce as number,
+          gravitationalForce as number,
+        ),
+      ).toThrow(
+        /PhysicsEngine\.calculateNetForce input variable (normal.?[fF]orce|gravitational.?[fF]orce) must be a number/,
+      );
+    },
+  );
+
+  // Boundary values
+  it("accepts a Number.MAX_VALUE normal force with no gravitational force", () => {
+    expect(PhysicsEngine.calculateNetForce(Number.MAX_VALUE, 0)).toBe(
+      Number.MAX_VALUE,
+    );
+  });
+
+  it("returns zero when Number.MAX_VALUE normal and gravitational forces balance", () => {
+    expect(
+      PhysicsEngine.calculateNetForce(Number.MAX_VALUE, Number.MAX_VALUE),
+    ).toBe(0);
+  });
+
+  it("returns zero when Number.MIN_VALUE normal and gravitational forces balance", () => {
+    expect(
+      PhysicsEngine.calculateNetForce(Number.MIN_VALUE, Number.MIN_VALUE),
+    ).toBe(0);
+  });
+
+  it("accepts no normal force with a Number.MIN_VALUE gravitational force", () => {
+    expect(PhysicsEngine.calculateNetForce(0, Number.MIN_VALUE)).toBe(
+      -Number.MIN_VALUE,
+    );
+  });
+});

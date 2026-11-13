@@ -105,4 +105,38 @@ export class PhysicsEngine {
 
     return this.divide(this.subtract(finalVelocity, initialVelocity), time);
   }
+
+  public static calculateForce(mass: number, acceleration: number) {
+    this.validateNumber(
+      mass,
+      "PhysicsEngine.calculateForce input variable mass",
+    );
+    this.validateNumber(
+      acceleration,
+      "PhysicsEngine.calculateForce input variable acceleration",
+    );
+
+    if (mass <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateForce.mass must be > 0. Received: ${mass}`,
+      );
+    }
+
+    return this.multiply(mass, acceleration);
+  }
+
+  public static calculateNetForce(
+    normalForce: number,
+    gravitationalForce: number,
+  ) {
+    this.validateNumber(
+      normalForce,
+      "PhysicsEngine.calculateNetForce input variable normal force",
+    );
+    this.validateNumber(
+      gravitationalForce,
+      "PhysicsEngine.calculateNetForce input variable gravitational force",
+    );
+    return this.subtract(normalForce, gravitationalForce);
+  }
 }
