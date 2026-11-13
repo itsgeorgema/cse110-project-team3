@@ -47,7 +47,7 @@ export interface SteppableWorld {
 export interface RunOptions {
   readonly stepMs: number;
   readonly maxSteps: number;
-  readonly isFinished?: (state: SimulationState) => boolean;
+  readonly isFinished?: ((state: SimulationState) => boolean) | undefined;
 }
 
 /** Steps a world on a fixed timestep and records a frozen snapshot per step. */
