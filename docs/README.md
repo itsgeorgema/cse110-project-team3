@@ -12,6 +12,8 @@ approaches. Update the relevant note with the implementing change.
   layer responsibilities, and the current storage and map-preview flow.
 - [Answer validation](./answer-validation.md): validator contract, input
   requirements, bounds, and tolerance behavior.
+- [Physics simulation](./physics-simulation.md): how a run is recorded as copied
+  `SimulationState` snapshots, the runner seam, and where matter-js is isolated.
 - [Session progress and next-level selection](./progress-tracking.md): attempt
   snapshots, completion, and ordered level availability.
 - [Overworld story map preview](./overworld-preview.md): scope and design
