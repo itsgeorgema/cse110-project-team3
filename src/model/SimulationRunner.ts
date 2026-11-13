@@ -1,11 +1,16 @@
-import { snapshotState } from './SimulationState';
-import type { LiveBody, ObjectId, SimulationState, Vec2 } from './SimulationState';
+import { snapshotState } from "./SimulationState";
+import type {
+  LiveBody,
+  ObjectId,
+  SimulationState,
+  Vec2,
+} from "./SimulationState";
 
 export const DEFAULT_STEP_MS = 1000 / 60;
 
 export type Shape =
-  | { readonly kind: 'circle'; readonly radius: number }
-  | { readonly kind: 'rect'; readonly width: number; readonly height: number };
+  | { readonly kind: "circle"; readonly radius: number }
+  | { readonly kind: "rect"; readonly width: number; readonly height: number };
 
 export interface BodySpec {
   readonly id: ObjectId;
@@ -46,11 +51,16 @@ export interface RunOptions {
 }
 
 /** Steps a world on a fixed timestep and records a frozen snapshot per step. */
-export function recordRun(world: SteppableWorld, options: RunOptions): SimulationState[] {
+export function recordRun(
+  world: SteppableWorld,
+  options: RunOptions,
+): SimulationState[] {
   const { stepMs, maxSteps, isFinished } = options;
   if (!(stepMs > 0)) throw new RangeError(`stepMs must be > 0, got ${stepMs}`);
   if (!Number.isInteger(maxSteps) || maxSteps < 0) {
-    throw new RangeError(`maxSteps must be a non-negative integer, got ${maxSteps}`);
+    throw new RangeError(
+      `maxSteps must be a non-negative integer, got ${maxSteps}`,
+    );
   }
 
   const states: SimulationState[] = [snapshotState(0, 0, world.liveBodies())];
