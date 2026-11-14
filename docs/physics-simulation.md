@@ -88,7 +88,7 @@ interface BodySpec {
     | { kind: "circle"; radius: number }
     | { kind: "rect"; width: number; height: number };
   position: Vec2;
-  velocity?: Vec2; // passed to matter-js unchanged, in its units
+  velocity?: Vec2; // passed to matter-js unchanged, in its units (see Units)
   isStatic?: boolean; // default false
   frictionAir?: number; // 0 to 1, default: matter-js default, 0.01
 }
@@ -153,6 +153,52 @@ matter-js, and it requires the `matter-js` and `@types/matter-js` packages.
   use matter-js's `Runner`, so a run is synchronous. Running the same request
   twice gives equal frames.
 - Hands the live bodies to `recordRun`, which copies them out immediately.
+
+## Units
+
+matter-js has no meters or seconds. It uses its own world units, and the
+project does not convert anything yet. `BodySpec` values go to matter-js
+unchanged, and `ObjectState` positions come back in the same world units.
+
+| Quantity           | matter-js unit (version 0.20)                                    |
+| ------------------ | ---------------------------------------------------------------- |
+| Position, size     | World units. 1 unit is whatever the view decides, often 1 pixel  |
+| `velocity`         | World units per `1000 / 60` ms (one 60 fps step), not per second |
+| `gravity`          | `{ x: 0, y: 1 }` is about 1000 world units/s², pointing down     |
+| `angle`            | Radians                                                          |
+| `stepMs`, `timeMs` | Milliseconds                                                     |
+
+The velocity unit does not change with `stepMs`. A `velocity.x` of 5 moves a
+body 300 units in one second at any allowed `stepMs`. Passing a problem's
+velocity in m/s straight through is therefore wrong: `velocity: { x: 12.5 }`
+moves 750 units per second, not 12.5. The gravity figure comes from matter-js
+multiplying `gravity` by a fixed scale of 0.001 units/ms².
+
+Given a scale of `PX_PER_M` world units per meter, the conversions are:
+
+| From SI        | To matter-js                           |
+| -------------- | -------------------------------------- |
+| Position `m`   | `m * PX_PER_M`                         |
+| Velocity `m/s` | `(m/s) * PX_PER_M / 60` units per step |
+| Gravity `m/s²` | `gravity.y = (m/s²) * PX_PER_M / 1000` |
+
+For example, a `PX_PER_M` of about 102 makes the default `gravity.y` of 1 equal
+9.8 m/s².
+
+### Further discussion needed
+
+The unit scale has not been agreed, so nothing above is applied in code. Before
+levels pass real physics values to the runner, the physics subteam and the
+animation subteam (#23) need to decide:
+
+- the value of `PX_PER_M`, and whether it is fixed or set per level;
+- whether `SimulationRequest` and `SimulationState` use meters, with the
+  runner converting at the matter-js boundary, or world units, with the
+  problem generator and view converting;
+- the unit for velocity in `ObjectState`, which is left out until then.
+
+Raise this on #57 or #23. Once it is decided, put the conversion in one tested
+module and update this section.
 
 ## `PhysicsEngine.ts`
 
