@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MatterSimulationRunner } from "./MatterSimulationRunner";
+import { MAX_STEP_MS, MatterSimulationRunner } from "./MatterSimulationRunner";
 import { DEFAULT_STEP_MS } from "./SimulationRunner";
 import type { BodySpec, SimulationRequest } from "./SimulationRunner";
 import type { SimulationState, Vec2 } from "./SimulationState";
@@ -315,10 +315,21 @@ describe("MatterSimulationRunner", () => {
       );
     });
 
-    it("rejects an infinite stepMs", () => {
-      expect(() =>
-        run({ bodies: [ball], maxSteps: 1, stepMs: Infinity }),
-      ).toThrow(/stepMs must be a finite number > 0/);
+    it.each([0, -1, MAX_STEP_MS + 0.001, 50, NaN, Infinity])(
+      "rejects a stepMs of %s",
+      (stepMs) => {
+        expect(() => run({ bodies: [ball], maxSteps: 1, stepMs })).toThrow(
+          /stepMs must be > 0 and at most 16\.667 for matter-js/,
+        );
+      },
+    );
+
+    it.each([1, 10, MAX_STEP_MS])("accepts a stepMs of %s", (stepMs) => {
+      expect(() => run({ bodies: [ball], maxSteps: 1, stepMs })).not.toThrow();
+    });
+
+    it("allows the default stepMs, which equals the cap", () => {
+      expect(DEFAULT_STEP_MS).toBeLessThanOrEqual(MAX_STEP_MS);
     });
 
     it.each([0, 1])("accepts the boundary frictionAir of %s", (frictionAir) => {

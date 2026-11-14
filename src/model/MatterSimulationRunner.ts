@@ -12,6 +12,12 @@ import type { SimulationState, Vec2 } from "./SimulationState";
 // matter-js is CommonJS/UMD, so destructure the default import instead of using named imports.
 const { Engine, Bodies, Body, Composite } = Matter;
 
+/**
+ * Largest stepMs matter-js handles cleanly (its Engine._deltaMax). Above it,
+ * matter-js warns, and frictionAir can flip a body's velocity each step.
+ */
+export const MAX_STEP_MS = 1000 / 60;
+
 /** The only file in the project that imports matter-js. */
 export class MatterSimulationRunner implements SimulationRunner {
   run(request: SimulationRequest): SimulationState[] {
@@ -23,6 +29,7 @@ export class MatterSimulationRunner implements SimulationRunner {
       isFinished,
     } = request;
 
+    validateStepMs(stepMs);
     validateRequest(request);
 
     const engine = Engine.create();
@@ -65,6 +72,14 @@ function validateRequest(request: SimulationRequest): void {
     if (spec.velocity) validateVec2(spec.velocity, `velocity of ${spec.id}`);
     validateShape(spec);
     validateFrictionAir(spec);
+  }
+}
+
+function validateStepMs(stepMs: number): void {
+  if (!(stepMs > 0 && stepMs <= MAX_STEP_MS)) {
+    throw new RangeError(
+      `stepMs must be > 0 and at most ${MAX_STEP_MS.toFixed(3)} for matter-js, got ${stepMs}`,
+    );
   }
 }
 

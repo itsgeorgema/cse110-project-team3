@@ -62,7 +62,7 @@ velocity.
 interface SimulationRequest {
   bodies: readonly BodySpec[];
   gravity?: Vec2; // default: matter-js default, { x: 0, y: 1 }
-  stepMs?: number; // default: DEFAULT_STEP_MS = 1000 / 60
+  stepMs?: number; // default: DEFAULT_STEP_MS = 1000 / 60, which is also the matter-js maximum
   maxSteps: number;
   isFinished?: (state: SimulationState) => boolean; // optional early stop
 }
@@ -122,11 +122,16 @@ matter-js, and it requires the `matter-js` and `@types/matter-js` packages.
 - Checks the request before building anything, because matter-js does not
   check its inputs and turns bad values into `NaN` frames. It throws an `Error`
   for duplicate `id`s, and a `RangeError` when:
+  - `stepMs` is not greater than 0 and at most `MAX_STEP_MS` (`1000 / 60`,
+    about 16.667 ms). matter-js warns above that, and `frictionAir` can then
+    flip a body's velocity each step, so the run is rejected instead;
   - a `position`, `velocity` or `gravity` coordinate is `NaN` or infinite;
   - a `radius`, `width` or `height` is not a finite number greater than 0;
   - a `frictionAir` is outside 0 to 1.
 - Passes `frictionAir` to matter-js only when the spec sets it. Each step
-  scales a body's velocity by about `1 - frictionAir`.
+  scales a body's velocity by about `1 - frictionAir * stepMs / MAX_STEP_MS`,
+  which is `1 - frictionAir` at the default `stepMs` and never negative under
+  the cap.
 - Creates an `Engine`, applies `gravity` only when the request supplies one, and
   adds one body per `BodySpec`. The body's `label` carries the `ObjectId`.
 - Steps with `Engine.update(engine, stepMs)` on a fixed timestep and does not
@@ -207,11 +212,11 @@ const fakeRunner: SimulationRunner = { run: () => canned };
 
 ## Tests
 
-| Test file                        | Covers                                                                                                                                                                                                                                          |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                                                                         |
-| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, rejection of non-finite or non-positive inputs, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, duplicate ids |
-| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                                                                         |
+| Test file                        | Covers                                                                                                                                                                                                                                                            |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                                                                                           |
+| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, rejection of non-finite or non-positive inputs, the `stepMs` cap, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, duplicate ids |
+| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                                                                                           |
 
 Physics assertions are qualitative, such as "x strictly increases" or "y stays
 near 0", so they do not depend on matter-js internals.
