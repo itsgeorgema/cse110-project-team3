@@ -216,6 +216,57 @@ describe("MatterSimulationRunner", () => {
       });
     });
 
+    describe("shape sizes", () => {
+      // A body pushed against a static surface stops when its edge touches it,
+      // so its resting center shows its size. matter-js leaves a contact slop of
+      // about 0.05 units, which toBeCloseTo(_, 0) allows.
+      const rest = (
+        shape: BodySpec["shape"],
+        gravity: Vec2,
+        surface: BodySpec,
+      ): Vec2 => {
+        const body: BodySpec = { id: "body", shape, position: { x: 0, y: 0 } };
+        return (
+          track(
+            run({ bodies: [body, surface], gravity, maxSteps: 120 }),
+            "body",
+          ).at(-1) ?? { x: NaN, y: NaN }
+        );
+      };
+
+      // Top face at y = 100.
+      const ground: BodySpec = {
+        id: "ground",
+        shape: { kind: "rect", width: 1000, height: 20 },
+        position: { x: 0, y: 110 },
+        isStatic: true,
+      };
+      // Left face at x = 100.
+      const wall: BodySpec = {
+        id: "wall",
+        shape: { kind: "rect", width: 20, height: 1000 },
+        position: { x: 110, y: 0 },
+        isStatic: true,
+      };
+      const down: Vec2 = { x: 0, y: 1 };
+      const right: Vec2 = { x: 1, y: 0 };
+
+      it.each([20, 60])("rests a rect of height %s on its bottom edge", (h) => {
+        const shape = { kind: "rect", width: 30, height: h } as const;
+        expect(rest(shape, down, ground).y).toBeCloseTo(100 - h / 2, 0);
+      });
+
+      it.each([20, 60])("stops a rect of width %s at its side edge", (w) => {
+        const shape = { kind: "rect", width: w, height: 30 } as const;
+        expect(rest(shape, right, wall).x).toBeCloseTo(100 - w / 2, 0);
+      });
+
+      it.each([10, 30])("rests a circle of radius %s on its edge", (r) => {
+        const shape = { kind: "circle", radius: r } as const;
+        expect(rest(shape, down, ground).y).toBeCloseTo(100 - r, 0);
+      });
+    });
+
     it("builds both circle and rectangle bodies", () => {
       const box: BodySpec = {
         id: "box",
