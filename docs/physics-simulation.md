@@ -50,6 +50,21 @@ Plain data shared with the animation side.
 numbers into new objects and freezes the result, so a later physics step cannot
 change an earlier frame. Writing to a frozen frame throws a `TypeError`.
 
+`objects` has no prototype (`Object.create(null)`). Any id, including
+`__proto__`, is stored as a normal key, and looking up an id that is not in the
+frame, such as `objects["toString"]`, returns `undefined`.
+
+When reading `objects`:
+
+- Check for an id with `Object.hasOwn(objects, id)` or `id in objects`.
+  `objects.hasOwnProperty(id)` throws a `TypeError`.
+- `objects[id]`, `Object.keys`, `Object.entries`, `for...in`, spreading and
+  `JSON.stringify` work as they do on `{}`.
+- Turning `objects` into a string, as in `` `${objects}` `` or
+  `String(objects)`, throws a `TypeError`. Use `JSON.stringify(objects)`.
+- In tests, compare frames with `toEqual`. `toStrictEqual` fails against a
+  plain object literal because the prototypes differ.
+
 Step `0` is the initial layout, before any physics step has run. Step `n` has
 `timeMs = n * stepMs`. A frame carries position and angle only; it has no
 velocity.
@@ -212,11 +227,12 @@ const fakeRunner: SimulationRunner = { run: () => canned };
 
 ## Tests
 
-| Test file                        | Covers                                                                                                                                                                                                                                                                      |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                                                                                                     |
-| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, rejection of non-finite or non-positive inputs, the `stepMs` cap, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, empty and duplicate ids |
-| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                                                                                                     |
+| Test file                        | Covers                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SimulationState.test.ts`        | `snapshotState` keeps ids such as `__proto__` and `toString` as normal keys, and missing ids look up as `undefined`                                                                                                                                                                      |
+| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                                                                                                                  |
+| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, rejection of non-finite or non-positive inputs, the `stepMs` cap, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, empty, duplicate and `__proto__` ids |
+| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                                                                                                                  |
 
 Physics assertions are qualitative, such as "x strictly increases" or "y stays
 near 0", so they do not depend on matter-js internals.

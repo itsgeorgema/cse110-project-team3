@@ -45,7 +45,9 @@ export function snapshotState(
   timeMs: number,
   bodies: Iterable<LiveBody>,
 ): SimulationState {
-  const objects: Record<ObjectId, ObjectState> = {};
+  // No prototype, so ids like "__proto__" are stored as normal keys and
+  // looking up a missing id like "toString" returns undefined.
+  const objects = Object.create(null) as Record<ObjectId, ObjectState>;
   for (const body of bodies) {
     objects[body.id] = Object.freeze({
       position: Object.freeze({ x: body.position.x, y: body.position.y }),

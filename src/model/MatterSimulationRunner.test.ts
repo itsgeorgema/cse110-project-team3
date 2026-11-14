@@ -244,6 +244,19 @@ describe("MatterSimulationRunner", () => {
       },
     );
 
+    it("records a body whose id is __proto__ in every frame", () => {
+      const states = run({
+        bodies: [{ ...ball, id: "__proto__" }, floor],
+        maxSteps: 3,
+      });
+      for (const state of states) {
+        expect(Object.keys(state.objects).sort()).toEqual([
+          "__proto__",
+          "floor",
+        ]);
+      }
+    });
+
     it("accepts an id with surrounding spaces as long as it is not blank", () => {
       const states = run({ bodies: [{ ...ball, id: " ball " }], maxSteps: 1 });
       expect(Object.keys(states[0]?.objects ?? {})).toEqual([" ball "]);
