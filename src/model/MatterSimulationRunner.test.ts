@@ -235,6 +235,20 @@ describe("MatterSimulationRunner", () => {
       );
     });
 
+    it.each(["", " ", "\t\n"])(
+      "rejects an empty or blank object id %j before running",
+      (id) => {
+        expect(() => run({ bodies: [{ ...ball, id }], maxSteps: 1 })).toThrow(
+          /Object id must not be empty/,
+        );
+      },
+    );
+
+    it("accepts an id with surrounding spaces as long as it is not blank", () => {
+      const states = run({ bodies: [{ ...ball, id: " ball " }], maxSteps: 1 });
+      expect(Object.keys(states[0]?.objects ?? {})).toEqual([" ball "]);
+    });
+
     it("rejects invalid run options", () => {
       expect(() => run({ bodies: [ball], maxSteps: 1, stepMs: 0 })).toThrow(
         RangeError,

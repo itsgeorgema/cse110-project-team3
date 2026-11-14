@@ -65,6 +65,11 @@ function validateRequest(request: SimulationRequest): void {
 
   const seen = new Set<string>();
   for (const spec of request.bodies) {
+    if (spec.id.trim() === "") {
+      throw new Error(
+        `Object id must not be empty, got ${JSON.stringify(spec.id)}`,
+      );
+    }
     if (seen.has(spec.id)) throw new Error(`Duplicate object id: ${spec.id}`);
     seen.add(spec.id);
 
