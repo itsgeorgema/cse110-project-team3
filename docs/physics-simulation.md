@@ -237,8 +237,9 @@ animation subteam (#23) need to decide:
 - which `stepMs` levels use, given the accuracy table above, and how much
   tolerance answer checks allow for it.
 
-Raise this on #57 or #23. Once it is decided, put the conversion in one tested
-module and update this section.
+The discussion is in
+[#89](https://github.com/itsgeorgema/cse110-project-team3/issues/89). Once it is
+decided, put the conversion in one tested module and update this section.
 
 ## `PhysicsEngine.ts`
 
