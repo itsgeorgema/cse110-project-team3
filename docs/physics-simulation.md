@@ -168,22 +168,60 @@ unchanged, and `ObjectState` positions come back in the same world units.
 | `angle`            | Radians                                                          |
 | `stepMs`, `timeMs` | Milliseconds                                                     |
 
-The velocity unit does not change with `stepMs`. A `velocity.x` of 5 moves a
-body 300 units in one second at any allowed `stepMs`. Passing a problem's
-velocity in m/s straight through is therefore wrong: `velocity: { x: 12.5 }`
-moves 750 units per second, not 12.5. The gravity figure comes from matter-js
-multiplying `gravity` by a fixed scale of 0.001 units/ms².
+### Step length
 
-Given a scale of `PX_PER_M` world units per meter, the conversions are:
+Two step lengths are involved:
 
-| From SI        | To matter-js                           |
-| -------------- | -------------------------------------- |
-| Position `m`   | `m * PX_PER_M`                         |
-| Velocity `m/s` | `(m/s) * PX_PER_M / 60` units per step |
-| Gravity `m/s²` | `gravity.y = (m/s²) * PX_PER_M / 1000` |
+- `BASE_STEP_MS = 1000 / 60`: the fixed step matter-js measures velocity
+  against (its `Body._baseDelta`). It never changes. It happens to equal
+  `DEFAULT_STEP_MS` and `MAX_STEP_MS`, but it is a separate idea.
+- `stepMs`: how far each `Engine.update` call advances, and how far apart
+  recorded frames are. It is set per request.
 
-For example, a `PX_PER_M` of about 102 makes the default `gravity.y` of 1 equal
-9.8 m/s².
+matter-js rescales velocity for the actual `stepMs`, so the velocity unit is
+always world units per `BASE_STEP_MS`. A `velocity.x` of 5 moves a body 300
+units in one second whether `stepMs` is 16.667, 10, 5 or 1. What `stepMs`
+changes is how far the body moves between two frames: 5, 3, 1.5 or 0.3 units.
+Passing a problem's velocity in m/s straight through is therefore wrong:
+`velocity: { x: 12.5 }` moves 750 units per second, not 12.5.
+
+Gravity is an acceleration: matter-js multiplies `gravity` by a fixed scale of
+0.001 units/ms², so it does not depend on `stepMs` either.
+
+### Conversions
+
+With `PX_PER_M` world units per meter, `v` in m/s and `g` in m/s²:
+
+| Quantity                  | Conversion                                         | Depends on `stepMs` |
+| ------------------------- | -------------------------------------------------- | ------------------- |
+| Position or size, in      | `meters * PX_PER_M`                                | No                  |
+| `velocity`, in            | `v * PX_PER_M * BASE_STEP_MS / 1000`               | No                  |
+| `gravity.y`, in           | `g * PX_PER_M / 1000`                              | No                  |
+| Distance per frame        | `v * PX_PER_M * stepMs / 1000`                     | Yes                 |
+| Frame time, out           | `timeMs / 1000` seconds                            | Yes, through `step` |
+| Position, out             | `x / PX_PER_M` meters                              | No                  |
+| Velocity from frames, out | `(x[n] - x[n-1]) / PX_PER_M / (stepMs / 1000)` m/s | Yes                 |
+
+`BASE_STEP_MS / 1000` is `1 / 60`, so the velocity conversion is the same as
+`v * PX_PER_M / 60`. For example, a `PX_PER_M` of about 102 makes the default
+`gravity.y` of 1 equal 9.8 m/s².
+
+### Step length and accuracy
+
+Under gravity, the integration error grows with `stepMs`. A body falling from
+rest for `t` seconds travels about `1 + stepMs / (1000 * t)` times the exact
+`½ g t²`. Measured with the default gravity over one second:
+
+| `stepMs` | Distance fallen | Exact | Error |
+| -------- | --------------- | ----- | ----- |
+| 16.667   | 508.33          | 500   | 1.7%  |
+| 10       | 505.00          | 500   | 1.0%  |
+| 5        | 502.50          | 500   | 0.5%  |
+| 1        | 500.50          | 500   | 0.1%  |
+
+Constant velocity with no gravity or `frictionAir` has no such error. When a
+level compares a simulated outcome with a formula answer, either allow for this
+error or use a smaller `stepMs`, which records more frames.
 
 ### Further discussion needed
 
@@ -195,7 +233,9 @@ animation subteam (#23) need to decide:
 - whether `SimulationRequest` and `SimulationState` use meters, with the
   runner converting at the matter-js boundary, or world units, with the
   problem generator and view converting;
-- the unit for velocity in `ObjectState`, which is left out until then.
+- the unit for velocity in `ObjectState`, which is left out until then;
+- which `stepMs` levels use, given the accuracy table above, and how much
+  tolerance answer checks allow for it.
 
 Raise this on #57 or #23. Once it is decided, put the conversion in one tested
 module and update this section.
