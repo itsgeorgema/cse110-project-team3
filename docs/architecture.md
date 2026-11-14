@@ -32,7 +32,7 @@ unit-tested behavior but are not wired into this screen.
 | ----------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `src/view/`       | Story-map and sample-results presentation; Konva stage code                     | Konva imports stay in this directory. The map uses native controls and inline SVG.      |
 | `src/controller/` | Text-to-number parsing, command types, ordered-level progression                | No implemented game-controller lifecycle currently composes these services.             |
-| `src/model/`      | Answer validation, attempt tracking, checked kinematics helpers, level identity | Logic has no rendering dependency. The arithmetic helper is not a Matter.js simulation. |
+| `src/model/`      | Answer validation, attempt tracking, checked kinematics helpers, level identity | Logic has no rendering dependency. `MatterSimulationRunner.ts` alone imports Matter.js. |
 | `src/data/`       | Versioned progress record and storage adapter                                   | Saves completed/current level addresses; no shipped level catalog or attempt history.   |
 | `src/main.ts`     | Constructs and connects the currently used preview pieces                       | Connects `SaveManager` to `OverworldMap`; it is not a general dependency container.     |
 
@@ -75,4 +75,5 @@ The repo's focused notes describe implemented behavior:
 - [Answer validation](./answer-validation.md)
 - [Session progress and next-level selection](./progress-tracking.md)
 - [Overworld story map preview](./overworld-preview.md)
+- [Physics simulation](./physics-simulation.md)
 - [Test responsibilities and current coverage](./testing/README.md)

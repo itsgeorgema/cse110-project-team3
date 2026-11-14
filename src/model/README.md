@@ -17,12 +17,20 @@ composed into a playable game loop.
 - [`SimulationState.ts`](./SimulationState.ts) declares the frame types
   (`ObjectId`, `Vec2`, `ObjectState`, `SimulationState`) and `snapshotState`,
   which copies live bodies into frozen frames so a later physics step cannot
-  change an earlier one.
+  change an earlier one. A frame's `objects` record has no prototype, so any id,
+  including `__proto__`, is a normal key. Check ids with `Object.hasOwn` or `in`,
+  not `objects.hasOwnProperty`.
 - [`SimulationRunner.ts`](./SimulationRunner.ts) declares the simulation
-  request types, the `SimulationRunner` contract, and `recordRun`, which steps a
-  world on a fixed timestep and records one snapshot per step.
+  request types (`SimulationRequest`, and `BodySpec` with its optional
+  `velocity`, `isStatic` and `frictionAir`), the `SimulationRunner` contract,
+  and `recordRun`, which steps a world on a fixed timestep and records one
+  snapshot per step. `recordRun` requires a finite `stepMs` greater than 0.
 - [`MatterSimulationRunner.ts`](./MatterSimulationRunner.ts) implements
   `SimulationRunner` with Matter.js. It is the only file that imports Matter.js.
+  It rejects a bad request before building the world: empty or duplicate ids,
+  non-finite positions, velocities or gravity, shape sizes that are not finite
+  and positive, `frictionAir` outside 0 to 1, and `stepMs` above `MAX_STEP_MS`
+  (`1000 / 60`).
 - [`ProgressTracker.ts`](./ProgressTracker.ts) stores immutable snapshots of
   answer-validation results for the current session and derives completion from
   successful attempts.
