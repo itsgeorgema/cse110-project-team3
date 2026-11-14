@@ -27,6 +27,7 @@ export class MatterSimulationRunner implements SimulationRunner {
     for (const spec of bodies) {
       if (seen.has(spec.id)) throw new Error(`Duplicate object id: ${spec.id}`);
       seen.add(spec.id);
+      validateFrictionAir(spec);
     }
 
     const engine = Engine.create();
@@ -53,9 +54,24 @@ export class MatterSimulationRunner implements SimulationRunner {
   }
 }
 
+function validateFrictionAir(spec: BodySpec): void {
+  const { frictionAir } = spec;
+  if (frictionAir === undefined) return;
+  if (!(frictionAir >= 0 && frictionAir <= 1)) {
+    throw new RangeError(
+      `frictionAir for ${spec.id} must be between 0 and 1, got ${frictionAir}`,
+    );
+  }
+}
+
 function toMatterBody(spec: BodySpec): MatterBody {
   const { x, y } = spec.position;
-  const options = { label: spec.id, isStatic: spec.isStatic ?? false };
+  const options: Matter.IChamferableBodyDefinition = {
+    label: spec.id,
+    isStatic: spec.isStatic ?? false,
+  };
+  // Only set it when given, so matter-js keeps its own default otherwise.
+  if (spec.frictionAir !== undefined) options.frictionAir = spec.frictionAir;
   const body =
     spec.shape.kind === "circle"
       ? Bodies.circle(x, y, spec.shape.radius, options)

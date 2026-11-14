@@ -18,6 +18,11 @@ export interface BodySpec {
   readonly position: Vec2;
   readonly velocity?: Vec2;
   readonly isStatic?: boolean;
+  /**
+   * Air resistance, from 0 (none) to 1. Each step scales velocity by about
+   * (1 - frictionAir). Omit it to use the matter-js default of 0.01.
+   */
+  readonly frictionAir?: number;
 }
 
 /**

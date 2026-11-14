@@ -175,6 +175,47 @@ describe("MatterSimulationRunner", () => {
       );
     });
 
+    describe("frictionAir", () => {
+      const coast = (frictionAir?: number): Vec2[] => {
+        const spec: BodySpec = {
+          ...ball,
+          velocity: { x: 5, y: 0 },
+          ...(frictionAir === undefined ? {} : { frictionAir }),
+        };
+        return track(
+          run({ bodies: [spec], gravity: { x: 0, y: 0 }, maxSteps: 20 }),
+          "ball",
+        );
+      };
+      const distance = (positions: Vec2[]): number =>
+        (positions.at(-1)?.x ?? NaN) - START.x;
+
+      it("keeps a constant speed when frictionAir is 0", () => {
+        const xs = coast(0).map((p) => p.x);
+        const gaps = xs.slice(1).map((x, i) => x - (xs[i] ?? NaN));
+        for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0] ?? NaN);
+      });
+
+      it("slows a body more as frictionAir increases", () => {
+        const none = distance(coast(0));
+        const some = distance(coast(0.05));
+        const lots = distance(coast(0.3));
+        expect(none).toBeGreaterThan(some);
+        expect(some).toBeGreaterThan(lots);
+        expect(lots).toBeGreaterThan(0);
+      });
+
+      it("stops a body after one step when frictionAir is 1", () => {
+        const xs = coast(1).map((p) => p.x);
+        for (const x of xs.slice(2)) expect(x).toBeCloseTo(xs[1] ?? NaN);
+      });
+
+      it("uses the matter-js default of 0.01 when omitted", () => {
+        expect(coast()).toEqual(coast(0.01));
+        expect(coast()).not.toEqual(coast(0));
+      });
+    });
+
     it("builds both circle and rectangle bodies", () => {
       const box: BodySpec = {
         id: "box",
@@ -199,6 +240,21 @@ describe("MatterSimulationRunner", () => {
         RangeError,
       );
       expect(() => run({ bodies: [ball], maxSteps: -1 })).toThrow(RangeError);
+    });
+
+    it.each([-0.1, 1.5, NaN, Infinity])(
+      "rejects frictionAir of %s before running",
+      (frictionAir) => {
+        expect(() =>
+          run({ bodies: [{ ...ball, frictionAir }], maxSteps: 1 }),
+        ).toThrow(/frictionAir for ball must be between 0 and 1/);
+      },
+    );
+
+    it.each([0, 1])("accepts the boundary frictionAir of %s", (frictionAir) => {
+      expect(() =>
+        run({ bodies: [{ ...ball, frictionAir }], maxSteps: 1 }),
+      ).not.toThrow();
     });
   });
 });
