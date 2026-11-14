@@ -251,6 +251,76 @@ describe("MatterSimulationRunner", () => {
       },
     );
 
+    const bad = [NaN, Infinity, -Infinity];
+    const box: BodySpec = {
+      id: "box",
+      shape: { kind: "rect", width: 20, height: 20 },
+      position: { x: 0, y: 0 },
+    };
+
+    it.each(bad)("rejects a position coordinate of %s", (value) => {
+      for (const position of [
+        { x: value, y: 0 },
+        { x: 0, y: value },
+      ]) {
+        expect(() =>
+          run({ bodies: [{ ...ball, position }], maxSteps: 1 }),
+        ).toThrow(/position of ball must have finite x and y/);
+      }
+    });
+
+    it.each(bad)("rejects a velocity coordinate of %s", (value) => {
+      for (const velocity of [
+        { x: value, y: 0 },
+        { x: 0, y: value },
+      ]) {
+        expect(() =>
+          run({ bodies: [{ ...ball, velocity }], maxSteps: 1 }),
+        ).toThrow(/velocity of ball must have finite x and y/);
+      }
+    });
+
+    it.each(bad)("rejects a gravity coordinate of %s", (value) => {
+      for (const gravity of [
+        { x: value, y: 0 },
+        { x: 0, y: value },
+      ]) {
+        expect(() => run({ bodies: [ball], gravity, maxSteps: 1 })).toThrow(
+          /gravity must have finite x and y/,
+        );
+      }
+    });
+
+    it.each([0, -5, ...bad])("rejects a circle radius of %s", (radius) => {
+      const circle: BodySpec = { ...ball, shape: { kind: "circle", radius } };
+      expect(() => run({ bodies: [circle], maxSteps: 1 })).toThrow(
+        /radius of ball must be a finite number > 0/,
+      );
+    });
+
+    it.each([0, -5, ...bad])("rejects a rect side of %s", (side) => {
+      const wide: BodySpec = {
+        ...box,
+        shape: { kind: "rect", width: side, height: 20 },
+      };
+      const tall: BodySpec = {
+        ...box,
+        shape: { kind: "rect", width: 20, height: side },
+      };
+      expect(() => run({ bodies: [wide], maxSteps: 1 })).toThrow(
+        /width of box must be a finite number > 0/,
+      );
+      expect(() => run({ bodies: [tall], maxSteps: 1 })).toThrow(
+        /height of box must be a finite number > 0/,
+      );
+    });
+
+    it("rejects an infinite stepMs", () => {
+      expect(() =>
+        run({ bodies: [ball], maxSteps: 1, stepMs: Infinity }),
+      ).toThrow(/stepMs must be a finite number > 0/);
+    });
+
     it.each([0, 1])("accepts the boundary frictionAir of %s", (frictionAir) => {
       expect(() =>
         run({ bodies: [{ ...ball, frictionAir }], maxSteps: 1 }),

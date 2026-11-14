@@ -61,7 +61,9 @@ export function recordRun(
   options: RunOptions,
 ): SimulationState[] {
   const { stepMs, maxSteps, isFinished } = options;
-  if (!(stepMs > 0)) throw new RangeError(`stepMs must be > 0, got ${stepMs}`);
+  if (!(Number.isFinite(stepMs) && stepMs > 0)) {
+    throw new RangeError(`stepMs must be a finite number > 0, got ${stepMs}`);
+  }
   if (!Number.isInteger(maxSteps) || maxSteps < 0) {
     throw new RangeError(
       `maxSteps must be a non-negative integer, got ${maxSteps}`,

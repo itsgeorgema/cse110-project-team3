@@ -7,7 +7,7 @@ import type {
   SimulationRunner,
   SteppableWorld,
 } from "./SimulationRunner";
-import type { SimulationState } from "./SimulationState";
+import type { SimulationState, Vec2 } from "./SimulationState";
 
 // matter-js is CommonJS/UMD, so destructure the default import instead of using named imports.
 const { Engine, Bodies, Body, Composite } = Matter;
@@ -23,12 +23,7 @@ export class MatterSimulationRunner implements SimulationRunner {
       isFinished,
     } = request;
 
-    const seen = new Set<string>();
-    for (const spec of bodies) {
-      if (seen.has(spec.id)) throw new Error(`Duplicate object id: ${spec.id}`);
-      seen.add(spec.id);
-      validateFrictionAir(spec);
-    }
+    validateRequest(request);
 
     const engine = Engine.create();
     if (gravity) {
@@ -51,6 +46,49 @@ export class MatterSimulationRunner implements SimulationRunner {
     };
 
     return recordRun(world, { stepMs, maxSteps, isFinished });
+  }
+}
+
+/**
+ * Rejects a bad request before anything is built. matter-js does not check its
+ * inputs, so a NaN or a zero-sized shape would otherwise turn into NaN frames.
+ */
+function validateRequest(request: SimulationRequest): void {
+  if (request.gravity) validateVec2(request.gravity, "gravity");
+
+  const seen = new Set<string>();
+  for (const spec of request.bodies) {
+    if (seen.has(spec.id)) throw new Error(`Duplicate object id: ${spec.id}`);
+    seen.add(spec.id);
+
+    validateVec2(spec.position, `position of ${spec.id}`);
+    if (spec.velocity) validateVec2(spec.velocity, `velocity of ${spec.id}`);
+    validateShape(spec);
+    validateFrictionAir(spec);
+  }
+}
+
+function validateVec2(vec: Vec2, name: string): void {
+  if (!Number.isFinite(vec.x) || !Number.isFinite(vec.y)) {
+    throw new RangeError(
+      `${name} must have finite x and y, got (${vec.x}, ${vec.y})`,
+    );
+  }
+}
+
+function validatePositiveSize(value: number, name: string): void {
+  if (!(Number.isFinite(value) && value > 0)) {
+    throw new RangeError(`${name} must be a finite number > 0, got ${value}`);
+  }
+}
+
+function validateShape(spec: BodySpec): void {
+  const { shape } = spec;
+  if (shape.kind === "circle") {
+    validatePositiveSize(shape.radius, `radius of ${spec.id}`);
+  } else {
+    validatePositiveSize(shape.width, `width of ${spec.id}`);
+    validatePositiveSize(shape.height, `height of ${spec.id}`);
   }
 }
 

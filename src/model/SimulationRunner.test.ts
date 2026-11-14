@@ -65,6 +65,12 @@ describe("recordRun", () => {
     expect(xs(states)).toEqual([0, 1, 2, 3]);
   });
 
+  it.each([NaN, Infinity, -Infinity])("rejects a stepMs of %s", (stepMs) => {
+    expect(() =>
+      recordRun(new InPlaceWorld(), { stepMs, maxSteps: 1 }),
+    ).toThrow(/stepMs must be a finite number > 0/);
+  });
+
   it("rejects nonsense options", () => {
     expect(() =>
       recordRun(new InPlaceWorld(), { stepMs: 0, maxSteps: 1 }),

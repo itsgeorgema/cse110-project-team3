@@ -104,7 +104,7 @@ interface SteppableWorld {
 
 `recordRun(world, { stepMs, maxSteps, isFinished? })`:
 
-1. Throws a `RangeError` unless `stepMs` is greater than 0 and `maxSteps` is a
+1. Throws a `RangeError` unless `stepMs` is a finite number greater than 0 and `maxSteps` is a
    non-negative integer.
 2. Records the initial layout as step 0.
 3. For each step from 1 to `maxSteps`, advances the world by `stepMs`, records a
@@ -119,8 +119,12 @@ using a fake world that mutates one object in place, as matter-js does.
 Implements `SimulationRunner` with matter-js. It is the only file that imports
 matter-js, and it requires the `matter-js` and `@types/matter-js` packages.
 
-- Throws an `Error` for duplicate `id`s, and a `RangeError` for a `frictionAir`
-  outside 0 to 1, before building anything.
+- Checks the request before building anything, because matter-js does not
+  check its inputs and turns bad values into `NaN` frames. It throws an `Error`
+  for duplicate `id`s, and a `RangeError` when:
+  - a `position`, `velocity` or `gravity` coordinate is `NaN` or infinite;
+  - a `radius`, `width` or `height` is not a finite number greater than 0;
+  - a `frictionAir` is outside 0 to 1.
 - Passes `frictionAir` to matter-js only when the spec sets it. Each step
   scales a body's velocity by about `1 - frictionAir`.
 - Creates an `Engine`, applies `gravity` only when the request supplies one, and
@@ -203,11 +207,11 @@ const fakeRunner: SimulationRunner = { run: () => canned };
 
 ## Tests
 
-| Test file                        | Covers                                                                                                                                                                                          |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                         |
-| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, duplicate ids |
-| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                         |
+| Test file                        | Covers                                                                                                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SimulationRunner.test.ts`       | `recordRun` with an in-place-mutating fake world: earlier steps keep their values, step 0 and timeline, frozen and independent snapshots, early stop, option validation                                                                         |
+| `MatterSimulationRunner.test.ts` | matter-js runs: default and custom gravity, initial velocity, static bodies, `frictionAir` and its range, rejection of non-finite or non-positive inputs, both shapes, custom `stepMs`, early stop, `maxSteps: 0`, repeatability, duplicate ids |
+| `PhysicsEngine.simulate.test.ts` | `simulate` passes the request through unchanged, returns the runner result, surfaces runner errors, returns independent steps end to end, and instances have no `run()`                                                                         |
 
 Physics assertions are qualitative, such as "x strictly increases" or "y stays
 near 0", so they do not depend on matter-js internals.
