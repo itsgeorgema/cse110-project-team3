@@ -6,6 +6,18 @@ composed into a playable game loop.
 
 ## Implemented files
 
+- [`OverworldGraph.ts`](./OverworldGraph.ts) owns immutable map topology for #22.
+  `OverworldNode` pairs a stable node ID with a `LevelAddress` and layout
+  coordinates; `OverworldConnection` is an undirected pair of node IDs.
+  `getNode`, `findLevel`, `neighbors`, and `isAdjacent` resolve destinations
+  without depending on the view. Construction rejects duplicate IDs/level
+  bindings, nonfinite coordinates, invalid identities, missing endpoints,
+  self-connections, and duplicate edges (including reversed duplicates).
+  Disconnected nodes are allowed and have no inferred neighbors. Returned
+  nodes, addresses, and connection arrays are frozen copies of the inputs.
+  The graph does not decide whether a level is unlocked or animate movement;
+  those belong to progression and the animation integration respectively.
+  Map/controller wiring is the next #22 implementation step.
 - [`AnswerValidator.ts`](./AnswerValidator.ts) declares the answer submission,
   validation configuration/result, and validator contract.
 - [`DefaultAnswerValidator.ts`](./DefaultAnswerValidator.ts) checks level
