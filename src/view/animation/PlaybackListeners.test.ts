@@ -85,7 +85,10 @@ describe("PlaybackListeners", () => {
   it("lets a listener unsubscribe itself while being notified", () => {
     const listeners = started();
     const other = vi.fn();
-    const remove = listeners.add(() => remove());
+    const selfRemover = vi.fn(() => {
+      remove();
+    });
+    const remove = listeners.add(selfRemover);
     listeners.add(other);
 
     listeners.finish();
@@ -93,6 +96,26 @@ describe("PlaybackListeners", () => {
     listeners.finish();
 
     expect(other).toHaveBeenCalledTimes(2);
+    expect(selfRemover).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a playback that a listener starts while being notified, e.g. replay()", () => {
+    const listeners = started();
+    let replays = 0;
+    const replayOnce = vi.fn(() => {
+      if (replays === 0) {
+        replays++;
+        listeners.start();
+      }
+    });
+    listeners.add(replayOnce);
+
+    listeners.finish();
+    expect(listeners.isPlaying).toBe(true);
+
+    listeners.finish();
+    expect(replayOnce).toHaveBeenCalledTimes(2);
+    expect(listeners.isPlaying).toBe(false);
   });
 
   it("does not call a listener added during a notification until the next finish", () => {
