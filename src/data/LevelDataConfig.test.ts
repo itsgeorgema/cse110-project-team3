@@ -325,7 +325,7 @@ describe("createLevelDataConfig for kinematics game, level 2", () => {
         absolute: 0.00001,
       },
       bounds: {
-        velocity: {
+        displacement: {
           min: 0.0,
         },
       },

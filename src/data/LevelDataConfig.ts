@@ -133,7 +133,7 @@ export class LevelDataConfigFactory {
       expectedUserInput: { displacement: displacementForProblem },
       toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 },
+        displacement: { min: 0.0 },
       },
     };
   }
