@@ -1,10 +1,14 @@
 # `src/data/`
 
 This layer owns level definitions, saved progress data, and its browser-storage
-adapter. A full level catalog and level loading are not implemented yet.
+adapter. The catalog includes implemented levels; browser integration is pending.
 
 ## Implemented files
 
+- [`levelCatalog.ts`](./levelCatalog.ts) registers kinematics levels 1–3 and
+  net-force level 2 with titles and lazy factory callbacks. Add registrations
+  only when their factory implementation exists. The controller's `LevelManager`
+  uses this catalog without depending on individual minigames.
 - [`LevelDataConfig.ts`](./LevelDataConfig.ts) defines the one level shape
   (`gameId`, `levelId`, problem text, `userInputVariables` and their units,
   expected answers, tolerance, bounds). `LevelDataConfigFactory` generates the
@@ -33,7 +37,7 @@ Tests live beside the implementation as `*.test.ts`. See the
 [testing plan](../../docs/testing/README.md) for current coverage.
 
 Before consuming a generated config, call `assertLevelConfig(config)` and handle
-any error at the loading boundary. The check does not mutate data. The planned
-level manager will own this boundary and player-facing failure handling; it is
-not yet connected to the application. Run `npm run test:coverage` for the existing
+any error at the loading boundary. The check does not mutate data. `LevelManager`
+owns this boundary and returns player-facing failure messages; it is not yet
+connected to the application. Run `npm run test:coverage` for the existing
 CI unit suite, including deterministic factory samples and malformed-config tests.

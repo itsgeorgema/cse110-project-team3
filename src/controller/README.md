@@ -6,6 +6,14 @@ service; it does not yet contain the planned game controller or level lifecycle.
 
 ## Implemented files
 
+- [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
+  injected catalog. `loadModule(address)` generates a fresh config, copies it,
+  validates its format and identity, and returns `{ ok: true, config }` only on
+  success. Failures return `{ ok: false, reason, message }`; callers must check
+  `ok` before constructing a level view. Messages are suitable for players and
+  do not expose factory exceptions. A failed load does not prevent retrying.
+  `listLevels()` returns presentation metadata without generating problems.
+  Availability/progression checks and view disposal belong to the caller.
 - [`GameCommands.ts`](./GameCommands.ts) defines the actions the view can request:
   submit an answer, save a draft, or select a level. `RawInput` carries typed
   strings and a `LevelAddress` identity. This is an interface, not an
@@ -34,3 +42,10 @@ document the architecture decision after implementation is reviewed and merged.
 Tests live beside the implementation as `*.test.ts`. See the
 [testing plan](../../docs/testing/README.md) for current coverage and feature
 acceptance expectations.
+
+To construct the loader, pass `createLevelCatalog()` from
+`src/data/levelCatalog.ts` to `new LevelManager(...)`, then call
+`loadModule({ gameId: "kinematics", levelId: 1 })`. The browser entry point is
+not connected yet. `npm run test:coverage` exercises real catalog loading,
+invalid configs, mismatched identities, generation failures, retries, and data
+isolation using deterministic fixtures and injected factories.
