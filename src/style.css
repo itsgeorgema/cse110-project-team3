@@ -1225,3 +1225,67 @@ progress::-moz-progress-bar {
     padding: 28px 24px;
   }
 }
+
+.practice-entry {
+  padding: 12px 24px;
+  border-bottom: 1px solid #2c3d42;
+}
+.practice-entry button {
+  background: #29474b;
+  border: 1px solid #6e8b7c;
+  border-radius: 4px;
+  padding: 10px 16px;
+}
+.level-panel {
+  color: #e5e9e0;
+  background: #182c33;
+  border: 1px solid #6e8b7c;
+  border-radius: 8px;
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: clamp(20px, 4vw, 36px);
+  overflow-y: auto;
+}
+.level-panel::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+.level-panel h2 {
+  margin-top: 0;
+}
+.level-panel p {
+  line-height: 1.6;
+}
+.level-panel label,
+.level-panel input,
+.level-panel select {
+  display: block;
+  width: 100%;
+}
+.level-panel input,
+.level-panel select {
+  font: inherit;
+  color: inherit;
+  background: #111e23;
+  border: 1px solid #6e8b7c;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0 16px;
+}
+.level-panel :is(input, select):focus-visible {
+  outline: 3px solid #e2b77c;
+  outline-offset: 2px;
+}
+.level-panel input[aria-invalid="true"] {
+  border-color: #f4ad9c;
+}
+.level-panel .level-field-error,
+.level-panel [role="alert"] {
+  color: #f4ad9c;
+}
+.level-panel .level-field-error:empty {
+  display: none;
+}
+.level-panel .level-problem {
+  border-top: 1px solid #6e8b7c;
+  padding-top: 20px;
+}

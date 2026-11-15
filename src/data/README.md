@@ -1,7 +1,7 @@
 # `src/data/`
 
 This layer owns level definitions, saved progress data, and its browser-storage
-adapter. The catalog includes implemented levels; browser integration is pending.
+adapter. The catalog supplies implemented levels to the browser's practice panel.
 
 ## Implemented files
 
@@ -12,7 +12,7 @@ adapter. The catalog includes implemented levels; browser integration is pending
 - [`LevelDataConfig.ts`](./LevelDataConfig.ts) defines the one level shape
   (`gameId`, `levelId`, problem text, `userInputVariables` and their units,
   expected answers, tolerance, bounds). `LevelDataConfigFactory` generates the
-  kinematics levels 1–3 with random values. The validator's
+  kinematics levels 1–3 and net-force level 2 with random values. The validator's
   `AnswerValidationConfig` is derived from this type (#75).
 - [`SaveData.ts`](./SaveData.ts) defines the version 1 save shape: completed
   `LevelAddress` values and the current selection.
@@ -38,6 +38,6 @@ Tests live beside the implementation as `*.test.ts`. See the
 
 Before consuming a generated config, call `assertLevelConfig(config)` and handle
 any error at the loading boundary. The check does not mutate data. `LevelManager`
-owns this boundary and returns player-facing failure messages; it is not yet
-connected to the application. Run `npm run test:coverage` for the existing
+owns this boundary and returns player-facing failure messages to `LevelSession`.
+Run `npm run test:coverage` for the existing
 CI unit suite, including deterministic factory samples and malformed-config tests.

@@ -91,7 +91,7 @@ describe("LevelManager", () => {
     expect(original.expectedUserInput.velocity).toBe(5);
   });
 
-  it.each([null, {}, { invalid: () => {} }])(
+  it.each([null, {}, { ...address }, { invalid: () => {} }])(
     "refuses malformed or uncloneable config %s",
     (candidate) => {
       expect(

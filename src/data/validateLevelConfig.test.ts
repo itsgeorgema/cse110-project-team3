@@ -23,6 +23,16 @@ function fixture(): LevelDataConfig {
 afterEach(() => vi.restoreAllMocks());
 
 describe("assertLevelConfig", () => {
+  it("rejects tolerance overflow before the answer validator receives the config", () => {
+    expect(() =>
+      assertLevelConfig({
+        ...fixture(),
+        expectedUserInput: { speed: Number.MAX_VALUE },
+        bounds: {},
+        toleranceRule: { absolute: 0, relative: 2 },
+      }),
+    ).toThrow("overflow");
+  });
   it("accepts a valid config without changing it", () => {
     const config = fixture();
     const before = structuredClone(config);

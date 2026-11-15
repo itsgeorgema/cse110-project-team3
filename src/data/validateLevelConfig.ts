@@ -90,6 +90,17 @@ export function assertLevelConfig(
   ) {
     throw new Error("Tolerances must be finite and nonnegative");
   }
+  if (
+    Object.values(answers).some(
+      (answer) =>
+        !Number.isFinite(
+          ((tolerance.relative as number | undefined) ?? 0) *
+            (answer as number),
+        ),
+    )
+  ) {
+    throw new Error("Relative tolerance must not overflow for any answer");
+  }
 
   if (!isRecord(value.bounds)) throw new Error("Bounds must be an object");
   for (const [field, bounds] of Object.entries(value.bounds)) {

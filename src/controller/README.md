@@ -1,11 +1,16 @@
 # `src/controller/`
 
 The controller layer defines the boundary between player actions and application
-logic. The current implementation contains input parsing and a progression
-service; it does not yet contain the planned game controller or level lifecycle.
+logic. It loads validated practice levels, handles answer submissions, and
+provides progression queries separately from the story-map preview.
 
 ## Implemented files
 
+- [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
+  a `LevelScreen` only on success. It constructs the existing `GameController`
+  with `DefaultAnswerValidator` for practice answers. Navigation and closing
+  clear the screen and invalidate old submit/retry callbacks. Loading errors
+  expose retry without passing malformed configs to the view.
 - [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
   injected catalog. `loadModule(address)` generates a fresh config, copies it,
   validates its format and identity, and returns `{ ok: true, config }` only on
@@ -27,17 +32,15 @@ service; it does not yet contain the planned game controller or level lifecycle.
   level after success. It does not load level data, save progress, or control
   playback.
 
-`main.ts` is currently the composition root. It wires browser storage to the
-overworld preview directly. It does not yet construct a game controller.
+`main.ts` is the composition root. It wires browser storage to the overworld
+preview and constructs the practice catalog, manager, session, and panel.
 
 ## Intended boundary
 
-The view sends raw player actions through `GameCommands`. A future controller
-implementation can parse input, obtain the selected level configuration, call
-model services, and coordinate playback and progress. Until those connections
-exist in code, this README describes only the implemented parser, progression
-service, and command interface. Record proposed behavior on the relevant issue;
-document the architecture decision after implementation is reviewed and merged.
+The practice view sends `RawInput` through a session-owned submit callback. The
+session coordinates loading and delegates parsing and validation to the existing
+controller. Playback, draft saving, and recording practice results are not part
+of this integration. `GameCommands` remains the intended broader game interface.
 
 Tests live beside the implementation as `*.test.ts`. See the
 [testing plan](../../docs/testing/README.md) for current coverage and feature
@@ -46,6 +49,9 @@ acceptance expectations.
 To construct the loader, pass `createLevelCatalog()` from
 `src/data/levelCatalog.ts` to `new LevelManager(...)`, then call
 `loadModule({ gameId: "kinematics", levelId: 1 })`. The browser entry point is
-not connected yet. `npm run test:coverage` exercises real catalog loading,
+the **Practice levels** button. `npm run test:coverage` exercises real catalog loading,
 invalid configs, mismatched identities, generation failures, retries, and data
 isolation using deterministic fixtures and injected factories.
+
+See [level loading](../../docs/level-loading.md) for the player flow, dependency
+boundaries, test commands, and future overworld integration.

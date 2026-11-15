@@ -3,6 +3,10 @@ import { SaveManager } from "./data/SaveManager.ts";
 import type { SaveData } from "./data/SaveData.ts";
 import { OverworldMap } from "./view/overworld/OverworldMap.ts";
 import { previewNodes } from "./view/overworld/mapPreview.ts";
+import { createLevelCatalog } from "./data/levelCatalog.ts";
+import { LevelManager } from "./controller/LevelManager.ts";
+import { LevelSession } from "./controller/LevelSession.ts";
+import { LevelPanel } from "./view/LevelPanel.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -77,3 +81,25 @@ new OverworldMap(
     }
   },
 );
+
+// Keep practice independent of preview addresses until overworld routing (#22).
+const practiceHost = document.createElement("div");
+container.before(practiceHost);
+const levelManager = new LevelManager(createLevelCatalog());
+const levelPanel = new LevelPanel(
+  practiceHost,
+  levelManager.listLevels(),
+  (address) => levelSession.selectLevel(address),
+  () => levelSession.close(),
+);
+const levelSession = new LevelSession(levelManager, levelPanel);
+
+// Shareable practice links also give unknown/retired levels a recoverable screen.
+const params = new URLSearchParams(window.location.search);
+if (params.has("game") || params.has("level")) {
+  levelPanel.open();
+  levelSession.selectLevel({
+    gameId: params.get("game") ?? "",
+    levelId: Number(params.get("level")),
+  });
+}
