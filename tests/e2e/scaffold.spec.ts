@@ -65,12 +65,12 @@ for (const viewport of [
     }) => {
       await page.goto("./");
       const locked = page.getByRole("button", {
-        name: /Level 4: Midnight midway/,
+        name: /Level 4: The blocked gate/,
       });
       await locked.click();
       await expect(locked).toHaveAttribute("aria-pressed", "true");
       await expect(
-        page.getByRole("heading", { name: "Midnight midway" }),
+        page.getByRole("heading", { name: "The blocked gate" }),
       ).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Chapter locked" }),
@@ -97,7 +97,7 @@ for (const viewport of [
       });
       await page.goto("./");
       await page
-        .getByRole("button", { name: /Level 1: The dressing room/ })
+        .getByRole("button", { name: /Level 1: The getaway car/ })
         .click();
       const trigger = page.getByRole("button", {
         name: "Replay level",
@@ -105,7 +105,7 @@ for (const viewport of [
       });
       await trigger.click();
       const dialog = page.getByRole("dialog", {
-        name: "Getaway vehicle: velocity",
+        name: "The getaway car",
       });
       await expect(
         dialog.getByLabel("velocity (m/s)", { exact: true }),
@@ -126,9 +126,7 @@ for (const viewport of [
 
 test("refresh restores the selected level", async ({ page }) => {
   await page.goto("./");
-  await page
-    .getByRole("button", { name: /Level 2: Backstage breakout/ })
-    .click();
+  await page.getByRole("button", { name: /Level 2: Past the big top/ }).click();
   await page.reload();
   await expectMap(page, 2, 0, false);
 });
@@ -148,7 +146,7 @@ test("saved completions restore the map state and journey count", async ({
   await page.goto("./");
   await expectMap(page, 2, 1);
   await expect(
-    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+    page.getByRole("button", { name: /Level 1: The getaway car/ }),
   ).toHaveClass(/cleared/);
   await expect(page.locator(".map-node.current .node-circle")).toHaveText("02");
 });
@@ -158,16 +156,16 @@ test("selected level restores after refresh and reset clears saved progress", as
 }) => {
   await page.goto("./");
   const selected = page.getByRole("button", {
-    name: /Level 3: Under the big top/,
+    name: /Level 3: Outrun the ringmaster/,
   });
   await selected.click();
   await page.reload();
   const restored = page.getByRole("button", {
-    name: /Level 3: Under the big top/,
+    name: /Level 3: Outrun the ringmaster/,
   });
   await expect(restored).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("heading", { name: "Under the big top" }),
+    page.getByRole("heading", { name: "Outrun the ringmaster" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Reset progress" }).click();

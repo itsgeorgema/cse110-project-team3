@@ -9,25 +9,25 @@ export function createLevelCatalog(
     {
       gameId: "kinematics",
       levelId: 1,
-      title: "Getaway vehicle: velocity",
+      title: "The getaway car",
       createConfig: () => factory.createLevelDataConfig("kinematics", 1),
     },
     {
       gameId: "kinematics",
       levelId: 2,
-      title: "Getaway vehicle: displacement",
+      title: "Past the big top",
       createConfig: () => factory.createLevelDataConfig("kinematics", 2),
     },
     {
       gameId: "kinematics",
       levelId: 3,
-      title: "Getaway vehicle: acceleration",
+      title: "Outrun the ringmaster",
       createConfig: () => factory.createLevelDataConfig("kinematics", 3),
     },
     {
       gameId: "netForce",
       levelId: 2,
-      title: "Blocked gate: balanced forces",
+      title: "The blocked gate",
       createConfig: () => factory.createLevelDataConfig("netForce", 2),
     },
   ];

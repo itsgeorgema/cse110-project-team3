@@ -21,7 +21,7 @@ for (const width of [1280, 390]) {
         .getByRole("button", { name: "Start level", exact: true })
         .click();
       const dialog = page.getByRole("dialog", {
-        name: "Getaway vehicle: velocity",
+        name: "The getaway car",
       });
       await expect(dialog.locator(".level-problem")).toContainText("10 meters");
       const answer = dialog.getByLabel("velocity (m/s)", { exact: true });
@@ -76,7 +76,7 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await dialog.getByRole("button", { name: "Check answer" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: /Level 4: Midnight midway/ }).click();
+  await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
   await page.getByRole("button", { name: "Start level", exact: true }).click();
   await expect(
     dialog.getByLabel("velocity (m/s)", { exact: true }),
@@ -143,7 +143,7 @@ test("preview saves never grant completion of real levels and locked levels cann
   await expect(
     page.getByRole("button", { name: "Practice levels", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: /Level 4: Midnight midway/ }).click();
+  await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
   await expect(
     page.getByRole("button", { name: "Chapter locked", exact: true }),
   ).toBeDisabled();

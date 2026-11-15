@@ -36,10 +36,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "dressing-room",
     level: { gameId: "kinematics", levelId: 1 },
-    title: "The dressing room",
-    subtitle: "A small beginning",
+    title: "The getaway car",
+    subtitle: "Velocity · Make for the backstage gate",
     story:
-      "One last look in the mirror. One red nose left behind. Tonight, you’re putting on a different kind of show.",
+      "The last applause fades as you climb into the getaway car. Use the distance to the backstage gate and the travel time to calculate the car’s velocity.",
     chapter: 0,
     x: 240,
     y: 210,
@@ -47,10 +47,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "backstage",
     level: { gameId: "kinematics", levelId: 2 },
-    title: "Backstage breakout",
-    subtitle: "The plan takes shape",
+    title: "Past the big top",
+    subtitle: "Displacement · Put the circus behind you",
     story:
-      "Past the props and painted scenery, you find the one thing no one thought to lock away: a way out.",
+      "The car rolls away from the guards, past striped tents and silent ticket booths. Given its velocity and travel time, work out how far it travels.",
     chapter: 0,
     x: 430,
     y: 380,
@@ -58,10 +58,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "big-top",
     level: { gameId: "kinematics", levelId: 3 },
-    title: "Under the big top",
-    subtitle: "The final act begins",
+    title: "Outrun the ringmaster",
+    subtitle: "Acceleration · Pick up the pace",
     story:
-      "The ring is empty, the spotlights are dark, and the tent flap is only a few brave steps away.",
+      "The ringmaster’s guards have spotted your escape. Use the car’s initial velocity, final velocity, and elapsed time to calculate its acceleration.",
     chapter: 0,
     x: 280,
     y: 565,
@@ -69,10 +69,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "midway",
     level: { gameId: "netForce", levelId: 2 },
-    title: "Midnight midway",
-    subtitle: "Beyond the bright lights",
+    title: "The blocked gate",
+    subtitle: "Balanced forces · Investigate the crate",
     story:
-      "The midway sleeps beneath a sky full of stars. Somewhere ahead, the road leaves the circus behind.",
+      "A heavy circus crate rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
     chapter: 1,
     x: 420,
     y: 830,
@@ -80,10 +80,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "wheel",
     level: { gameId: "circus-preview", levelId: 5 },
-    title: "The quiet wheel",
-    subtitle: "A different kind of high",
+    title: "The cannon escape",
+    subtitle: "Coming soon · Projectile motion",
     story:
-      "From the top of the silent Ferris wheel, the whole world seems to wait just beyond the gates.",
+      "The human cannonball’s cannon offers a daring route out. Plan a launch over the circus wall by exploring how launch speed and angle shape a projectile’s path.",
     chapter: 1,
     x: 245,
     y: 1030,
@@ -91,10 +91,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "fence",
     level: { gameId: "circus-preview", levelId: 6 },
-    title: "Past the last fence",
-    subtitle: "The world opens up",
+    title: "The midnight loop",
+    subtitle: "Coming soon · Circular motion",
     story:
-      "One final fence stands between the life you knew and the open road. Dawn is close now.",
+      "An abandoned roller coaster winds toward the edge of the carnival. Work out the speed needed to carry your car through its loop and keep your escape on track.",
     chapter: 2,
     x: 410,
     y: 1400,
@@ -102,10 +102,10 @@ export const previewNodes: readonly MapNode[] = [
   {
     id: "dawn",
     level: { gameId: "circus-preview", levelId: 7 },
-    title: "A new day",
-    subtitle: "Freedom, at last",
+    title: "The final swing",
+    subtitle: "Coming soon · Momentum and the trapeze",
     story:
-      "The sun rises over a world with no call time, no painted smile, and no one telling you where to go.",
+      "One last trapeze swing stands between you and freedom. Explore momentum and time your release for a final leap beyond the circus fence.",
     chapter: 2,
     x: 280,
     y: 1610,
