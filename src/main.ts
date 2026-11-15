@@ -2,11 +2,16 @@ import "./style.css";
 import { SaveManager } from "./data/SaveManager.ts";
 import type { SaveData } from "./data/SaveData.ts";
 import { OverworldMap } from "./view/overworld/OverworldMap.ts";
-import { previewNodes } from "./view/overworld/mapPreview.ts";
+import {
+  previewNodes,
+  previewConnections,
+} from "./view/overworld/mapPreview.ts";
 import { createLevelCatalog } from "./data/levelCatalog.ts";
 import { LevelManager } from "./controller/LevelManager.ts";
 import { LevelSession } from "./controller/LevelSession.ts";
 import { LevelPanel } from "./view/LevelPanel.ts";
+import { OverworldGraph } from "./model/OverworldGraph.ts";
+import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -34,24 +39,25 @@ const completedLevels = new Set(
     .filter((level) => knownLevels.has(`${level.gameId}:${level.levelId}`))
     .map((level) => `${level.gameId}:${level.levelId}`),
 );
-const validCurrentLevel =
-  savedProgress.currentLevel &&
-  knownLevels.has(
-    `${savedProgress.currentLevel.gameId}:${savedProgress.currentLevel.levelId}`,
-  )
-    ? savedProgress.currentLevel
-    : null;
-
 const levelHost = document.createElement("div");
 container.after(levelHost);
 const levelManager = new LevelManager(createLevelCatalog());
 const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
 const levelSession = new LevelSession(levelManager, levelPanel);
 
+const navigation = new OverworldNavigation(
+  new OverworldGraph(previewNodes, previewConnections),
+  levelManager.listLevels(),
+  {
+    isCompleted: (level) =>
+      completedLevels.has(`${level.gameId}:${level.levelId}`),
+  },
+  savedProgress.currentLevel,
+);
+
 new OverworldMap(
   container,
-  completedLevels,
-  validCurrentLevel,
+  navigation,
   (level) => {
     savedProgress = { ...savedProgress, currentLevel: level };
     try {
@@ -61,6 +67,7 @@ new OverworldMap(
     }
   },
   () => {
+    completedLevels.clear();
     savedProgress = {
       schemaVersion: 1,
       completedLevels: [],
@@ -72,7 +79,6 @@ new OverworldMap(
       // Reset the visible session even when browser storage is unavailable.
     }
   },
-  levelManager.listLevels(),
   (level, trigger) => {
     const registered = levelManager
       .listLevels()

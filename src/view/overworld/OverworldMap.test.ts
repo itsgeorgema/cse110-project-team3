@@ -1,43 +1,52 @@
 import { describe, expect, it } from "vitest";
-import { getMapProgress } from "./OverworldMap";
-import { previewNodes } from "./mapPreview";
+import { OverworldGraph } from "../../model/OverworldGraph.ts";
+import { OverworldNavigation } from "../../controller/OverworldNavigation.ts";
+import { createLevelCatalog } from "../../data/levelCatalog.ts";
+import { previewConnections, previewNodes } from "./mapPreview.ts";
 
-const key = (index: number) => {
-  const { gameId, levelId } = previewNodes[index].level;
-  return `${gameId}:${levelId}`;
-};
-
-describe("getMapProgress", () => {
-  it("loads saved completions into the count and sequential map states", () => {
-    const progress = getMapProgress(new Set([key(0), key(1), key(3)]));
-    expect(progress.completedCount).toBe(3);
-    expect(progress.nodes.map((node) => node.state)).toEqual([
-      "cleared",
-      "cleared",
+describe("overworld data integration", () => {
+  it("binds every implemented level to exactly one location", () => {
+    const graph = new OverworldGraph(previewNodes, previewConnections);
+    for (const level of createLevelCatalog())
+      expect(graph.findLevel(level)).toBeDefined();
+    expect(graph.neighbors("dressing-room").map((node) => node.id)).toEqual([
+      "backstage",
+    ]);
+    expect(graph.neighbors("big-top").map((node) => node.id)).toEqual([
+      "backstage",
+      "midway",
+    ]);
+  });
+  it("does not treat preview saves as real achievements", () => {
+    const navigation = new OverworldNavigation(
+      new OverworldGraph(previewNodes, previewConnections),
+      createLevelCatalog(),
+      {
+        isCompleted: (level) =>
+          level.gameId === "circus-preview" && level.levelId < 3,
+      },
+    );
+    expect(navigation.current.id).toBe("dressing-room");
+    expect(previewNodes.map((node) => navigation.status(node.level))).toEqual([
       "current",
-      "cleared",
+      "locked",
+      "locked",
+      "locked",
       "locked",
       "locked",
       "locked",
     ]);
-    expect(progress.current.id).toBe("big-top");
   });
-
-  it("starts from the first level when nothing is saved", () => {
-    const progress = getMapProgress(new Set());
-    expect(progress.completedCount).toBe(0);
-    expect(progress.current.id).toBe("dressing-room");
-    expect(
-      progress.nodes.slice(1).every((node) => node.state === "locked"),
-    ).toBe(true);
-  });
-
-  it("keeps the last level selected when every level is completed", () => {
-    const progress = getMapProgress(
-      new Set(previewNodes.map((_, index) => key(index))),
+  it("keeps unimplemented locations out of navigation after completing earlier levels", () => {
+    const navigation = new OverworldNavigation(
+      new OverworldGraph(previewNodes, previewConnections),
+      createLevelCatalog(),
+      { isCompleted: () => true },
     );
-    expect(progress.completedCount).toBe(previewNodes.length);
-    expect(progress.current.id).toBe("dawn");
-    expect(progress.current.state).toBe("cleared");
+    expect(navigation.current.id).toBe("midway");
+    expect(navigation.selectLevel(previewNodes[4].level)).toMatchObject({
+      ok: false,
+      reason: "unimplemented",
+    });
   });
 });

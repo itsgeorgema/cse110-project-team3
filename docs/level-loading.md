@@ -2,7 +2,7 @@
 
 Players open real physics problems directly from the story map. Available
 registered levels expose **Start level** or **Replay level**; locked nodes cannot
-launch, and locations without a registered factory show **Level coming soon**.
+launch, and locations without a registered factory report that they are coming soon.
 Only configs that pass the runtime format check reach the problem screen.
 
 ## Use the feature
@@ -11,7 +11,7 @@ Run `npm run dev`, open the printed URL, and press **Start level** at the first
 map location. Enter an answer and press **Check answer** or Enter. A load generates
 a new problem; editing or submitting keeps it unchanged. Escape or **Return to
 story map** clears the session and restores focus to the launching button.
-Select another available map location to load its own problem and fields.
+Select an available neighboring map location to load its own problem and fields.
 
 A loading failure displays a message and **Try again**. The return button is
 always available. There is no separate practice picker or query-string launch
@@ -46,8 +46,8 @@ this change does not manufacture completion on load or on answer feedback.
 
 The composition root is `src/main.ts`. It receives launch callbacks from the map,
 opens `LevelPanel`, and calls `LevelSession.selectLevel(address)`. The map checks
-availability and registration before emitting the callback. Future #22 movement
-and graph rules can reuse this entry point. The loader remains independent of
+availability and registration before emitting the callback. #22 routing now
+uses `OverworldNavigation` to restrict selection to neighboring locations. The loader remains independent of
 map layout and progression policy.
 
 To add a level, implement its factory, register it in `levelCatalog.ts`, and add

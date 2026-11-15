@@ -13,8 +13,8 @@ current app has a story map that launches registered levels in a shared dialog.
   Escape and the return button clear the session and restore launcher focus.
 - [`overworld/OverworldMap.ts`](./overworld/OverworldMap.ts) renders the story
   map with native HTML controls and inline SVG scenery. Marker selection changes
-  the story preview. It derives a sequential display state from supplied
-  completed addresses; it does not call `ProgressionSystem`.
+  the current location only when `OverworldNavigation` accepts the destination.
+  The controller supplies progression status and validated graph connections.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,
   positions, route connections, and real addresses for the first four locations.
   Remaining `circus-preview` addresses are upcoming, unregistered locations.
@@ -30,7 +30,7 @@ is unavailable. New saves start at the first real level with no completions;
 old preview completions are not converted into real achievements.
 
 **Start level** and **Replay level** open registered, available levels. Locked
-levels cannot launch and unregistered locations show **Level coming soon**.
+levels cannot launch and unregistered locations report that they are coming soon.
 Answer feedback works now; completion recording, drafts, and animated physics
 remain separate integrations. See [level loading](../../docs/level-loading.md).
 

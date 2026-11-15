@@ -17,7 +17,7 @@ composed into a playable game loop.
   nodes, addresses, and connection arrays are frozen copies of the inputs.
   The graph does not decide whether a level is unlocked or animate movement;
   those belong to progression and the animation integration respectively.
-  Map/controller wiring is the next #22 implementation step.
+  `OverworldNavigation` now uses this graph for map selection and routing.
 - [`AnswerValidator.ts`](./AnswerValidator.ts) declares the answer submission,
   validation configuration/result, and validator contract.
 - [`DefaultAnswerValidator.ts`](./DefaultAnswerValidator.ts) checks level

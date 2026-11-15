@@ -76,6 +76,10 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await dialog.getByRole("button", { name: "Check answer" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
   await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /Level 2: Past the big top/ }).click();
+  await page
+    .getByRole("button", { name: /Level 3: Outrun the ringmaster/ })
+    .click();
   await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
   await page.getByRole("button", { name: "Start level", exact: true }).click();
   await expect(
@@ -143,13 +147,15 @@ test("preview saves never grant completion of real levels and locked levels cann
   await expect(
     page.getByRole("button", { name: "Practice levels", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
+  await page
+    .getByRole("button", { name: /Level 4: The blocked gate/ })
+    .dispatchEvent("click");
+  await expect(page.locator(".navigation-status")).toContainText(
+    "Complete the earlier levels",
+  );
   await expect(
-    page.getByRole("button", { name: "Chapter locked", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "Start level", exact: true }),
-  ).toHaveCount(0);
+    page.getByRole("button", { name: /Level 1: The getaway car/ }),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("a config rejected by the format check never renders and can be retried", async ({
@@ -204,8 +210,14 @@ test("an unlocked location without a registered config stays unavailable", async
     );
   });
   await page.goto("./");
+  await page
+    .getByRole("button", { name: /Level 5: The cannon escape/ })
+    .dispatchEvent("click");
+  await expect(page.locator(".navigation-status")).toHaveText(
+    "This level is coming soon.",
+  );
   await expect(
-    page.getByRole("button", { name: "Level coming soon" }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: /Level 4: The blocked gate/ }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });
