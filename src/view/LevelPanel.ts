@@ -1,9 +1,8 @@
 import type { LevelDataConfig } from "../data/LevelDataConfig.ts";
-import type { LevelAddress } from "../model/LevelAddress.ts";
 import type { RawInput } from "../controller/GameCommands.ts";
 import type { LevelScreen } from "../controller/LevelSession.ts";
 
-/** Native dialog shared by all registered practice levels. Config text stays text. */
+/** Native dialog shared by all loaded levels. Config text stays text. */
 export class LevelPanel implements LevelScreen {
   private readonly dialog = document.createElement("dialog");
   private readonly content = document.createElement("section");
@@ -12,70 +11,31 @@ export class LevelPanel implements LevelScreen {
     string,
     { input: HTMLInputElement; error: HTMLElement }
   >();
-  private readonly picker = document.createElement("select");
+  private returnFocus: HTMLElement | undefined;
+  private readonly title = document.createElement("h2");
 
-  constructor(
-    host: HTMLElement,
-    levels: readonly (LevelAddress & { readonly title: string })[],
-    onSelect: (address: LevelAddress) => void,
-    onClose: () => void,
-  ) {
-    const launcher = document.createElement("button");
-    launcher.type = "button";
-    launcher.textContent = "Practice levels";
-    launcher.addEventListener("click", () => this.open());
-    host.className = "practice-entry";
-    host.append(launcher, this.dialog);
+  constructor(host: HTMLElement, onClose: () => void) {
+    host.append(this.dialog);
     this.dialog.className = "level-panel";
     this.dialog.setAttribute("aria-labelledby", "level-panel-title");
-    const title = document.createElement("h2");
-    title.id = "level-panel-title";
-    title.textContent = "Practice a physics problem";
-    const note = document.createElement("p");
-    note.textContent =
-      "Try a problem and check your answer. Practice does not change story progress.";
-    const label = document.createElement("label");
-    label.textContent = "Choose a level";
-    this.picker.id = "practice-level";
-    label.htmlFor = this.picker.id;
-    levels.forEach((level, index) => {
-      const option = document.createElement("option");
-      option.value = String(index);
-      option.dataset.gameId = level.gameId;
-      option.dataset.levelId = String(level.levelId);
-      option.textContent = level.title;
-      this.picker.append(option);
-    });
-    const load = document.createElement("button");
-    load.type = "button";
-    load.textContent = "Load level";
-    load.disabled = levels.length === 0;
-    load.addEventListener("click", () =>
-      onSelect(levels[Number(this.picker.value)]),
-    );
+    this.title.id = "level-panel-title";
+    this.title.textContent = "Level";
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "Return to story map";
     close.addEventListener("click", () => this.dialog.close());
     this.dialog.addEventListener("close", () => {
       onClose();
-      launcher.focus();
+      this.returnFocus?.focus();
     });
     this.content.setAttribute("aria-label", "Loaded problem");
     this.feedback.setAttribute("role", "status");
-    this.dialog.append(
-      title,
-      note,
-      label,
-      this.picker,
-      load,
-      this.content,
-      this.feedback,
-      close,
-    );
+    this.dialog.append(this.title, this.content, this.feedback, close);
   }
 
-  open(): void {
+  open(title: string, trigger: HTMLElement): void {
+    this.title.textContent = title;
+    this.returnFocus = trigger;
     if (!this.dialog.open) this.dialog.showModal();
   }
 
@@ -98,12 +58,6 @@ export class LevelPanel implements LevelScreen {
   }
 
   showLevel(config: LevelDataConfig, submit: (raw: RawInput) => void): void {
-    const option = [...this.picker.options].find(
-      (item) =>
-        item.dataset.gameId === config.gameId &&
-        item.dataset.levelId === String(config.levelId),
-    );
-    if (option) this.picker.value = option.value;
     const problem = document.createElement("p");
     problem.className = "level-problem";
     problem.textContent = config.problemStatement;

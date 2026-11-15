@@ -1,7 +1,7 @@
 # `src/data/`
 
 This layer owns level definitions, saved progress data, and its browser-storage
-adapter. The catalog supplies implemented levels to the browser's practice panel.
+adapter. The catalog supplies implemented levels to the map-launched level panel.
 
 ## Implemented files
 
@@ -31,7 +31,7 @@ adapter. The catalog supplies implemented levels to the browser's practice panel
 `SaveManager` persists addresses, not answer history, scores, or drafts. Its
 `recordCompletedLevel` helper adds an address once while retaining the current
 selection. The application currently connects save data to the story-map
-preview in `src/main.ts`; gameplay completion is not wired to persistence.
+in `src/main.ts`; gameplay completion is not wired to persistence.
 
 Tests live beside the implementation as `*.test.ts`. See the
 [testing plan](../../docs/testing/README.md) for current coverage.

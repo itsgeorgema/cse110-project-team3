@@ -1,7 +1,7 @@
 import type { LevelAddress } from "../../model/LevelAddress.ts";
 
-/** Presentation fixtures only. These addresses are placeholders, not registered levels.
- * Replace the states with ProgressionSystem output when integrating gameplay.
+/** Map locations reference real configs where available. Remaining circus-preview
+ * addresses are upcoming locations and must never be passed to a level factory.
  */
 export interface MapNode {
   readonly id: string;
@@ -12,7 +12,6 @@ export interface MapNode {
   readonly chapter: number;
   readonly x: number;
   readonly y: number;
-  readonly initialState: "cleared" | "current" | "locked";
 }
 
 export const chapters = [
@@ -36,7 +35,7 @@ export const chapters = [
 export const previewNodes: readonly MapNode[] = [
   {
     id: "dressing-room",
-    level: { gameId: "circus-preview", levelId: 1 },
+    level: { gameId: "kinematics", levelId: 1 },
     title: "The dressing room",
     subtitle: "A small beginning",
     story:
@@ -44,11 +43,10 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 240,
     y: 210,
-    initialState: "cleared",
   },
   {
     id: "backstage",
-    level: { gameId: "circus-preview", levelId: 2 },
+    level: { gameId: "kinematics", levelId: 2 },
     title: "Backstage breakout",
     subtitle: "The plan takes shape",
     story:
@@ -56,11 +54,10 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 430,
     y: 380,
-    initialState: "cleared",
   },
   {
     id: "big-top",
-    level: { gameId: "circus-preview", levelId: 3 },
+    level: { gameId: "kinematics", levelId: 3 },
     title: "Under the big top",
     subtitle: "The final act begins",
     story:
@@ -68,11 +65,10 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 0,
     x: 280,
     y: 565,
-    initialState: "current",
   },
   {
     id: "midway",
-    level: { gameId: "circus-preview", levelId: 4 },
+    level: { gameId: "netForce", levelId: 2 },
     title: "Midnight midway",
     subtitle: "Beyond the bright lights",
     story:
@@ -80,7 +76,6 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 1,
     x: 420,
     y: 830,
-    initialState: "locked",
   },
   {
     id: "wheel",
@@ -92,7 +87,6 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 1,
     x: 245,
     y: 1030,
-    initialState: "locked",
   },
   {
     id: "fence",
@@ -104,7 +98,6 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 2,
     x: 410,
     y: 1400,
-    initialState: "locked",
   },
   {
     id: "dawn",
@@ -116,7 +109,6 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 2,
     x: 280,
     y: 1610,
-    initialState: "locked",
   },
 ];
 

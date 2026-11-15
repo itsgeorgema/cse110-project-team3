@@ -1,27 +1,28 @@
 # Validated level loading (#21)
 
-Players can load a real physics problem from **Practice levels**, answer it,
-correct invalid input, and switch to another registered level. Only configs
-that pass the runtime format check reach the problem screen. A failed load
-shows a message, **Try again**, and the level picker; it never leaves an old
-answer form active.
+Players open real physics problems directly from the story map. Available
+registered levels expose **Start level** or **Replay level**; locked nodes cannot
+launch, and locations without a registered factory show **Level coming soon**.
+Only configs that pass the runtime format check reach the problem screen.
 
 ## Use the feature
 
-Run `npm run dev`, open the printed local URL, select **Practice levels**, choose
-a problem, and press **Load level**. Enter an answer and press **Check answer**
-or Enter. A load generates a new problem; editing or submitting keeps that
-problem unchanged. Switching levels discards the previous inputs and feedback.
-Escape or **Return to story map** clears the session.
+Run `npm run dev`, open the printed URL, and press **Start level** at the first
+map location. Enter an answer and press **Check answer** or Enter. A load generates
+a new problem; editing or submitting keeps it unchanged. Escape or **Return to
+story map** clears the session and restores focus to the launching button.
+Select another available map location to load its own problem and fields.
 
-Practice links accept `?game=kinematics&level=1` (also levels 2 and 3) or
-`?game=netForce&level=2`. Unknown or malformed addresses show the same recoverable
-failure screen. Links select an identity, not a reproducible random problem.
+A loading failure displays a message and **Try again**. The return button is
+always available. There is no separate practice picker or query-string launch
+path that bypasses map availability.
 
-Practice is independent of the map's `circus-preview` fixtures. It does not grant
-completion, save attempts/drafts, or run animated physics. These remain separate
-integration work; the existing parser and answer validator provide real answer
-checking here.
+The first three locations load kinematics levels 1–3; the fourth loads the
+implemented net-force level 2. Later locations are unregistered placeholders.
+New saves have no completions, and old preview achievements do not unlock real
+levels. Answer checking works before animation exists. Recording completion
+and unlocking subsequent levels after playback remain #80 integration work;
+this change does not manufacture completion on load or on answer feedback.
 
 ## Architecture and decisions
 
@@ -43,10 +44,11 @@ checking here.
    to the session callback. `GameController` and `DefaultAnswerValidator` retain
    responsibility for parsing and checking answers.
 
-The composition root is `src/main.ts`. Future #22 routing can call
-`LevelSession.selectLevel(address)` after checking graph adjacency and progression
-and opening the level panel. The loader itself deliberately does not grant or
-deny progression access; practice exposes all registered levels.
+The composition root is `src/main.ts`. It receives launch callbacks from the map,
+opens `LevelPanel`, and calls `LevelSession.selectLevel(address)`. The map checks
+availability and registration before emitting the callback. Future #22 movement
+and graph rules can reuse this entry point. The loader remains independent of
+map layout and progression policy.
 
 To add a level, implement its factory, register it in `levelCatalog.ts`, and add
 deterministic loader tests. The common view does not branch on game identity.
@@ -76,8 +78,8 @@ Factories use fixed randomness in these tests.
 
 `tests/e2e/level-loading.spec.ts` covers loading and correcting answers at desktop
 and narrow widths, multi-field level switching, focus/closing, and recovery from
-unknown level links. It runs against the production build under the Pages base
-path; the core practice flow is tagged `@smoke` for existing PR CI. Malformed
+failed generation, locked destinations, and old preview saves. It runs against the production build under the Pages base
+path; the core level-loading flow is tagged `@smoke` for existing PR CI. Malformed
 factory results and generator exceptions are injected in unit/integration tests,
 without adding production test hooks.
 

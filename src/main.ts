@@ -26,20 +26,6 @@ try {
   // Keep the map usable with session-only progress when storage is unavailable.
 }
 
-// Seed the preview's sample completion state so it survives the first selection
-// save, just like progress loaded from an existing save.
-if (
-  savedProgress.completedLevels.length === 0 &&
-  savedProgress.currentLevel === null
-) {
-  savedProgress = {
-    ...savedProgress,
-    completedLevels: previewNodes
-      .filter((node) => node.initialState === "cleared")
-      .map((node) => node.level),
-  };
-}
-
 const knownLevels = new Set(
   previewNodes.map((node) => `${node.level.gameId}:${node.level.levelId}`),
 );
@@ -55,6 +41,12 @@ const validCurrentLevel =
   )
     ? savedProgress.currentLevel
     : null;
+
+const levelHost = document.createElement("div");
+container.after(levelHost);
+const levelManager = new LevelManager(createLevelCatalog());
+const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
+const levelSession = new LevelSession(levelManager, levelPanel);
 
 new OverworldMap(
   container,
@@ -80,26 +72,16 @@ new OverworldMap(
       // Reset the visible session even when browser storage is unavailable.
     }
   },
-);
-
-// Keep practice independent of preview addresses until overworld routing (#22).
-const practiceHost = document.createElement("div");
-container.before(practiceHost);
-const levelManager = new LevelManager(createLevelCatalog());
-const levelPanel = new LevelPanel(
-  practiceHost,
   levelManager.listLevels(),
-  (address) => levelSession.selectLevel(address),
-  () => levelSession.close(),
+  (level, trigger) => {
+    const registered = levelManager
+      .listLevels()
+      .find(
+        (entry) =>
+          entry.gameId === level.gameId && entry.levelId === level.levelId,
+      );
+    if (!registered) return;
+    levelPanel.open(registered.title, trigger);
+    levelSession.selectLevel(level);
+  },
 );
-const levelSession = new LevelSession(levelManager, levelPanel);
-
-// Shareable practice links also give unknown/retired levels a recoverable screen.
-const params = new URLSearchParams(window.location.search);
-if (params.has("game") || params.has("level")) {
-  levelPanel.open();
-  levelSession.selectLevel({
-    gameId: params.get("game") ?? "",
-    levelId: Number(params.get("level")),
-  });
-}

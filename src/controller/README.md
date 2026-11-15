@@ -1,14 +1,14 @@
 # `src/controller/`
 
 The controller layer defines the boundary between player actions and application
-logic. It loads validated practice levels, handles answer submissions, and
-provides progression queries separately from the story-map preview.
+logic. It loads validated levels, handles answer submissions, and
+provides progression queries separately from the story map.
 
 ## Implemented files
 
 - [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
   a `LevelScreen` only on success. It constructs the existing `GameController`
-  with `DefaultAnswerValidator` for practice answers. Navigation and closing
+  with `DefaultAnswerValidator` for answers. Navigation and closing
   clear the screen and invalidate old submit/retry callbacks. Loading errors
   expose retry without passing malformed configs to the view.
 - [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
@@ -33,13 +33,13 @@ provides progression queries separately from the story-map preview.
   playback.
 
 `main.ts` is the composition root. It wires browser storage to the overworld
-preview and constructs the practice catalog, manager, session, and panel.
+map and constructs the level catalog, manager, session, and panel.
 
 ## Intended boundary
 
-The practice view sends `RawInput` through a session-owned submit callback. The
+The level view sends `RawInput` through a session-owned submit callback. The
 session coordinates loading and delegates parsing and validation to the existing
-controller. Playback, draft saving, and recording practice results are not part
+controller. Playback, draft saving, and recording completion are not part
 of this integration. `GameCommands` remains the intended broader game interface.
 
 Tests live beside the implementation as `*.test.ts`. See the
@@ -49,7 +49,7 @@ acceptance expectations.
 To construct the loader, pass `createLevelCatalog()` from
 `src/data/levelCatalog.ts` to `new LevelManager(...)`, then call
 `loadModule({ gameId: "kinematics", levelId: 1 })`. The browser entry point is
-the **Practice levels** button. `npm run test:coverage` exercises real catalog loading,
+the map’s **Start level** / **Replay level** buttons. `npm run test:coverage` exercises real catalog loading,
 invalid configs, mismatched identities, generation failures, retries, and data
 isolation using deterministic fixtures and injected factories.
 

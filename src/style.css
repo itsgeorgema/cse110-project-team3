@@ -1226,16 +1226,6 @@ progress::-moz-progress-bar {
   }
 }
 
-.practice-entry {
-  padding: 12px 24px;
-  border-bottom: 1px solid #2c3d42;
-}
-.practice-entry button {
-  background: #29474b;
-  border: 1px solid #6e8b7c;
-  border-radius: 4px;
-  padding: 10px 16px;
-}
 .level-panel {
   color: #e5e9e0;
   background: #182c33;
@@ -1245,6 +1235,12 @@ progress::-moz-progress-bar {
   max-height: calc(100dvh - 32px);
   padding: clamp(20px, 4vw, 36px);
   overflow-y: auto;
+}
+.level-panel button {
+  background: #29474b;
+  border: 1px solid #6e8b7c;
+  border-radius: 4px;
+  padding: 10px 16px;
 }
 .level-panel::backdrop {
   background: rgb(0 0 0 / 70%);

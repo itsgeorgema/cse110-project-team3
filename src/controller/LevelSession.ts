@@ -14,7 +14,7 @@ export interface LevelScreen {
   showFeedback(message: string): void;
 }
 
-/** One active practice problem; old screen callbacks become inert on navigation. */
+/** One active level problem; old screen callbacks become inert on navigation. */
 export class LevelSession {
   private revision = 0;
   private readonly loader: Pick<LevelManager, "loadModule">;
