@@ -11,8 +11,10 @@ lifecycle or a composition root that builds a game controller.
 
 - [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
   a `LevelScreen` only on success. It constructs the existing `GameController`
-  with `DefaultAnswerValidator` for answers. Navigation and closing
-  clear the screen and invalidate old submit/retry callbacks. Loading errors
+  with `DefaultAnswerValidator` and the playback wiring its factory builds for
+  that level. Navigation and closing dispose the current controller (stopping
+  its playback and attempt recording), clear the screen and invalidate old
+  submit/retry callbacks. Loading errors
   expose retry without passing malformed configs to the view.
 - [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
   injected catalog. `loadModule(address)` generates a fresh config, copies it,

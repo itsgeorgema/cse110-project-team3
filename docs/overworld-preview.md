@@ -33,9 +33,8 @@ selected address. The app loads and saves this selection through `SaveManager`.
 On an empty save, `main.ts` seeds the sample cleared addresses from the fixtures.
 Reset clears the saved state and returns the map to its preview defaults.
 
-Cleared markers can open [`ResultsSummary`](../src/view/overworld/ResultsSummary.ts).
-It shows fixed sample accuracy values (90% and 80%) and correct-answer counts;
-no score is calculated or saved. Other markers have disabled launch buttons.
+Cleared markers replay their actual level through `LevelSession`; no score is
+calculated or saved. Other markers have disabled launch buttons.
 The native modal supports Escape and return buttons, restores focus to its
 trigger, and leaves map scroll position intact.
 

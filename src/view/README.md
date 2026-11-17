@@ -18,9 +18,6 @@ current app has a story map that launches registered levels in a shared dialog.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,
   positions, route connections, and real addresses for the first four locations.
   Remaining `circus-preview` addresses are upcoming, unregistered locations.
-- [`overworld/ResultsSummary.ts`](./overworld/ResultsSummary.ts) is the legacy
-  mock results dialog; the map no longer mounts it. Cleared nodes replay their
-  actual level instead.
 - [`KonvaStage.ts`](./KonvaStage.ts) contains the existing Konva stage
   implementation. The story-map preview does not mount it.
 

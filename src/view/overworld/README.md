@@ -16,8 +16,7 @@ scope are recorded in [`docs/overworld-preview.md`](../../../docs/overworld-prev
 - Available registered locations expose **Start level** or **Replay level**.
   The composition root opens `LevelPanel` and loads through `LevelSession`.
   Locked locations remain disabled; unregistered locations cannot launch.
-- `ResultsSummary.ts` is retained legacy code, no longer mounted by the map.
-  The existing `KonvaStage` is not mounted yet.
+- The existing `KonvaStage` is not mounted yet.
 
 New saves start with no completions. Old `circus-preview` completions are not
 mapped to real level achievements. Selecting a marker saves its address; reset
