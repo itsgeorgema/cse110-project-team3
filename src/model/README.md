@@ -18,6 +18,7 @@ composed into a playable game loop.
   successful attempts.
 - [`LevelAddress.ts`](./LevelAddress.ts) identifies a level by its game ID and
   level ID pair.
+- [`AnswerHint.ts`](./AnswerHint.ts) detects the common mistakes of a wrong answer (flipped sign or misplaced decimal point) and returns a hint on how to re-do the problem without showing the correct answer.
 
 The validator and tracker have no rendering or storage dependencies. The
 controller is expected to coordinate them, but a complete controller and
