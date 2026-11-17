@@ -1,4 +1,15 @@
+import type { SimulationRequest, SimulationRunner } from "./SimulationRunner";
+import type { SimulationState } from "./SimulationState";
+
 export class PhysicsEngine {
+  /** Runs a simulation through whichever runner the caller wires in. */
+  public static simulate(
+    runner: SimulationRunner,
+    request: SimulationRequest,
+  ): SimulationState[] {
+    return runner.run(request);
+  }
+
   private static validateNumber(value: number, name: string): void {
     if (typeof value !== "number") {
       throw new TypeError(`${name} must be a number.`);
