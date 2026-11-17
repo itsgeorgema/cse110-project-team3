@@ -60,27 +60,22 @@ for (const viewport of [
       );
     });
 
-    test("locked story can be previewed but not played; return restores current selection", async ({
+    test("locked destinations refuse navigation and keep the current selection", async ({
       page,
     }) => {
       await page.goto("./");
       const locked = page.getByRole("button", {
         name: /Level 4: The blocked gate/,
       });
-      await locked.click();
-      await expect(locked).toHaveAttribute("aria-pressed", "true");
-      await expect(
-        page.getByRole("heading", { name: "The blocked gate" }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Chapter locked" }),
-      ).toBeDisabled();
-      await expect(
-        page.getByRole("button", { name: /View results/ }),
-      ).toHaveCount(0);
+      // aria-disabled communicates refusal while allowing an explanatory message.
+      await locked.dispatchEvent("click");
+      await expect(locked).toHaveAttribute("aria-pressed", "false");
+      await expect(page.locator(".navigation-status")).toContainText(
+        "Complete the earlier levels",
+      );
+      await expectMap(page);
       await page.getByRole("button", { name: /Back to your chapter/ }).click();
       await expectMap(page);
-      await expect(locked).toHaveAttribute("aria-pressed", "false");
     });
 
     test("completed levels replay the real problem and return focus", async ({
@@ -124,11 +119,23 @@ for (const viewport of [
   });
 }
 
-test("refresh restores the selected level", async ({ page }) => {
+test("refresh restores an accepted neighboring destination", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("escape-route-progress"))
+      localStorage.setItem(
+        "escape-route-progress",
+        JSON.stringify({
+          schemaVersion: 1,
+          completedLevels: [{ gameId: "kinematics", levelId: 1 }],
+        }),
+      );
+  });
   await page.goto("./");
-  await page.getByRole("button", { name: /Level 2: Past the big top/ }).click();
+  await page.getByRole("button", { name: /Level 1: The getaway car/ }).click();
   await page.reload();
-  await expectMap(page, 2, 0, false);
+  await expectMap(page, 1, 1, false);
 });
 
 test("saved completions restore the map state and journey count", async ({
@@ -154,6 +161,20 @@ test("saved completions restore the map state and journey count", async ({
 test("selected level restores after refresh and reset clears saved progress", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("escape-route-progress"))
+      localStorage.setItem(
+        "escape-route-progress",
+        JSON.stringify({
+          schemaVersion: 1,
+          completedLevels: [1, 2].map((levelId) => ({
+            gameId: "kinematics",
+            levelId,
+          })),
+          currentLevel: { gameId: "kinematics", levelId: 2 },
+        }),
+      );
+  });
   await page.goto("./");
   const selected = page.getByRole("button", {
     name: /Level 3: Outrun the ringmaster/,

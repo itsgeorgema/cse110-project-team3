@@ -8,20 +8,22 @@ scope are recorded in [`docs/overworld-preview.md`](../../../docs/overworld-prev
 ## Rendering and level bindings
 
 - `OverworldMap.ts` renders native HTML controls and inline SVG scenery and route
-  lines. It derives cleared/current/locked state from saved completions and map
-  order. It does not yet call `ProgressionSystem`.
+  lines. It reads coordinates/connections from `OverworldGraph` and delegates
+  status and selection to `OverworldNavigation`, which uses `ProgressionSystem`.
 - `mapPreview.ts` binds the first three locations to kinematics levels 1–3 and
   the fourth to the implemented net-force level 2. Remaining locations retain
   unregistered placeholder addresses. Positions use a 680 × 1770 reference map.
 - Available registered locations expose **Start level** or **Replay level**.
   The composition root opens `LevelPanel` and loads through `LevelSession`.
   Locked locations remain disabled; unregistered locations cannot launch.
-- The existing `KonvaStage` is not mounted yet.
+- `ResultsSummary.ts` is retained legacy code, no longer mounted by the map.
+  The existing `KonvaStage` is not mounted yet.
 
 New saves start with no completions. Old `circus-preview` completions are not
-mapped to real level achievements. Selecting a marker saves its address; reset
-clears progress and returns selection to the first level. The clown is still
-static artwork; walking and adjacency enforcement remain #22 work. Answer
+mapped to real level achievements. Only accepted neighboring selections save their address; reset
+clears progress and returns selection to the first level. The clown moves to
+the accepted location immediately. Smooth walking remains separate animation
+work; adjacency and unlock rules are enforced now. Answer
 checking works, while recording completion after playback remains controller
 integration work.
 
@@ -37,3 +39,22 @@ Update this guide and the relevant tests in the same pull request when fixture
 shape, rendering behavior, interactions, persistence wiring, or accessibility
 behavior changes. Browser coverage lives in `tests/e2e/`; view unit tests live
 beside this code.
+
+## Routing contract
+
+`OverworldNavigation.checkDestination(level)` returns either a failure reason
+and player-facing message or the immutable `from`/`to` nodes and coordinates.
+It does not change position. `selectLevel(level)` rechecks the same rules and
+commits an accepted destination. Unknown, locked, unimplemented, and non-adjacent
+locations are rejected without changing the current selection or saved address.
+The current location can be reopened without a move. Markers announce refusal
+through a live status message and expose `aria-disabled`; the handler still
+checks the rules, including for keyboard activation.
+
+A valid saved position restores directly. Invalid, locked, or unimplemented
+positions fall back to the first available unfinished registered level, or the
+last available registered level when all implemented levels are completed.
+Completion is read through an injected query; navigating never awards progress.
+
+The full flow and animation handoff are in
+[`docs/overworld-routing.md`](../../../docs/overworld-routing.md).

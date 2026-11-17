@@ -1285,3 +1285,14 @@ progress::-moz-progress-bar {
   border-top: 1px solid #6e8b7c;
   padding-top: 20px;
 }
+
+.navigation-status {
+  color: #e2b77c;
+  line-height: 1.5;
+}
+.navigation-status:empty {
+  display: none;
+}
+.map-node[aria-disabled="true"] {
+  cursor: not-allowed;
+}

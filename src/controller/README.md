@@ -2,12 +2,16 @@
 
 The controller layer defines the boundary between player actions and application
 logic. It loads validated levels, handles answer submissions, and
-provides progression queries separately from the story map.
-The current implementation contains input parsing, the game controller's
-answer loop and a progression service. It does not yet contain a level
-lifecycle or a composition root that builds a game controller.
+uses progression queries to control story-map navigation.
 
 ## Implemented files
+
+- [`OverworldNavigation.ts`](./OverworldNavigation.ts) validates map selections
+  against `OverworldGraph`, registered levels, and `ProgressionSystem`. It owns
+  current position, restores an available saved destination, and returns typed
+  `NavigationResult` values. Rejected moves leave position unchanged. Its
+  completion query is injected and read on every check; selection never records
+  completion or starts physics playback.
 
 - [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
   a `LevelScreen` only on success. It constructs the existing `GameController`
