@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Free Body Diagram Demo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #f4ead2;
+        color: #162c34;
+        font-family: system-ui, sans-serif;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 1.4rem;
+      }
+      p {
+        margin: 0 0 16px;
+      }
+      #stage {
+        width: 760px;
+        height: 640px;
+        background: #fffaf0;
+        border: 1px solid #d9bd8c;
+      }
+      #error {
+        color: #a32d1a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Free body diagram demo (#96)</h1>
+    <p>
+      Four diagrams on one Konva Stage. Dev only: open with
+      <code>npm run dev</code>, then <code>/src/view/forces/demo.html</code>.
+    </p>
+    <p>
+      <button id="toggle" type="button">
+        Show pushed crate after answering
+      </button>
+    </p>
+    <div id="stage"></div>
+    <p id="error" role="alert"></p>
+    <script type="module" src="./demoPage.ts"></script>
+  </body>
+</html>
