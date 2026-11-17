@@ -90,7 +90,7 @@ scope; newer narrow issues take precedence over older umbrella descriptions.
 | [#40](https://github.com/itsgeorgema/cse110-project-team3/issues/40), [#43](https://github.com/itsgeorgema/cse110-project-team3/issues/43), [#44](https://github.com/itsgeorgema/cse110-project-team3/issues/44): answer validation | Interface contracts only; no runtime validator                      | Missing/nonfinite values, wrong identity, bounds endpoints, tolerance endpoints, zero/negative answers, multiple fields, malformed config | Real parser → controller unit attachment → real validator; validation alone must not alter progress/UI                           |
 | [#41](https://github.com/itsgeorgema/cse110-project-team3/issues/41): progression                                                                                                                                                   | Not implemented                                                     | Wrong attempts retryable, correct attempts complete after playback, replay preserves completion, games sharing level 1 stay distinct      | Map queries real progression; finishing one game never unlocks another accidentally                                              |
 | [#42](https://github.com/itsgeorgema/cse110-project-team3/issues/42): localStorage                                                                                                                                                  | Not implemented                                                     | Versioned round trips; missing/corrupt/unsupported saves; invalid IDs; reset; storage exceptions                                          | Browser reload restores completion; reset removes it; blocked storage permits session play                                       |
-| [#37](https://github.com/itsgeorgema/cse110-project-team3/issues/37), [#57](https://github.com/itsgeorgema/cse110-project-team3/issues/57): engine/snapshots                                                                        | No physics engine yet                                               | Fixed-step deterministic runs; earlier nested position/velocity values survive later updates and source body mutation                     | Actual engine adapter produces copied records consumed by view; no matter-js bodies cross the boundary                           |
+| [#37](https://github.com/itsgeorgema/cse110-project-team3/issues/37), [#57](https://github.com/itsgeorgema/cse110-project-team3/issues/57): engine/snapshots                                                                        | Real matter-js runs; earlier frames survive later steps             | Velocity in `ObjectState` once matter-js unit scaling is decided; real scene format in place of the placeholder `SimulationRequest`       | AnimationEngine (#23) plays `SimulationState[]` from `PhysicsEngine.simulate`; no matter-js bodies cross the boundary            |
 
 ## Repository and process issues
 
@@ -118,9 +118,11 @@ unit tests. This table records acceptance evidence, not administrator setup step
    tracker with a controllable animation fake. Assert incomplete before finish,
    completed after one finish, unchanged after duplicates, and incomplete after
    stop or an incorrect answer. Change levels mid-playback to catch stale events.
-3. **Physics to animation (#57, #24):** produce frames with the actual adapter,
-   retain early snapshots, advance/mutate engine bodies, and compare nested
-   values. Assert view input is ordinary records, not live physics objects.
+3. **Physics to animation (#57, #23, #24):** the physics side is covered:
+   `MatterSimulationRunner.test.ts` produces frames with the real adapter and
+   checks that early frames keep their values after later steps. What remains is
+   to feed those frames into the AnimationEngine and assert that the view
+   receives ordinary records, not live physics objects.
 4. **Progress to persistence (#42):** serialize real tracker state, reconstruct a
    fresh tracker through SaveManager, and compare completion/availability. In a
    browser, refresh and reset using actual localStorage. Inject storage failures
@@ -153,8 +155,9 @@ for canvas interaction when necessary, and observable state transitions instead
 of fixed sleeps. Verify numerical outcomes in Node; screenshots alone cannot
 prove physics or progression correctness.
 
-Performance/load testing is **not implemented**: there is no backend to load and
-no physics/playback workload yet. When #37/#57 and animation land, add a separate
+Performance/load testing is **not implemented**: there is no backend to load,
+and physics runs (#57) exist but no playback workload does yet. When animation
+(#23) lands, add a separate
 scheduled/manual performance workflow with a seeded maximum supported level,
 fixed timestep/frame count, warmup, repeated measurements, and machine-readable
 reports. Measure simulation duration, snapshot size, playback frame timing, and

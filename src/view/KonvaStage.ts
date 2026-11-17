@@ -20,4 +20,8 @@ export class KonvaStage {
     this.layer = new Konva.Layer();
     this.stage.add(this.layer);
   }
+
+  getLayer(): Konva.Layer {
+    return this.layer;
+  }
 }
