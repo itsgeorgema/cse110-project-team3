@@ -38,13 +38,17 @@ this change does not manufacture completion on load or on answer feedback.
    The check belongs in the data layer and does not verify physics calculations.
 4. `LevelSession` clears the previous screen before loading. Success constructs
    `GameController` and renders the problem; failure renders recovery controls.
-   A revision counter makes callbacks from replaced or closed screens inert.
+   A revision counter makes callbacks from replaced or closed screens inert, and
+   the session disposes the previous `GameController` so an old level stops
+   playing and recording attempts.
 5. `LevelPanel` implements the session's view port. It builds fields from
    `userInputVariables`, uses text nodes for config strings, and sends `RawInput`
    to the session callback. `GameController` and `DefaultAnswerValidator` retain
    responsibility for parsing and checking answers.
 
-The composition root is `src/main.ts`. It receives launch callbacks from the map,
+The composition root is `src/main.ts`. It passes `LevelSession` a factory for
+each level's `PlaybackWiring`; until `LevelPanel` mounts an animation stage this
+is a canvas-free engine, an empty run and a no-op recorder. It receives launch callbacks from the map,
 opens `LevelPanel`, and calls `LevelSession.selectLevel(address)`. The map checks
 availability and registration before emitting the callback. #22 routing now
 uses `OverworldNavigation` to restrict selection to neighboring locations. The loader remains independent of

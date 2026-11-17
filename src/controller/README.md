@@ -15,8 +15,10 @@ uses progression queries to control story-map navigation.
 
 - [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
   a `LevelScreen` only on success. It constructs the existing `GameController`
-  with `DefaultAnswerValidator` for answers. Navigation and closing
-  clear the screen and invalidate old submit/retry callbacks. Loading errors
+  with `DefaultAnswerValidator` and the playback wiring its factory builds for
+  that level. Navigation and closing dispose the current controller (stopping
+  its playback and attempt recording), clear the screen and invalidate old
+  submit/retry callbacks. Loading errors
   expose retry without passing malformed configs to the view.
 - [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
   injected catalog. `loadModule(address)` generates a fresh config, copies it,
@@ -34,6 +36,15 @@ uses progression queries to control story-map navigation.
   finite numbers. It reports field-specific errors for missing, malformed, or
   non-finite values. It does not check bounds or whether an answer is correct;
   those belong to the validator.
+- [`GameController.ts`](./GameController.ts) runs one answer through the loop
+  in #80: parse the input, add the level's units, validate, show feedback, build
+  the run with the level's `RunBuilder` and play it through an `AnimationEngine`
+  (#23). When that playback finishes, it records the attempt once through an
+  `AttemptRecorder` such as `ProgressController`. Wrong answers are played and
+  recorded too. A replay, a stopped playback or a playback interrupted by a newer
+  answer records nothing extra. `dispose()` stops playback and unsubscribes.
+  No level supplies a real `RunBuilder` yet; that waits on the scene format and
+  units (#89).
 - [`ProgressionSystem.ts`](./ProgressionSystem.ts) receives an ordered list of
   level addresses and a completion query. It reports availability and the next
   level after success. It does not load level data, save progress, or control

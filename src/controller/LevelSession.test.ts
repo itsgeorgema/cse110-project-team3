@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createLevelCatalog } from "../data/levelCatalog.ts";
 import { LevelManager } from "./LevelManager.ts";
+import { FakeAnimationEngine } from "../view/animation/FakeAnimationEngine.ts";
 import { LevelSession, type LevelScreen } from "./LevelSession.ts";
 
 const first = { gameId: "kinematics", levelId: 1 };
@@ -13,7 +14,14 @@ function setup(loader = new LevelManager(createLevelCatalog())) {
     showInputErrors: vi.fn(),
     showFeedback: vi.fn(),
   };
-  return { screen, session: new LevelSession(loader, screen) };
+  const engines: FakeAnimationEngine[] = [];
+  const progress = { recordAttempt: vi.fn() };
+  const session = new LevelSession(loader, screen, () => {
+    const animation = new FakeAnimationEngine();
+    engines.push(animation);
+    return { animation, buildRun: () => [], progress };
+  });
+  return { screen, session, engines, progress };
 }
 afterEach(() => vi.restoreAllMocks());
 
@@ -124,5 +132,32 @@ describe("LevelSession", () => {
     session.close();
     screen.showLoadError.mock.calls[0][1]();
     expect(load).toHaveBeenCalledOnce();
+  });
+
+  it("disposes the old controller on a level switch so it stops playing and recording", () => {
+    const { session, screen, engines, progress } = setup();
+    session.selectLevel(first);
+    const oldSubmit = screen.showLevel.mock.calls[0][1];
+    session.selectLevel({ gameId: "kinematics", levelId: 2 });
+    expect(engines).toHaveLength(2);
+    expect(engines[0].stopCount).toBe(1);
+    expect(engines[1].stopCount).toBe(0);
+
+    // The old engine finishing after the switch no longer records an attempt.
+    engines[0].play([]);
+    oldSubmit({ ...first, fields: { velocity: "5" } });
+    expect(progress.recordAttempt).not.toHaveBeenCalled();
+    expect(engines[0].played).toHaveLength(1);
+  });
+
+  it("records an attempt once playback finishes, and close() stops the controller", () => {
+    const { session, screen, engines, progress } = setup();
+    session.selectLevel(first);
+    screen.showLevel.mock.calls[0][1]({ ...first, fields: { velocity: "5" } });
+    expect(engines[0].played).toHaveLength(1);
+    expect(progress.recordAttempt).toHaveBeenCalledOnce();
+    session.close();
+    session.close();
+    expect(engines[0].stopCount).toBe(1);
   });
 });

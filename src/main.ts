@@ -12,6 +12,7 @@ import { LevelSession } from "./controller/LevelSession.ts";
 import { LevelPanel } from "./view/LevelPanel.ts";
 import { OverworldGraph } from "./model/OverworldGraph.ts";
 import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
+import { FakeAnimationEngine } from "./view/animation/FakeAnimationEngine.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -43,7 +44,14 @@ const levelHost = document.createElement("div");
 container.after(levelHost);
 const levelManager = new LevelManager(createLevelCatalog());
 const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
-const levelSession = new LevelSession(levelManager, levelPanel);
+// LevelPanel has no animation stage yet, so each level gets a canvas-free engine
+// that finishes at once and an empty run. Swap in the level's AnimationFactory
+// engine, a PhysicsEngine run builder and ProgressController once the panel mounts a stage.
+const levelSession = new LevelSession(levelManager, levelPanel, () => ({
+  animation: new FakeAnimationEngine(),
+  buildRun: () => [],
+  progress: { recordAttempt: () => {} },
+}));
 
 const navigation = new OverworldNavigation(
   new OverworldGraph(previewNodes, previewConnections),
