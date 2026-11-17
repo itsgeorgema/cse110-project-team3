@@ -1,12 +1,29 @@
 # `src/controller/`
 
 The controller layer defines the boundary between player actions and application
-logic. The current implementation contains input parsing, the game controller's
+logic. It loads validated levels, handles answer submissions, and
+provides progression queries separately from the story map.
+The current implementation contains input parsing, the game controller's
 answer loop and a progression service. It does not yet contain a level
 lifecycle or a composition root that builds a game controller.
 
 ## Implemented files
 
+- [`LevelSession.ts`](./LevelSession.ts) loads through `LevelManager` and mounts
+  a `LevelScreen` only on success. It constructs the existing `GameController`
+  with `DefaultAnswerValidator` and the playback wiring its factory builds for
+  that level. Navigation and closing dispose the current controller (stopping
+  its playback and attempt recording), clear the screen and invalidate old
+  submit/retry callbacks. Loading errors
+  expose retry without passing malformed configs to the view.
+- [`LevelManager.ts`](./LevelManager.ts) resolves a `LevelAddress` against an
+  injected catalog. `loadModule(address)` generates a fresh config, copies it,
+  validates its format and identity, and returns `{ ok: true, config }` only on
+  success. Failures return `{ ok: false, reason, message }`; callers must check
+  `ok` before constructing a level view. Messages are suitable for players and
+  do not expose factory exceptions. A failed load does not prevent retrying.
+  `listLevels()` returns presentation metadata without generating problems.
+  Availability/progression checks and view disposal belong to the caller.
 - [`GameCommands.ts`](./GameCommands.ts) defines the actions the view can request:
   submit an answer, save a draft, or select a level. `RawInput` carries typed
   strings and a `LevelAddress` identity. This is an interface, not an
@@ -29,18 +46,26 @@ lifecycle or a composition root that builds a game controller.
   level after success. It does not load level data, save progress, or control
   playback.
 
-`main.ts` is currently the composition root. It wires browser storage to the
-overworld preview directly. It does not yet construct a game controller.
+`main.ts` is the composition root. It wires browser storage to the overworld
+map and constructs the level catalog, manager, session, and panel.
 
 ## Intended boundary
 
-The view sends raw player actions through `GameCommands`. A future controller
-implementation can parse input, obtain the selected level configuration, call
-model services, and coordinate playback and progress. Until those connections
-exist in code, this README describes only the implemented parser, progression
-service, and command interface. Record proposed behavior on the relevant issue;
-document the architecture decision after implementation is reviewed and merged.
+The level view sends `RawInput` through a session-owned submit callback. The
+session coordinates loading and delegates parsing and validation to the existing
+controller. Playback, draft saving, and recording completion are not part
+of this integration. `GameCommands` remains the intended broader game interface.
 
 Tests live beside the implementation as `*.test.ts`. See the
 [testing plan](../../docs/testing/README.md) for current coverage and feature
 acceptance expectations.
+
+To construct the loader, pass `createLevelCatalog()` from
+`src/data/levelCatalog.ts` to `new LevelManager(...)`, then call
+`loadModule({ gameId: "kinematics", levelId: 1 })`. The browser entry point is
+the map’s **Start level** / **Replay level** buttons. `npm run test:coverage` exercises real catalog loading,
+invalid configs, mismatched identities, generation failures, retries, and data
+isolation using deterministic fixtures and injected factories.
+
+See [level loading](../../docs/level-loading.md) for the player flow, dependency
+boundaries, test commands, and future overworld integration.

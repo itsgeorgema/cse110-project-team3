@@ -9,9 +9,9 @@ test.beforeEach(async ({ page }) => {
 
 async function expectMap(
   page: Page,
-  expectedCurrent = 3,
-  expectedCleared = 2,
-  expectComingSoon = true,
+  expectedCurrent = 1,
+  expectedCleared = 0,
+  expectPlayable = true,
 ) {
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(
@@ -26,10 +26,10 @@ async function expectMap(
   await expect(
     page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
   ).toHaveAttribute("aria-pressed", "true");
-  if (expectComingSoon) {
+  if (expectPlayable) {
     await expect(
-      page.getByRole("button", { name: "Level coming soon" }),
-    ).toBeDisabled();
+      page.getByRole("button", { name: "Start level" }),
+    ).toBeEnabled();
   }
   await expect(page.getByText("Saved progress", { exact: true })).toHaveCount(
     0,
@@ -65,12 +65,12 @@ for (const viewport of [
     }) => {
       await page.goto("./");
       const locked = page.getByRole("button", {
-        name: /Level 4: Midnight midway/,
+        name: /Level 4: The blocked gate/,
       });
       await locked.click();
       await expect(locked).toHaveAttribute("aria-pressed", "true");
       await expect(
-        page.getByRole("heading", { name: "Midnight midway" }),
+        page.getByRole("heading", { name: "The blocked gate" }),
       ).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Chapter locked" }),
@@ -83,7 +83,7 @@ for (const viewport of [
       await expect(locked).toHaveAttribute("aria-pressed", "false");
     });
 
-    test("completed level results close by button or Escape and restore focus", async ({
+    test("completed levels replay the real problem and return focus", async ({
       page,
     }) => {
       await page.addInitScript(() => {
@@ -91,41 +91,34 @@ for (const viewport of [
           "escape-route-progress",
           JSON.stringify({
             schemaVersion: 1,
-            completedLevels: [
-              { gameId: "circus-preview", levelId: 1 },
-              { gameId: "circus-preview", levelId: 2 },
-            ],
+            completedLevels: [{ gameId: "kinematics", levelId: 1 }],
           }),
         );
       });
       await page.goto("./");
       await page
-        .getByRole("button", { name: /Level 1: The dressing room/ })
+        .getByRole("button", { name: /Level 1: The getaway car/ })
         .click();
-      const trigger = page.getByRole("button", { name: /View results/ });
-      const map = page.getByRole("region", { name: "Scrollable story map" });
-      const scrollTop = await map.evaluate((element) => element.scrollTop);
+      const trigger = page.getByRole("button", {
+        name: "Replay level",
+        exact: true,
+      });
       await trigger.click();
-      const dialog = page.getByRole("dialog", { name: "Results Summary" });
-      await expect(dialog).toBeVisible();
+      const dialog = page.getByRole("dialog", {
+        name: "The getaway car",
+      });
       await expect(
-        dialog.getByRole("heading", { name: "The dressing room" }),
+        dialog.getByLabel("velocity (m/s)", { exact: true }),
       ).toBeVisible();
-      await expect(dialog.locator(".accuracy-display")).toHaveText("90%");
-      await expect(dialog.getByText("9 / 10", { exact: true })).toBeVisible();
       await expect(
-        dialog.getByText("Mock results for this preview.", { exact: false }),
-      ).toBeVisible();
-      await dialog.getByRole("button", { name: /Return to story map/ }).click();
-      await expect(dialog).toHaveCount(0);
+        dialog.getByText("Mock results", { exact: false }),
+      ).toHaveCount(0);
+      await dialog.getByRole("button", { name: "Return to story map" }).click();
+      await expect(dialog).not.toBeVisible();
       await expect(trigger).toBeFocused();
-      expect(await map.evaluate((element) => element.scrollTop)).toBe(
-        scrollTop,
-      );
       await trigger.click();
-      await expect(dialog).toHaveCount(1);
       await page.keyboard.press("Escape");
-      await expect(dialog).toHaveCount(0);
+      await expect(dialog).not.toBeVisible();
       await expect(trigger).toBeFocused();
     });
   });
@@ -133,11 +126,9 @@ for (const viewport of [
 
 test("refresh restores the selected level", async ({ page }) => {
   await page.goto("./");
-  await page
-    .getByRole("button", { name: /Level 2: Backstage breakout/ })
-    .click();
+  await page.getByRole("button", { name: /Level 2: Past the big top/ }).click();
   await page.reload();
-  await expectMap(page, 2, 2, false);
+  await expectMap(page, 2, 0, false);
 });
 
 test("saved completions restore the map state and journey count", async ({
@@ -148,14 +139,14 @@ test("saved completions restore the map state and journey count", async ({
       "escape-route-progress",
       JSON.stringify({
         schemaVersion: 1,
-        completedLevels: [{ gameId: "circus-preview", levelId: 1 }],
+        completedLevels: [{ gameId: "kinematics", levelId: 1 }],
       }),
     );
   });
   await page.goto("./");
   await expectMap(page, 2, 1);
   await expect(
-    page.getByRole("button", { name: /Level 1: The dressing room/ }),
+    page.getByRole("button", { name: /Level 1: The getaway car/ }),
   ).toHaveClass(/cleared/);
   await expect(page.locator(".map-node.current .node-circle")).toHaveText("02");
 });
@@ -165,16 +156,16 @@ test("selected level restores after refresh and reset clears saved progress", as
 }) => {
   await page.goto("./");
   const selected = page.getByRole("button", {
-    name: /Level 3: Under the big top/,
+    name: /Level 3: Outrun the ringmaster/,
   });
   await selected.click();
   await page.reload();
   const restored = page.getByRole("button", {
-    name: /Level 3: Under the big top/,
+    name: /Level 3: Outrun the ringmaster/,
   });
   await expect(restored).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("heading", { name: "Under the big top" }),
+    page.getByRole("heading", { name: "Outrun the ringmaster" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Reset progress" }).click();

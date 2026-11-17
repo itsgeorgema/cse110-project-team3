@@ -17,9 +17,9 @@ progress.
 index.html
     └── src/main.ts
          ├── SaveManager ── browser localStorage
-         └── OverworldMap
-              ├── mapPreview fixtures
-              └── ResultsSummary (fixed sample values)
+         ├── OverworldMap
+         │    └── mapPreview fixtures
+         └── LevelSession ── LevelManager, LevelPanel, GameController
 ```
 
 The current screen is a story-map preview. It does not launch a level, submit an
