@@ -13,6 +13,7 @@ import { LevelPanel } from "./view/LevelPanel.ts";
 import { OverworldGraph } from "./model/OverworldGraph.ts";
 import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
 import { FakeAnimationEngine } from "./view/animation/FakeAnimationEngine.ts";
+import { clearOnCorrect } from "./controller/clearOnCorrect.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -46,11 +47,31 @@ const levelManager = new LevelManager(createLevelCatalog());
 const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
 // LevelPanel has no animation stage yet, so each level gets a canvas-free engine
 // that finishes at once and an empty run. Swap in the level's AnimationFactory
-// engine, a PhysicsEngine run builder and ProgressController once the panel mounts a stage.
+// engine and a PhysicsEngine run builder once the panel mounts a stage.
+// A correct answer clears its level: the map unlocks the next node, and the
+// save keeps it. savedProgress is updated too, because map moves save from it.
+const progress = clearOnCorrect({
+  isCleared: (level) => completedLevels.has(`${level.gameId}:${level.levelId}`),
+  markCleared: (level) => {
+    completedLevels.add(`${level.gameId}:${level.levelId}`);
+    savedProgress = {
+      ...savedProgress,
+      completedLevels: [...savedProgress.completedLevels, level],
+    };
+    try {
+      saveManager?.save(
+        savedProgress.completedLevels,
+        savedProgress.currentLevel,
+      );
+    } catch {
+      // The level stays cleared for this session without storage.
+    }
+  },
+});
 const levelSession = new LevelSession(levelManager, levelPanel, () => ({
   animation: new FakeAnimationEngine(),
   buildRun: () => [],
-  progress: { recordAttempt: () => {} },
+  progress,
 }));
 
 const navigation = new OverworldNavigation(
