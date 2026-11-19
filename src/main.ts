@@ -13,6 +13,7 @@ import { LevelPanel } from "./view/LevelPanel.ts";
 import { OverworldGraph } from "./model/OverworldGraph.ts";
 import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
 import { FakeAnimationEngine } from "./view/animation/FakeAnimationEngine.ts";
+import { saveAttempts } from "./controller/saveAttempts.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -21,9 +22,10 @@ if (!container) {
 }
 let saveManager: SaveManager | undefined;
 let savedProgress: SaveData = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   completedLevels: [],
   currentLevel: null,
+  attempts: [],
 };
 try {
   saveManager = new SaveManager(window.localStorage);
@@ -50,7 +52,7 @@ const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
 const levelSession = new LevelSession(levelManager, levelPanel, () => ({
   animation: new FakeAnimationEngine(),
   buildRun: () => [],
-  progress: { recordAttempt: () => {} },
+  progress: saveAttempts(saveManager),
 }));
 
 const navigation = new OverworldNavigation(
@@ -77,9 +79,10 @@ new OverworldMap(
   () => {
     completedLevels.clear();
     savedProgress = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [],
       currentLevel: null,
+      attempts: [],
     };
     try {
       saveManager?.reset();

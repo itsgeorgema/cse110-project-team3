@@ -13,9 +13,10 @@ function memoryStorage(initial: Record<string, string> = {}) {
 describe("SaveManager", () => {
   it("returns an empty versioned save when no progress exists", () => {
     expect(new SaveManager(memoryStorage()).load()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [],
       currentLevel: null,
+      attempts: [],
     });
   });
 
@@ -32,12 +33,13 @@ describe("SaveManager", () => {
 
     const loaded = manager.load();
     expect(loaded).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [
         { gameId: "carKinematics", levelId: 1 },
         { gameId: "netForce", levelId: 2 },
       ],
       currentLevel: { gameId: "netForce", levelId: 2 },
+      attempts: [],
     });
     expect(loaded.completedLevels[0]).not.toBe(
       JSON.parse(storage.getItem("escape-route-progress")!).completedLevels[0],
@@ -76,9 +78,10 @@ describe("SaveManager", () => {
     const manager = new SaveManager(memoryStorage(), "test-progress");
     manager.save([{ gameId: "game", levelId: 0 }], null);
     expect(manager.load()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [{ gameId: "game", levelId: 0 }],
       currentLevel: null,
+      attempts: [],
     });
   });
 
@@ -100,7 +103,7 @@ describe("SaveManager", () => {
     expect(() => manager.reset()).toThrow("storage unavailable");
   });
 
-  it("loads the previous versioned shape with no current selection", () => {
+  it("upgrades a version 1 save with no current selection", () => {
     const manager = new SaveManager(
       memoryStorage({
         "escape-route-progress": JSON.stringify({
@@ -110,9 +113,10 @@ describe("SaveManager", () => {
       }),
     );
     expect(manager.load()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [{ gameId: "game", levelId: 1 }],
       currentLevel: null,
+      attempts: [],
     });
   });
 
@@ -125,9 +129,10 @@ describe("SaveManager", () => {
     });
     manager.reset();
     expect(manager.load()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [],
       currentLevel: null,
+      attempts: [],
     });
   });
 
@@ -142,9 +147,102 @@ describe("SaveManager", () => {
     manager.recordCompletedLevel(second);
 
     expect(manager.load()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       completedLevels: [first, second],
       currentLevel: second,
+      attempts: [],
+    });
+  });
+
+  it("records right and wrong attempts in order and keeps progress", () => {
+    const manager = new SaveManager(memoryStorage());
+    const first = { gameId: "game", levelId: 1 };
+    manager.save([first], first);
+
+    manager.recordAttempt(result(first, { velocity: 3 }, false));
+    manager.recordAttempt(result(first, { velocity: 20 }, true));
+
+    expect(manager.load()).toEqual({
+      schemaVersion: 2,
+      completedLevels: [first],
+      currentLevel: first,
+      attempts: [
+        { ...first, values: { velocity: 3 }, correct: false },
+        { ...first, values: { velocity: 20 }, correct: true },
+      ],
+    });
+  });
+
+  it("keeps the attempt history when progress is saved again", () => {
+    const manager = new SaveManager(memoryStorage());
+    const first = { gameId: "game", levelId: 1 };
+    manager.recordAttempt(result(first, { velocity: 20 }, true));
+
+    manager.save([first], { gameId: "game", levelId: 2 });
+    manager.recordCompletedLevel({ gameId: "game", levelId: 2 });
+
+    expect(manager.load().attempts).toEqual([
+      { ...first, values: { velocity: 20 }, correct: true },
+    ]);
+  });
+
+  it("restores attempts after a reload and copies their values", () => {
+    const storage = memoryStorage();
+    const values = { velocity: 20 };
+    new SaveManager(storage).recordAttempt(
+      result({ gameId: "game", levelId: 1 }, values, true),
+    );
+    values.velocity = 99;
+
+    const loaded = new SaveManager(storage).load();
+    expect(loaded.attempts).toEqual([
+      { gameId: "game", levelId: 1, values: { velocity: 20 }, correct: true },
+    ]);
+  });
+
+  it("clears the attempt history on reset", () => {
+    const manager = new SaveManager(memoryStorage());
+    manager.recordAttempt(result({ gameId: "game", levelId: 1 }, {}, false));
+    manager.reset();
+    expect(manager.load().attempts).toEqual([]);
+  });
+
+  it.each([
+    { schemaVersion: 3, completedLevels: [], attempts: [] },
+    { schemaVersion: 2, completedLevels: [], attempts: "invalid" },
+    {
+      schemaVersion: 2,
+      completedLevels: [],
+      attempts: [{ gameId: "game", levelId: 1, values: {}, correct: "yes" }],
+    },
+    {
+      schemaVersion: 2,
+      completedLevels: [],
+      attempts: [
+        { gameId: "game", levelId: 1, values: { v: "20" }, correct: true },
+      ],
+    },
+  ])("treats a save with invalid attempts as empty: %j", (saved) => {
+    const manager = new SaveManager(
+      memoryStorage({ "escape-route-progress": JSON.stringify(saved) }),
+    );
+    expect(manager.load()).toEqual({
+      schemaVersion: 2,
+      completedLevels: [],
+      currentLevel: null,
+      attempts: [],
     });
   });
 });
+
+function result(
+  level: { gameId: string; levelId: number },
+  values: Record<string, number>,
+  correct: boolean,
+) {
+  return {
+    submittedAnswer: { ...level, values, units: {} },
+    correct,
+    feedback: "",
+  };
+}
