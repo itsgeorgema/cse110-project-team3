@@ -16,9 +16,14 @@ export class AnimationFactory {
     this.registry = registry;
   }
 
+  /** True when gameId has an engine registered. */
+  has(gameId: string): boolean {
+    return Object.hasOwn(this.registry, gameId);
+  }
+
   /** Throws when no game is registered under gameId. */
   create(gameId: string, stage: KonvaStage): AnimationEngine {
-    if (!Object.hasOwn(this.registry, gameId)) {
+    if (!this.has(gameId)) {
       throw new Error(`gameId does not exist: ${gameId}`);
     }
 
