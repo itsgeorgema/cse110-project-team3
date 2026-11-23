@@ -63,6 +63,7 @@ export class GameController {
     this.unsubscribePlayback = this.animation.onPlaybackFinished(() =>
       this.handlePlaybackFinished(),
     );
+    this.animation.showLevel(level);
   }
 
   submitAnswer(raw: RawInput): void {
@@ -83,6 +84,7 @@ export class GameController {
     // Step 4: play the player's numbers, right or wrong.
     const states = this.buildRun(submission, this.level);
     this.pendingResult = result;
+    this.animation.showResult(result);
     this.animation.play(states);
   }
 
