@@ -73,7 +73,7 @@ const progress = clearOnCorrect({
 const levelSession = new LevelSession(levelManager, levelPanel, () => ({
   animation: new FakeAnimationEngine(),
   buildRun: () => [],
-  progress: saveAttempts(saveManager),
+  progress,
 }));
 
 const navigation = new OverworldNavigation(
