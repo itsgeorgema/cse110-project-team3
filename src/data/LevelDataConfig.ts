@@ -229,20 +229,16 @@ export class LevelDataConfigFactory {
       radius,
       gravitationalAcceleration,
     );
-    const speed = Math.ceil(minimumSpeed) + this.randomIntegerInclusive(1, 10);
-    const netForce = PhysicsEngine.calculateForce(
-      mass,
-      PhysicsEngine.calculateCentripetalAcceleration(speed, radius),
-    );
 
     const problemStatement =
       `At the top of the loop, gravity pulls the coaster toward the center. ` +
       `The track can only push the coaster toward the center, so its normal force must be zero or positive for the coaster to stay in contact. ` +
-      `At the minimum speed, the normal force is zero and gravity alone provides the inward force. ` +
-      `A coaster with a mass of ${mass} kg travels at a speed of ${speed} m/s at the top of a loop with a radius of ${radius} m. ` +
+      `A coaster with a mass of ${mass} kg travels at a speed of v m/s at the top of a loop with a radius of ${radius} m. ` +
       `Use ${gravitationalAcceleration} m/s^2 for gravity and take the direction toward the center as positive. ` +
-      `What is the net force on the coaster at the top, and what is the minimum speed needed to stay in contact with the track? ` +
-      `Round both answers to two decimal places.`;
+      `First, express the net force at the top in terms of v. ` +
+      `At the minimum speed, the normal force is zero, so the net force equals the coaster's weight. ` +
+      `Use this condition to find the minimum speed needed to stay in contact with the track. ` +
+      `Round your answer to two decimal places.`;
 
     return {
       gameId: "circularMotion",
@@ -250,21 +246,19 @@ export class LevelDataConfigFactory {
       problemStatementVariables: [
         "mass",
         "radius",
-        "speed",
         "gravitationalAcceleration",
       ],
       problemStatementVariablesValues: {
         mass,
         radius,
-        speed,
         gravitationalAcceleration,
       },
       problemStatement,
-      userInputVariables: ["netForce", "minimumSpeed"],
-      userInputVariablesUnits: { netForce: "N", minimumSpeed: "m/s" },
-      expectedUserInput: { netForce, minimumSpeed },
+      userInputVariables: ["minimumSpeed"],
+      userInputVariablesUnits: { minimumSpeed: "m/s" },
+      expectedUserInput: { minimumSpeed },
       toleranceRule: { absolute: 0.01 },
-      bounds: { netForce: { min: 0 }, minimumSpeed: { min: 0 } },
+      bounds: { minimumSpeed: { min: 0 } },
     };
   }
 }

@@ -48,6 +48,17 @@ export class PhysicsEngine {
     return this.validateResult(a / b, "PhysicsEngine.divide");
   }
 
+  public static sqrt(value: number): number {
+    this.validateNumber(value, "PhysicsEngine.sqrt input variable value");
+    if (value < 0) {
+      throw new RangeError(
+        `PhysicsEngine.sqrt.value must be >= 0. Received: ${value}`,
+      );
+    }
+
+    return Math.sqrt(value);
+  }
+
   public static calculateVelocity(displacement: number, time: number) {
     this.validateNumber(
       displacement,
@@ -175,11 +186,9 @@ export class PhysicsEngine {
       );
     }
 
-    const scaledSpeed = speed / Math.sqrt(radius);
-    return this.validateResult(
-      scaledSpeed * scaledSpeed,
-      "PhysicsEngine.calculateCentripetalAcceleration",
-    );
+    // Divide before squaring to avoid overflowing on a large speed.
+    const scaledSpeed = this.divide(speed, this.sqrt(radius));
+    return this.multiply(scaledSpeed, scaledSpeed);
   }
 
   /** At the minimum speed, gravity alone supplies the inward acceleration. */
@@ -206,6 +215,10 @@ export class PhysicsEngine {
       );
     }
 
-    return Math.sqrt(gravitationalAcceleration) * Math.sqrt(radius);
+    // Taking the roots first keeps sqrt(g * r) finite for large inputs.
+    return this.multiply(
+      this.sqrt(gravitationalAcceleration),
+      this.sqrt(radius),
+    );
   }
 }

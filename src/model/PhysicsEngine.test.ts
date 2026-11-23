@@ -238,6 +238,27 @@ describe("PhysicsEngine.divide", () => {
   });
 });
 
+describe("PhysicsEngine.sqrt", () => {
+  it.each([
+    [0, 0],
+    [9, 3],
+    [2.25, 1.5],
+    [0.04, 0.2],
+  ])("calculates the square root of %s", (value, expected) => {
+    expect(PhysicsEngine.sqrt(value)).toBeCloseTo(expected, DECIMAL_PRECISION);
+  });
+
+  it.each([-0.25, NaN, Infinity, -Infinity])("rejects %s", (value) => {
+    expect(() => PhysicsEngine.sqrt(value)).toThrow(RangeError);
+  });
+
+  it("rejects nonnumeric input", () => {
+    expect(() => PhysicsEngine.sqrt("4" as unknown as number)).toThrow(
+      TypeError,
+    );
+  });
+});
+
 describe("PhysicsEngine.calculateVelocity", () => {
   it.each([
     [10, 5, 2],
@@ -1085,6 +1106,9 @@ describe("PhysicsEngine.calculateCentripetalAcceleration", () => {
   it.each([
     [15, 5, 45],
     [12, 10, 14.4],
+    [0.5, 2.5, 0.1],
+    [7.25, 4.5, 11.68055556],
+    [12.5, 3.2, 48.828125],
     [0, 10, 0],
     [2 ** 600, 2 ** 600, 2 ** 600],
   ])(
@@ -1114,6 +1138,9 @@ describe("PhysicsEngine.calculateMinimumLoopSpeed", () => {
   it.each([
     [4, 9, 6],
     [10, 10, 10],
+    [2.25, 9.61, 4.65],
+    [7.5, 9.81, 8.57758707],
+    [12.8, 9.81, 11.20571283],
     [4, 0, 0],
     [2 ** 600, 2 ** 600, 2 ** 600],
   ])(
