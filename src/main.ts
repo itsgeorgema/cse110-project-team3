@@ -14,7 +14,6 @@ import { OverworldGraph } from "./model/OverworldGraph.ts";
 import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
 import { FakeAnimationEngine } from "./view/animation/FakeAnimationEngine.ts";
 import { clearOnCorrect } from "./controller/clearOnCorrect.ts";
-import { saveAttempts } from "./controller/saveAttempts.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
