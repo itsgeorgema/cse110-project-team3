@@ -21,8 +21,10 @@ current app has a story map that launches registered levels in a shared dialog.
 - [`overworld/ResultsSummary.ts`](./overworld/ResultsSummary.ts) is the legacy
   mock results dialog; the map no longer mounts it. Cleared nodes replay their
   actual level instead.
-- [`KonvaStage.ts`](./KonvaStage.ts) contains the existing Konva stage
-  implementation. The story-map preview does not mount it.
+- [`KonvaStage.ts`](./KonvaStage.ts) owns the page's one Konva stage. It is
+  mounted in `LevelPanel`'s stage area and reset for each level that animates.
+- [`animation/`](./animation/README.md) holds the animation engines and the
+  guide to adding one for a level.
 
 `main.ts` creates the map, loads and saves its selected address through
 `SaveManager`, and falls back to session-only interaction when browser storage
@@ -31,8 +33,9 @@ old preview completions are not converted into real achievements.
 
 **Start level** and **Replay level** open registered, available levels. Locked
 levels cannot launch and unregistered locations report that they are coming soon.
-Answer feedback works now; completion recording, drafts, and animated physics
-remain separate integrations. See [level loading](../../docs/level-loading.md).
+Answer feedback works now. Levels with a run builder animate the answer on the
+stage before the attempt is recorded (Minigame 1 Level 1 so far); drafts remain
+a separate integration. See [level loading](../../docs/level-loading.md).
 
 Tests for view behavior are in `src/view/**/*.test.ts`; browser journeys are in
 `tests/e2e/`. See the

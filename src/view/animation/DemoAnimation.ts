@@ -1,7 +1,7 @@
 import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import type { AnimationEngine } from "./AnimationEngine.ts";
 import type { FrameScheduler } from "./FrameScheduler.ts";
-import { PlaybackListeners } from "./PlaybackListeners.ts";
+import { FramePlayback } from "./FramePlayback.ts";
 
 /** The object id DemoAnimation draws from each frame. */
 export const DEMO_BALL_ID = "ball";
@@ -15,75 +15,39 @@ export interface BallView {
 }
 
 /**
- * A ball following given frames (Strategy, #24): the reference for every
- * game's own AnimationEngine. Playback is time-based: each refresh draws the
- * last frame whose timeMs has been reached, so it plays at the same speed on
- * any monitor.
+ * A ball following given frames (Strategy, #24): the smallest possible
+ * AnimationEngine. FramePlayback runs the time loop; this class only draws.
  */
 export class DemoAnimation implements AnimationEngine {
-  private readonly listeners = new PlaybackListeners();
   private readonly ball: BallView;
-  private readonly schedule: FrameScheduler;
-  private states: readonly SimulationState[] = [];
-  private lastStates: readonly SimulationState[] | undefined;
-  /** Timestamp of the first refresh after play(); elapsed time counts from it. */
-  private startMs: number | undefined;
-  /** Cancels the pending refresh, while one is pending. */
-  private cancelFrame: (() => void) | undefined;
+  private readonly playback: FramePlayback;
 
   constructor(ball: BallView, schedule: FrameScheduler) {
     this.ball = ball;
-    this.schedule = schedule;
+    this.playback = new FramePlayback((state) => this.draw(state), schedule);
   }
 
-  /** Throws on an empty list: no frames means the simulation produced nothing. */
+  /** The demo has no scene: the ball appears with the first frame. */
+  showLevel(): void {}
+
+  /** The demo shows no verdict. */
+  showResult(): void {}
+
   play(states: readonly SimulationState[]): void {
-    if (states.length === 0) {
-      throw new Error("DemoAnimation.play needs at least one frame");
-    }
-    this.cancelFrame?.();
-    this.states = states;
-    this.lastStates = states;
-    this.startMs = undefined;
-    this.listeners.start();
-    this.draw(states[0]);
-    this.cancelFrame = this.schedule(this.onFrame);
+    this.playback.play(states);
   }
 
   stop(): void {
-    this.cancelFrame?.();
-    this.cancelFrame = undefined;
-    this.listeners.stop();
+    this.playback.stop();
   }
 
   replay(): void {
-    if (this.lastStates === undefined) return;
-    this.play(this.lastStates);
+    this.playback.replay();
   }
 
   onPlaybackFinished(listener: () => void): () => void {
-    return this.listeners.add(listener);
+    return this.playback.onPlaybackFinished(listener);
   }
-
-  /** One screen refresh: draw the frame for the elapsed time, then finish or ask for the next refresh. */
-  private readonly onFrame = (nowMs: number): void => {
-    this.startMs ??= nowMs;
-    const elapsed = nowMs - this.startMs;
-
-    let latestState = this.states[0];
-    for (const state of this.states) {
-      if (state.timeMs > elapsed) break;
-      latestState = state;
-    }
-    this.draw(latestState);
-
-    if (latestState == this.states[this.states.length - 1]) {
-      this.cancelFrame = undefined;
-      this.listeners.finish();
-    } else {
-      this.cancelFrame = this.schedule(this.onFrame);
-    }
-  };
 
   private draw(state: SimulationState): void {
     const ball = state.objects[DEMO_BALL_ID];

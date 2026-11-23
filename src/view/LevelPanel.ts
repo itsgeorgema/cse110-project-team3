@@ -13,6 +13,8 @@ export class LevelPanel implements LevelScreen {
   >();
   private returnFocus: HTMLElement | undefined;
   private readonly title = document.createElement("h2");
+  /** Where main.ts mounts the KonvaStage the level's animation draws on (#116). */
+  readonly stageHost = document.createElement("div");
 
   constructor(host: HTMLElement, onClose: () => void) {
     host.append(this.dialog);
@@ -30,7 +32,17 @@ export class LevelPanel implements LevelScreen {
     });
     this.content.setAttribute("aria-label", "Loaded problem");
     this.feedback.setAttribute("role", "status");
-    this.dialog.append(this.title, this.content, this.feedback, close);
+    this.stageHost.className = "level-stage";
+    this.stageHost.setAttribute("role", "img");
+    this.stageHost.setAttribute("aria-label", "Animation of your answer");
+    this.stageHost.hidden = true;
+    this.dialog.append(
+      this.title,
+      this.stageHost,
+      this.content,
+      this.feedback,
+      close,
+    );
   }
 
   open(title: string, trigger: HTMLElement): void {
@@ -39,7 +51,13 @@ export class LevelPanel implements LevelScreen {
     if (!this.dialog.open) this.dialog.showModal();
   }
 
+  /** Shows the animation stage for levels that have one. */
+  showStage(visible: boolean): void {
+    this.stageHost.hidden = !visible;
+  }
+
   clear(): void {
+    this.stageHost.hidden = true;
     this.content.replaceChildren();
     this.fields.clear();
     this.feedback.textContent = "";

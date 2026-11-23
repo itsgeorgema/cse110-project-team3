@@ -2,32 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import { snapshotState } from "../../model/SimulationState.ts";
 import { DEMO_BALL_ID, DemoAnimation, type BallView } from "./DemoAnimation.ts";
-import type { FrameScheduler } from "./FrameScheduler.ts";
-
-/** Plays the monitor: callbacks run only when the test calls tick(nowMs). */
-class ManualFrames {
-  private readonly pending = new Map<number, (nowMs: number) => void>();
-  private nextId = 0;
-
-  readonly schedule: FrameScheduler = (callback) => {
-    const id = this.nextId++;
-    this.pending.set(id, callback);
-    return () => {
-      this.pending.delete(id);
-    };
-  };
-
-  /** One screen refresh at nowMs: runs every callback that was waiting for it. */
-  tick(nowMs: number): void {
-    const due = [...this.pending.values()];
-    this.pending.clear();
-    for (const callback of due) callback(nowMs);
-  }
-
-  get waiting(): number {
-    return this.pending.size;
-  }
-}
+import { ManualFrames } from "./ManualFrames.ts";
 
 /** Records where the ball was drawn, instead of drawing it. */
 class RecordingBall implements BallView {

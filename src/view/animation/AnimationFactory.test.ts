@@ -38,3 +38,15 @@ describe("AnimationFactory", () => {
     expect(() => factory.create("constructor", stage)).toThrow(/constructor/);
   });
 });
+
+describe("AnimationFactory.has", () => {
+  const factory = new AnimationFactory({
+    demo: () => new FakeAnimationEngine(),
+  });
+
+  it("is true for a registered game and false otherwise", () => {
+    expect(factory.has("demo")).toBe(true);
+    expect(factory.has("pinball")).toBe(false);
+    expect(factory.has("constructor")).toBe(false);
+  });
+});

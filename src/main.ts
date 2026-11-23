@@ -13,7 +13,13 @@ import { LevelPanel } from "./view/LevelPanel.ts";
 import { OverworldGraph } from "./model/OverworldGraph.ts";
 import { OverworldNavigation } from "./controller/OverworldNavigation.ts";
 import { FakeAnimationEngine } from "./view/animation/FakeAnimationEngine.ts";
+import { clearOnCorrect } from "./controller/clearOnCorrect.ts";
+import { AnimationFactory } from "./view/animation/AnimationFactory.ts";
+import { animationRegistry } from "./view/animation/animationRegistry.ts";
+import { KonvaStage } from "./view/KonvaStage.ts";
+import { runBuilderFor } from "./controller/runRegistry.ts";
 import { saveAttempts } from "./controller/saveAttempts.ts";
+import type { AttemptRecorder } from "./controller/GameController.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -46,14 +52,57 @@ const levelHost = document.createElement("div");
 container.after(levelHost);
 const levelManager = new LevelManager(createLevelCatalog());
 const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
-// LevelPanel has no animation stage yet, so each level gets a canvas-free engine
-// that finishes at once and an empty run. Swap in the level's AnimationFactory
-// engine, a PhysicsEngine run builder and ProgressController once the panel mounts a stage.
-const levelSession = new LevelSession(levelManager, levelPanel, () => ({
-  animation: new FakeAnimationEngine(),
-  buildRun: () => [],
-  progress: saveAttempts(saveManager),
-}));
+// A correct answer clears its level: the map unlocks the next node, and the
+// save keeps it. savedProgress is updated too, because map moves save from it.
+const clearing = clearOnCorrect({
+  isCleared: (level) => completedLevels.has(`${level.gameId}:${level.levelId}`),
+  markCleared: (level) => {
+    completedLevels.add(`${level.gameId}:${level.levelId}`);
+    savedProgress = {
+      ...savedProgress,
+      completedLevels: [...savedProgress.completedLevels, level],
+    };
+    try {
+      saveManager?.save(
+        savedProgress.completedLevels,
+        savedProgress.currentLevel,
+      );
+    } catch {
+      // The level stays cleared for this session without storage.
+    }
+  },
+});
+// Every checked answer is added to the saved history (#81), then a correct one
+// clears its level (#106).
+const attempts = saveAttempts(saveManager);
+const progress: AttemptRecorder = {
+  recordAttempt(result) {
+    attempts.recordAttempt(result);
+    clearing.recordAttempt(result);
+  },
+};
+const stage = new KonvaStage(levelPanel.stageHost);
+const animations = new AnimationFactory(animationRegistry);
+// A level with a RunBuilder and a registered game plays its answer on the
+// stage (#116). Other levels keep the canvas-free engine, which finishes at
+// once, until their run builder lands.
+const levelSession = new LevelSession(levelManager, levelPanel, (config) => {
+  const buildRun = runBuilderFor(config);
+  if (buildRun === undefined || !animations.has(config.gameId)) {
+    return {
+      animation: new FakeAnimationEngine(),
+      buildRun: () => [],
+      progress,
+    };
+  }
+  levelPanel.showStage(true);
+  stage.reset();
+  return {
+    animation: animations.create(config.gameId, stage),
+    buildRun,
+    progress,
+  };
+});
 
 const navigation = new OverworldNavigation(
   new OverworldGraph(previewNodes, previewConnections),
