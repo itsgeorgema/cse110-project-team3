@@ -20,6 +20,8 @@ index.html
          ├── OverworldMap
          │    └── mapPreview fixtures
          └── LevelSession ── LevelManager, LevelPanel, GameController
+                              └── per level: runRegistry (RunBuilder) +
+                                  AnimationFactory engine on the KonvaStage
 ```
 
 The current screen is a story-map preview. It does not launch a level, submit an

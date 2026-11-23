@@ -1281,6 +1281,16 @@ progress::-moz-progress-bar {
 .level-panel .level-field-error:empty {
   display: none;
 }
+.level-panel .level-stage {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.level-panel .level-stage[hidden] {
+  display: none;
+}
 .level-panel .level-problem {
   border-top: 1px solid #6e8b7c;
   padding-top: 20px;

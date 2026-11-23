@@ -53,6 +53,33 @@ for (const width of [1280, 390]) {
   });
 }
 
+test("@smoke plays the getaway car on the stage and records the attempt after playback (#116)", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Start level", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "The getaway car" });
+  const stage = dialog.getByRole("img", { name: "Animation of your answer" });
+  await expect(stage.locator("canvas")).toBeVisible();
+  const box = await stage.boundingBox();
+  expect(box?.width).toBeGreaterThan(0);
+  expect(box?.height).toBeGreaterThan(0);
+
+  await dialog.getByLabel("velocity (m/s)", { exact: true }).fill("5");
+  await dialog.getByRole("button", { name: "Check answer" }).click();
+  await expect(dialog.getByRole("status")).toHaveText("Correct!");
+
+  // The run lasts the level's 2 s; the attempt is saved only once it ends.
+  const savedAttempts = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("escape-route-progress") ?? "{}")
+          .attempts?.length ?? 0,
+    );
+  expect(await savedAttempts()).toBe(0);
+  await expect.poll(savedAttempts, { timeout: 5_000 }).toBe(1);
+});
+
 test("switching map levels replaces fields and feedback; Escape clears the session", async ({
   page,
 }) => {
