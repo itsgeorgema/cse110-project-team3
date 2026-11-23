@@ -150,4 +150,62 @@ export class PhysicsEngine {
     );
     return this.subtract(normalForce, gravitationalForce);
   }
+
+  /** Returns the inward acceleration v²/r for circular motion. */
+  public static calculateCentripetalAcceleration(
+    speed: number,
+    radius: number,
+  ): number {
+    this.validateNumber(
+      speed,
+      "PhysicsEngine.calculateCentripetalAcceleration input variable speed",
+    );
+    this.validateNumber(
+      radius,
+      "PhysicsEngine.calculateCentripetalAcceleration input variable radius",
+    );
+    if (speed < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateCentripetalAcceleration.speed must be >= 0. Received: ${speed}`,
+      );
+    }
+    if (radius <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateCentripetalAcceleration.radius must be > 0. Received: ${radius}`,
+      );
+    }
+
+    const scaledSpeed = speed / Math.sqrt(radius);
+    return this.validateResult(
+      scaledSpeed * scaledSpeed,
+      "PhysicsEngine.calculateCentripetalAcceleration",
+    );
+  }
+
+  /** At the minimum speed, gravity alone supplies the inward acceleration. */
+  public static calculateMinimumLoopSpeed(
+    radius: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      radius,
+      "PhysicsEngine.calculateMinimumLoopSpeed input variable radius",
+    );
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateMinimumLoopSpeed input variable gravitational acceleration",
+    );
+    if (radius <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateMinimumLoopSpeed.radius must be > 0. Received: ${radius}`,
+      );
+    }
+    if (gravitationalAcceleration < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateMinimumLoopSpeed.gravitationalAcceleration must be >= 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    return Math.sqrt(gravitationalAcceleration) * Math.sqrt(radius);
+  }
 }
