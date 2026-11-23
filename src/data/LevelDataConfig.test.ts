@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { LevelDataConfigFactory } from "./LevelDataConfig";
 import type { LevelDataConfig } from "./LevelDataConfig";
+import { assertLevelConfig } from "./validateLevelConfig";
+import { DefaultAnswerValidator } from "../model/DefaultAnswerValidator";
 
-type GameId = "kinematics" | "netForce";
+type GameId = Parameters<LevelDataConfigFactory["createLevelDataConfig"]>[0];
 
 describe("createLevelDataConfig should handle invalid inputs", () => {
   it("createLevelDataConfig for nonExistent game, level 1 doesn't work", () => {
@@ -29,6 +31,14 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
     const levelId = 10;
     expect(() =>
       levelDataConfigFactory.createLevelDataConfig(gameId, levelId),
+    ).toThrow("levelId does not exist");
+  });
+
+  it.each([0, 99])("rejects circularMotion level %s", (levelId) => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    expect(() =>
+      levelDataConfigFactory.createLevelDataConfig("circularMotion", levelId),
     ).toThrow("levelId does not exist");
   });
 });
@@ -640,4 +650,77 @@ describe("createLevelDataConfig for net force game, level 2", () => {
       },
     });
   });
+});
+
+describe("createLevelDataConfig for circular motion game, level 3", () => {
+  it.each([
+    { random: 0, mass: 200, radius: 5 },
+    { random: 0.5, mass: 350, radius: 10 },
+    { random: 0.9999, mass: 500, radius: 15 },
+  ])(
+    "generates a valid loop problem with a radius of $radius m",
+    ({ random, mass, radius }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      try {
+        const config = new LevelDataConfigFactory().createLevelDataConfig(
+          "circularMotion",
+          3,
+        );
+        const gravitationalAcceleration = 9.81;
+        const minimumSpeed = Math.sqrt(gravitationalAcceleration * radius);
+
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        expect(config).toMatchObject({
+          gameId: "circularMotion",
+          levelId: 3,
+          problemStatementVariables: [
+            "mass",
+            "radius",
+            "gravitationalAcceleration",
+          ],
+          problemStatementVariablesValues: {
+            mass,
+            radius,
+            gravitationalAcceleration,
+          },
+          userInputVariables: ["minimumSpeed"],
+          userInputVariablesUnits: { minimumSpeed: "m/s" },
+          toleranceRule: { absolute: 0.01 },
+          bounds: { minimumSpeed: { min: 0 } },
+        });
+        expect(config.problemStatement).toContain(`mass of ${mass} kg`);
+        expect(config.problemStatement).toContain("speed of v m/s");
+        expect(config.problemStatement).toContain(`radius of ${radius} m`);
+        expect(config.problemStatement).toContain("9.81 m/s^2");
+        expect(config.problemStatement).toContain(
+          "normal force must be zero or positive",
+        );
+        expect(config.problemStatement).toContain(
+          "net force at the top in terms of v",
+        );
+        expect(config.problemStatement).toContain(
+          "the normal force is zero, so the net force equals the coaster's weight",
+        );
+        expect(config.problemStatement).toContain("minimum speed needed");
+        expect(config.problemStatement).toContain("two decimal places");
+        expect(config.expectedUserInput.minimumSpeed).toBeCloseTo(
+          minimumSpeed,
+          6,
+        );
+
+        const result = new DefaultAnswerValidator().validateAnswer(
+          {
+            gameId: config.gameId,
+            levelId: config.levelId,
+            values: { minimumSpeed: Number(minimumSpeed.toFixed(2)) },
+            units: config.userInputVariablesUnits,
+          },
+          config,
+        );
+        expect(result.correct).toBe(true);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
 });

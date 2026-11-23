@@ -238,6 +238,27 @@ describe("PhysicsEngine.divide", () => {
   });
 });
 
+describe("PhysicsEngine.sqrt", () => {
+  it.each([
+    [0, 0],
+    [9, 3],
+    [2.25, 1.5],
+    [0.04, 0.2],
+  ])("calculates the square root of %s", (value, expected) => {
+    expect(PhysicsEngine.sqrt(value)).toBeCloseTo(expected, DECIMAL_PRECISION);
+  });
+
+  it.each([-0.25, NaN, Infinity, -Infinity])("rejects %s", (value) => {
+    expect(() => PhysicsEngine.sqrt(value)).toThrow(RangeError);
+  });
+
+  it("rejects nonnumeric input", () => {
+    expect(() => PhysicsEngine.sqrt("4" as unknown as number)).toThrow(
+      TypeError,
+    );
+  });
+});
+
 describe("PhysicsEngine.calculateVelocity", () => {
   it.each([
     [10, 5, 2],
@@ -1078,5 +1099,84 @@ describe("PhysicsEngine.calculateNetForce", () => {
     expect(PhysicsEngine.calculateNetForce(0, Number.MIN_VALUE)).toBe(
       -Number.MIN_VALUE,
     );
+  });
+});
+
+describe("PhysicsEngine.calculateCentripetalAcceleration", () => {
+  it.each([
+    [15, 5, 45],
+    [12, 10, 14.4],
+    [0.5, 2.5, 0.1],
+    [7.25, 4.5, 11.68055556],
+    [12.5, 3.2, 48.828125],
+    [0, 10, 0],
+    [2 ** 600, 2 ** 600, 2 ** 600],
+  ])(
+    "calculates inward acceleration for speed %s and radius %s",
+    (speed, radius, expected) => {
+      expect(
+        PhysicsEngine.calculateCentripetalAcceleration(speed, radius),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it.each([
+    [-1, 10],
+    [12, 0],
+    [12, -1],
+    [NaN, 10],
+    [12, Infinity],
+    [Number.MAX_VALUE, 1],
+  ])("rejects invalid speed %s or radius %s", (speed, radius) => {
+    expect(() =>
+      PhysicsEngine.calculateCentripetalAcceleration(speed, radius),
+    ).toThrow(RangeError);
+  });
+});
+
+describe("PhysicsEngine.calculateMinimumLoopSpeed", () => {
+  it.each([
+    [4, 9, 6],
+    [10, 10, 10],
+    [2.25, 9.61, 4.65],
+    [7.5, 9.81, 8.57758707],
+    [12.8, 9.81, 11.20571283],
+    [4, 0, 0],
+    [2 ** 600, 2 ** 600, 2 ** 600],
+  ])(
+    "calculates the minimum speed for radius %s and gravity %s",
+    (radius, gravity, expected) => {
+      expect(
+        PhysicsEngine.calculateMinimumLoopSpeed(radius, gravity),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("sets the threshold where gravity alone supplies the inward acceleration", () => {
+    const radius = 12;
+    const gravity = 9.81;
+    const speed = PhysicsEngine.calculateMinimumLoopSpeed(radius, gravity);
+
+    expect(
+      PhysicsEngine.calculateCentripetalAcceleration(speed, radius),
+    ).toBeCloseTo(gravity, DECIMAL_PRECISION);
+    expect(
+      PhysicsEngine.calculateCentripetalAcceleration(speed - 1, radius),
+    ).toBeLessThan(gravity);
+    expect(
+      PhysicsEngine.calculateCentripetalAcceleration(speed + 1, radius),
+    ).toBeGreaterThan(gravity);
+  });
+
+  it.each([
+    [0, 9.81],
+    [-1, 9.81],
+    [12, -1],
+    [Infinity, 9.81],
+    [12, NaN],
+  ])("rejects invalid radius %s or gravity %s", (radius, gravity) => {
+    expect(() =>
+      PhysicsEngine.calculateMinimumLoopSpeed(radius, gravity),
+    ).toThrow(RangeError);
   });
 });
