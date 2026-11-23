@@ -46,10 +46,21 @@ class ManualAnimationEngine implements AnimationEngine {
   private readonly listeners = new PlaybackListeners();
   private last: readonly SimulationState[] | undefined;
   readonly played: (readonly SimulationState[])[] = [];
+  /** Every call, in order, so tests can check showResult comes before play. */
+  readonly calls: string[] = [];
+
+  showLevel(level: LevelDataConfig): void {
+    this.calls.push(`showLevel ${level.gameId}:${level.levelId}`);
+  }
+
+  showResult(result: AnswerValidationResult): void {
+    this.calls.push(`showResult ${result.correct}`);
+  }
 
   play(states: readonly SimulationState[]): void {
     this.last = states;
     this.played.push(states);
+    this.calls.push("play");
     this.listeners.start();
   }
 
@@ -309,5 +320,33 @@ describe("GameController step 5: record after playback", () => {
     controller.dispose();
 
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("GameController and the level's scene (#116)", () => {
+  it("draws the level's scene as soon as the level is set up", () => {
+    const { animation } = manualSetup();
+
+    expect(animation.calls).toEqual(["showLevel kinematics:1"]);
+  });
+
+  it("hands the engine the verdict just before playing the run", () => {
+    const { animation, controller } = manualSetup();
+
+    controller.submitAnswer({ ...correctInput, fields: { velocity: "3" } });
+
+    expect(animation.calls).toEqual([
+      "showLevel kinematics:1",
+      "showResult false",
+      "play",
+    ]);
+  });
+
+  it("gives the engine no verdict when the input does not parse", () => {
+    const { animation, controller } = manualSetup();
+
+    controller.submitAnswer({ ...correctInput, fields: { velocity: "abc" } });
+
+    expect(animation.calls).toEqual(["showLevel kinematics:1"]);
   });
 });
