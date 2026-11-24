@@ -81,8 +81,13 @@ export class GameController {
     const result = this.validator.validateAnswer(submission, this.level);
     this.onAnswerValidated(result);
 
-    // Step 4: play the player's numbers, right or wrong.
-    const states = this.buildRun(submission, this.level);
+    // Step 4: play the player's numbers when they are wrong, so the player
+    // sees what they did. An accepted answer plays the level's exact answer
+    // instead, so a correct answer always looks correct (#114).
+    const played: AnswerSubmission = result.correct
+      ? { ...submission, values: this.level.expectedUserInput }
+      : submission;
+    const states = this.buildRun(played, this.level);
     this.pendingResult = result;
     this.animation.showResult(result);
     this.animation.play(states);
