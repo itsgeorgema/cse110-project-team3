@@ -12,6 +12,8 @@ export interface LevelScreen {
   showLoadError(message: string, retry: () => void): void;
   showInputErrors(errors: Readonly<Record<string, string>>): void;
   showFeedback(message: string): void;
+  /** Blocks leaving the level while an answer's attempt is still unrecorded. */
+  lockReturn(locked: boolean): void;
 }
 
 /** Builds the playback wiring (#91) for the level that was just loaded. */
@@ -56,6 +58,9 @@ export class LevelSession {
       new DefaultAnswerValidator(),
       (answer) => this.screen.showFeedback(answer.feedback),
       this.playbackFor(result.config),
+      (pending) => {
+        if (revision === this.revision) this.screen.lockReturn(pending);
+      },
     );
     this.controller = controller;
     this.screen.showLevel(result.config, (raw) => {

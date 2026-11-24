@@ -41,14 +41,20 @@ for (const width of [1280, 390]) {
       await answer.fill("5");
       await answer.press("Enter");
       await expect(dialog.getByRole("status")).toHaveText("Correct!");
+      // The run must finish before the level counts, so the way back waits.
+      await expect(
+        dialog.getByRole("button", { name: "Finishing your run…" }),
+      ).toBeDisabled();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeVisible();
       await dialog
         .getByRole("button", { name: "Return to story map", exact: true })
         .click();
       await expect(dialog).not.toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Start level", exact: true }),
+        page.getByRole("button", { name: "Replay level", exact: true }),
       ).toBeFocused();
-      await expect(page.getByRole("progressbar")).toHaveAttribute("value", "0");
+      await expect(page.getByRole("progressbar")).toHaveAttribute("value", "1");
     });
   });
 }
@@ -80,6 +86,40 @@ test("@smoke plays the getaway car on the stage and records the attempt after pl
   await expect.poll(savedAttempts, { timeout: 5_000 }).toBe(1);
 });
 
+test("@smoke clearing a level unlocks the next node as soon as the map is back", async ({
+  page,
+}) => {
+  await page.goto("./");
+  const nextLevel = page.locator('[data-node="backstage"]');
+  await expect(nextLevel).toHaveClass(/locked/);
+
+  await page.getByRole("button", { name: "Start level", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "The getaway car" });
+  await dialog.getByLabel("velocity (m/s)", { exact: true }).fill("5");
+  await dialog.getByRole("button", { name: "Check answer" }).click();
+  // The level clears once its 2 s run has played.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            JSON.parse(localStorage.getItem("escape-route-progress") ?? "{}")
+              .completedLevels?.length ?? 0,
+        ),
+      { timeout: 5_000 },
+    )
+    .toBe(1);
+  await dialog
+    .getByRole("button", { name: "Return to story map", exact: true })
+    .click();
+
+  await expect(nextLevel).not.toHaveClass(/locked/);
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "1");
+  await expect(
+    page.getByRole("button", { name: "Replay level", exact: true }),
+  ).toBeFocused();
+});
+
 test("switching map levels replaces fields and feedback; Escape clears the session", async ({
   page,
 }) => {
@@ -102,6 +142,9 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await dialog.getByLabel("velocity (m/s)", { exact: true }).fill("5");
   await dialog.getByRole("button", { name: "Check answer" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
+  await expect(
+    dialog.getByRole("button", { name: "Return to story map", exact: true }),
+  ).toBeEnabled({ timeout: 5_000 });
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /Level 2: Past the big top/ }).click();
   await page
@@ -123,7 +166,8 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
-  await page.getByRole("button", { name: "Start level", exact: true }).click();
+  // The cleared level is redrawn as cleared at once (#106).
+  await page.getByRole("button", { name: "Replay level", exact: true }).click();
   await expect(dialog.getByLabel("netForce (N)", { exact: true })).toHaveValue(
     "",
   );
