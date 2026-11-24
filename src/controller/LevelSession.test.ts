@@ -13,6 +13,7 @@ function setup(loader = new LevelManager(createLevelCatalog())) {
     showLoadError: vi.fn<LevelScreen["showLoadError"]>(),
     showInputErrors: vi.fn(),
     showFeedback: vi.fn(),
+    lockReturn: vi.fn(),
   };
   const engines: FakeAnimationEngine[] = [];
   const progress = { recordAttempt: vi.fn() };
@@ -159,5 +160,15 @@ describe("LevelSession", () => {
     session.close();
     session.close();
     expect(engines[0].stopCount).toBe(1);
+  });
+
+  it("passes the attempt lock to the screen and unlocks once it is recorded", () => {
+    const { session, screen } = setup();
+    session.selectLevel(first);
+
+    screen.showLevel.mock.calls[0][1]({ ...first, fields: { velocity: "5" } });
+
+    // FakeAnimationEngine finishes at once, so the lock opens straight away.
+    expect(screen.lockReturn.mock.calls).toEqual([[true], [false]]);
   });
 });

@@ -42,6 +42,7 @@ export class GameController {
   private readonly buildRun: RunBuilder;
   private readonly progress: AttemptRecorder;
   private readonly unsubscribePlayback: () => void;
+  private readonly onAttemptPending: (pending: boolean) => void;
 
   /** The result waiting for its playback to finish. Cleared once recorded. */
   private pendingResult: AnswerValidationResult | undefined;
@@ -52,6 +53,12 @@ export class GameController {
     validator: AnswerValidator,
     onAnswerValidated: (result: AnswerValidationResult) => void,
     playback: PlaybackWiring,
+    /**
+     * Told true when an answer starts playing and false once its attempt is
+     * recorded, so the screen can keep the player in the level until the
+     * attempt counts. Replays do not record, so they do not report.
+     */
+    onAttemptPending: (pending: boolean) => void = () => {},
   ) {
     this.level = level;
     this.showInputErrors = showInputErrors;
@@ -60,6 +67,7 @@ export class GameController {
     this.animation = playback.animation;
     this.buildRun = playback.buildRun;
     this.progress = playback.progress;
+    this.onAttemptPending = onAttemptPending;
     this.unsubscribePlayback = this.animation.onPlaybackFinished(() =>
       this.handlePlaybackFinished(),
     );
@@ -84,6 +92,7 @@ export class GameController {
     // Step 4: play the player's numbers, right or wrong.
     const states = this.buildRun(submission, this.level);
     this.pendingResult = result;
+    this.onAttemptPending(true);
     this.animation.showResult(result);
     this.animation.play(states);
   }
@@ -92,6 +101,10 @@ export class GameController {
   dispose(): void {
     this.animation.stop();
     this.unsubscribePlayback();
+    if (this.pendingResult !== undefined) {
+      this.pendingResult = undefined;
+      this.onAttemptPending(false);
+    }
   }
 
   /**
@@ -103,5 +116,6 @@ export class GameController {
     if (result === undefined) return;
     this.pendingResult = undefined;
     this.progress.recordAttempt(result);
+    this.onAttemptPending(false);
   }
 }
