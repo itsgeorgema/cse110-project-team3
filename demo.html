@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DemoAnimation (dev only)</title>
+    <style>
+      body {
+        margin: 16px;
+        background: #111e23;
+        color: #e5e9e0;
+        font-family: system-ui, sans-serif;
+      }
+      #stage {
+        width: min(640px, 100%);
+        height: 360px;
+        border: 1px solid #e5e9e0;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      Status: <output id="status">loading</output>
+      <button id="replay" type="button">Replay</button>
+      <button id="stop" type="button">Stop</button>
+    </p>
+    <div id="stage"></div>
+    <script type="module" src="/src/view/animation/demoPage.ts"></script>
+  </body>
+</html>

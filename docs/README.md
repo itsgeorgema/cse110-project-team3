@@ -12,6 +12,8 @@ approaches. Update the relevant note with the implementing change.
   layer responsibilities, and the current storage and map-preview flow.
 - [Answer validation](./answer-validation.md): validator contract, input
   requirements, bounds, and tolerance behavior.
+- [Physics simulation](./physics-simulation.md): how a run is recorded as copied
+  `SimulationState` snapshots, the runner seam, and where matter-js is isolated.
 - [Session progress and next-level selection](./progress-tracking.md): attempt
   snapshots, completion, and ordered level availability.
 - [Overworld story map preview](./overworld-preview.md): scope and design
@@ -26,6 +28,8 @@ approaches. Update the relevant note with the implementing change.
 
 Implementation guides that must change with code are kept beside their code:
 [`src/view/overworld/README.md`](../src/view/overworld/README.md) documents the
-map UI details, and [`.github/workflows/README.md`](../.github/workflows/README.md)
+map UI details,
+[`src/view/animation/README.md`](../src/view/animation/README.md) explains how
+to add an animation for a level, and [`.github/workflows/README.md`](../.github/workflows/README.md)
 documents workflow responsibilities and constraints. Source directories also
 contain concise READMEs for local code orientation.

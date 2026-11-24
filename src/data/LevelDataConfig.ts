@@ -14,7 +14,7 @@ export interface LevelDataConfig {
   readonly bounds: Readonly<Record<string, AnswerBounds>>;
 }
 
-type GameId = "kinematics" | "netForce";
+type GameId = "kinematics" | "netForce" | "circularMotion";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
@@ -39,6 +39,13 @@ export class LevelDataConfigFactory {
           case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
+          default:
+            throw new Error("levelId does not exist");
+        }
+      case "circularMotion":
+        switch (levelId) {
+          case 3:
+            return this.createCircularMotionLevel3LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -133,7 +140,7 @@ export class LevelDataConfigFactory {
       expectedUserInput: { displacement: displacementForProblem },
       toleranceRule: { absolute: 0.00001 },
       bounds: {
-        velocity: { min: 0.0 },
+        displacement: { min: 0.0 },
       },
     };
   }
@@ -211,6 +218,47 @@ export class LevelDataConfigFactory {
       expectedUserInput: { gravitationalForce, normalForce, netForce },
       toleranceRule: { absolute: 0.00001 },
       bounds: { gravitationalForce: { min: 0.0 }, normalForce: { min: 0.0 } },
+    };
+  }
+
+  private createCircularMotionLevel3LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81; // m/s^2
+    const mass = this.randomIntegerInclusive(200, 500); // kg
+    const radius = this.randomIntegerInclusive(5, 15); // m
+    const minimumSpeed = PhysicsEngine.calculateMinimumLoopSpeed(
+      radius,
+      gravitationalAcceleration,
+    );
+
+    const problemStatement =
+      `At the top of the loop, gravity pulls the coaster toward the center. ` +
+      `The track can only push the coaster toward the center, so its normal force must be zero or positive for the coaster to stay in contact. ` +
+      `A coaster with a mass of ${mass} kg travels at a speed of v m/s at the top of a loop with a radius of ${radius} m. ` +
+      `Use ${gravitationalAcceleration} m/s^2 for gravity and take the direction toward the center as positive. ` +
+      `First, express the net force at the top in terms of v. ` +
+      `At the minimum speed, the normal force is zero, so the net force equals the coaster's weight. ` +
+      `Use this condition to find the minimum speed needed to stay in contact with the track. ` +
+      `Round your answer to two decimal places.`;
+
+    return {
+      gameId: "circularMotion",
+      levelId: 3,
+      problemStatementVariables: [
+        "mass",
+        "radius",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        mass,
+        radius,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: ["minimumSpeed"],
+      userInputVariablesUnits: { minimumSpeed: "m/s" },
+      expectedUserInput: { minimumSpeed },
+      toleranceRule: { absolute: 0.01 },
+      bounds: { minimumSpeed: { min: 0 } },
     };
   }
 }

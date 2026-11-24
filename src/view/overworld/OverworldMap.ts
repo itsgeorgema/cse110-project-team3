@@ -1,91 +1,70 @@
-import { showResultsSummary } from "./ResultsSummary.ts";
-import { chapters, previewConnections, previewNodes } from "./mapPreview.ts";
+import type { LevelAddress } from "../../model/LevelAddress.ts";
+import type { OverworldNavigation } from "../../controller/OverworldNavigation.ts";
+import { chapters, previewNodes } from "./mapPreview.ts";
 import type { MapNode } from "./mapPreview.ts";
 
-type ProgressMapNode = Omit<MapNode, "initialState"> & {
+type ProgressMapNode = MapNode & {
   readonly state: "cleared" | "current" | "locked";
 };
-
-export function getMapProgress(completedLevels: ReadonlySet<string>) {
-  const nodes: ProgressMapNode[] = previewNodes.map((node, index) => {
-    const key = `${node.level.gameId}:${node.level.levelId}`;
-    const completed = completedLevels.has(key);
-    const allEarlierCompleted = previewNodes
-      .slice(0, index)
-      .every((previous) =>
-        completedLevels.has(
-          `${previous.level.gameId}:${previous.level.levelId}`,
-        ),
-      );
-    return {
-      id: node.id,
-      level: node.level,
-      title: node.title,
-      subtitle: node.subtitle,
-      story: node.story,
-      chapter: node.chapter,
-      x: node.x,
-      y: node.y,
-      state: completed
-        ? ("cleared" as const)
-        : allEarlierCompleted
-          ? ("current" as const)
-          : ("locked" as const),
-    };
-  });
-  return {
-    nodes,
-    completedCount: nodes.filter((node) => node.state === "cleared").length,
-    current:
-      nodes.find((node) => node.state === "current") ?? nodes[nodes.length - 1],
-  };
-}
 
 const lock =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>';
 const star =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.8 6.4 7 .7-5.3 4.6 1.6 6.8-6.1-3.6-6.1 3.6 1.6-6.8L2.2 9.1l7-.7Z"/></svg>';
 
-/** UI-only map. Markers preview stories; the View results button opens mock results. */
+/** Story map with loading actions for available, registered levels. */
 export class OverworldMap {
   private readonly container: HTMLDivElement;
-  private readonly completedLevels: Set<string>;
-  private currentLevel: MapNode["level"] | null;
+  private readonly navigation: OverworldNavigation;
   private readonly saveCurrentLevel: (level: MapNode["level"]) => void;
   private readonly resetSavedProgress: () => void;
+  private readonly openLevel: (
+    level: LevelAddress,
+    trigger: HTMLButtonElement,
+  ) => void;
 
   constructor(
     container: HTMLDivElement,
-    completedLevels?: ReadonlySet<string>,
-    currentLevel: MapNode["level"] | null = null,
+    navigation: OverworldNavigation,
     saveCurrentLevel: (level: MapNode["level"]) => void = () => {},
     resetSavedProgress: () => void = () => {},
+    openLevel: (
+      level: LevelAddress,
+      trigger: HTMLButtonElement,
+    ) => void = () => {},
   ) {
     this.container = container;
-    this.completedLevels = new Set(
-      completedLevels ??
-        previewNodes
-          .filter((node) => node.initialState === "cleared")
-          .map((node) => `${node.level.gameId}:${node.level.levelId}`),
-    );
-    this.currentLevel = currentLevel;
+    this.navigation = navigation;
     this.saveCurrentLevel = saveCurrentLevel;
     this.resetSavedProgress = resetSavedProgress;
+    this.openLevel = openLevel;
     this.render();
   }
 
+  /**
+   * Redraws the map from the current progress, keeping the scroll position.
+   * Call it after progress changes off the map, such as a level cleared in
+   * the level panel. Focus lands on the selected level's action button, the
+   * one that opened the level, since the redraw replaces it.
+   */
+  refresh(): void {
+    const scrollTop = this.container.querySelector(".map-scroll")!.scrollTop;
+    this.render();
+    this.container.querySelector(".map-scroll")!.scrollTop = scrollTop;
+    this.container.querySelector<HTMLButtonElement>(".open-level")?.focus();
+  }
+
   private render(): void {
-    const {
-      nodes,
-      current,
-      completedCount: cleared,
-    } = getMapProgress(this.completedLevels);
-    const selected =
-      nodes.find(
-        (node) =>
-          node.level.gameId === this.currentLevel?.gameId &&
-          node.level.levelId === this.currentLevel.levelId,
-      ) ?? current;
+    const nodes: ProgressMapNode[] = previewNodes.map((node) => ({
+      ...node,
+      ...this.navigation.graph.getNode(node.id)!,
+      state: this.navigation.status(node.level),
+    }));
+    const current = nodes.find(
+      (node) => node.id === this.navigation.current.id,
+    )!;
+    const cleared = nodes.filter((node) => node.state === "cleared").length;
+    const selected = current;
     this.container.innerHTML = `
       <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="preview-badge">Story map</span></header>
       <main class="overworld">
@@ -93,6 +72,7 @@ export class OverworldMap {
           <h1>The Great<br>Escape</h1>
           <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><button class="reset-progress" type="button">Reset progress</button></div>
           <nav class="chapter-nav" aria-label="Story chapters">${chapters.map((chapter, index) => `<button class="chapter-link" data-chapter="${index}"><span class="chapter-number">0${index + 1}</span><span><strong>${chapter.title}</strong><small>${index === 0 ? "The story begins" : "Further down the road"}</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("")}</nav>
+          <p class="navigation-status" role="status" aria-live="polite"></p>
           <button class="return-button" type="button">◎ &nbsp; Back to your chapter</button>
         </aside>
         <section class="map-column" aria-label="Escape route map">
@@ -101,7 +81,7 @@ export class OverworldMap {
             <div class="map-world">
               ${this.landscape()}
               ${chapters.map((chapter, index) => `<div id="chapter-${index}" class="chapter-heading" style="top:${chapter.y + 36}px"><span>CHAPTER 0${index + 1}</span><h2>${chapter.title}</h2><p>${chapter.subtitle}</p></div>`).join("")}
-              <svg class="route-lines" viewBox="0 0 680 1770" preserveAspectRatio="none" aria-hidden="true">${previewConnections
+              <svg class="route-lines" viewBox="0 0 680 1770" preserveAspectRatio="none" aria-hidden="true">${this.navigation.graph.connections
                 .map(([fromId, toId]) => {
                   const from = nodes.find((node) => node.id === fromId)!;
                   const to = nodes.find((node) => node.id === toId)!;
@@ -109,7 +89,7 @@ export class OverworldMap {
                   return `<path class="route-bed" d="${path}"/><path class="route ${from.state === "cleared" ? "traveled" : ""}" d="${path}"/>`;
                 })
                 .join("")}</svg>
-              ${nodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.state === "current" ? "you are here" : node.state}. Preview story." aria-pressed="${node.id === selected.id}">${node.state === "current" ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : `<span aria-hidden="true">${String(current.level.levelId).padStart(2, "0")}</span>`}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
+              ${nodes.map((node, index) => `<button type="button" class="map-node ${node.state}" data-node="${node.id}" style="left:${(node.x / 680) * 100}%;top:${node.y}px" aria-label="Level ${index + 1}: ${node.title}, ${node.id === current.id ? "you are here" : node.state}. Select location." aria-pressed="${node.id === selected.id}" aria-disabled="${!this.navigation.checkDestination(node.level).ok}">${node.id === current.id ? '<span class="you-are-here">YOU ARE HERE</span><span class="clown" aria-hidden="true"><i class="clown-hat"></i><i class="clown-face"><b></b></i></span>' : ""}<span class="node-circle">${node.state === "cleared" ? '<span aria-hidden="true">✓</span>' : node.state === "locked" ? lock : `<span aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>`}</span><span class="node-label"><small>LEVEL 0${index + 1}</small><strong>${node.title}</strong>${node.state === "cleared" ? `<span class="node-stars">${star}${star}${star}</span><span class="node-caption">Completed</span>` : `<span class="node-caption">${node.state === "current" ? "Your next chapter" : "Still to be discovered"}</span>`}</span></button>`).join("")}
               <div class="map-ending"><span aria-hidden="true">✦</span> THE WORLD IS BIGGER THAN THE BIG TOP.</div>
             </div>
           </div>
@@ -123,14 +103,21 @@ export class OverworldMap {
       .forEach((button) => {
         button.addEventListener("click", () => {
           const node = nodes.find((item) => item.id === button.dataset.node)!;
-          this.currentLevel = node.level;
-          this.saveCurrentLevel(node.level);
+          const result = this.navigation.selectLevel(node.level);
+          if (!result.ok) {
+            this.container.querySelector(".navigation-status")!.textContent =
+              result.message;
+            return;
+          }
+          if (result.from.id !== result.to.id)
+            this.saveCurrentLevel(result.to.level);
+          const scrollTop =
+            this.container.querySelector(".map-scroll")!.scrollTop;
+          this.render();
+          this.container.querySelector(".map-scroll")!.scrollTop = scrollTop;
           this.container
-            .querySelectorAll("[data-node]")
-            .forEach((marker) =>
-              marker.setAttribute("aria-pressed", String(marker === button)),
-            );
-          this.showPreview(node);
+            .querySelector<HTMLButtonElement>(`[data-node="${node.id}"]`)!
+            .focus();
         });
       });
     this.container
@@ -152,8 +139,7 @@ export class OverworldMap {
       .querySelector<HTMLButtonElement>(".reset-progress")!
       .addEventListener("click", () => {
         this.resetSavedProgress();
-        this.completedLevels.clear();
-        this.currentLevel = null;
+        this.navigation.reset();
         this.render();
       });
   }
@@ -170,16 +156,22 @@ export class OverworldMap {
   private showPreview(node: ProgressMapNode): void {
     this.container.querySelector(".story-preview")!.innerHTML = `
       <div class="preview-illustration" aria-hidden="true"><svg viewBox="0 0 260 180"><circle cx="192" cy="40" r="22" fill="#e9d9a8"/><path d="M0 145Q65 108 130 142T260 134V180H0" fill="#28474b"/><path d="M45 126 130 46 215 126Z" fill="#d9bd8c"/><path d="m130 46-28 80h56Z" fill="#a95841"/><path d="M55 126h150v42H55Z" fill="#bd7653"/><path d="M109 168v-36q21-27 42 0v36" fill="#162c34"/><path d="M130 46V20l28 9-28 9" fill="#bc7050"/><path d="M28 168h205" stroke="#e1ce9b" opacity=".4"/><g fill="#e9d9a8"><circle cx="36" cy="45" r="1.5"/><circle cx="76" cy="26" r="1"/><circle cx="223" cy="85" r="1.5"/></g></svg><span>TALES FROM THE CIRCUS</span></div>
-      <div class="preview-copy"><div class="eyebrow">CHAPTER 0${node.chapter + 1} <span> / </span> LEVEL 0${node.level.levelId}</div><h2>${node.title}</h2><p class="preview-subtitle">${node.subtitle}</p><div class="story-divider"></div><p class="story-text">${node.story}</p><div class="level-status ${node.state}">${node.state === "locked" ? lock : '<span aria-hidden="true">' + (node.state === "cleared" ? "✓" : "◎") + "</span>"}<span>${node.state === "locked" ? "An undiscovered part of your story" : node.state === "cleared" ? "A little closer to freedom" : "This is where we left off"}</span></div>${node.state === "cleared" ? '<button class="results-preview-button" type="button">View results <span aria-hidden="true">↗</span></button>' : `<button class="play-placeholder" disabled>${node.state === "locked" ? "Chapter locked" : "Level coming soon"}${lock}</button>`}<p class="preview-disclaimer">A glimpse of the journey. Playable levels are on their way.</p></div>`;
+      <div class="preview-copy"><div class="eyebrow">CHAPTER 0${node.chapter + 1} <span> / </span> LEVEL 0${previewNodes.findIndex((entry) => entry.id === node.id) + 1}</div><h2>${node.title}</h2><p class="preview-subtitle">${node.subtitle}</p><div class="story-divider"></div><p class="story-text">${node.story}</p><div class="level-status ${node.state}">${node.state === "locked" ? lock : '<span aria-hidden="true">' + (node.state === "cleared" ? "✓" : "◎") + "</span>"}<span>${node.state === "locked" ? "An undiscovered part of your story" : node.state === "cleared" ? "A little closer to freedom" : "This is where we left off"}</span></div>${this.levelAction(node)}</div>`;
     this.container
-      .querySelector<HTMLButtonElement>(".results-preview-button")
+      .querySelector<HTMLButtonElement>(".open-level")
       ?.addEventListener("click", (event) => {
-        showResultsSummary(
-          this.container,
-          node,
-          event.currentTarget as HTMLButtonElement,
-        );
+        if (this.navigation.checkDestination(node.level).ok) {
+          this.openLevel(node.level, event.currentTarget as HTMLButtonElement);
+        }
       });
+  }
+
+  private levelAction(node: ProgressMapNode): string {
+    if (node.state === "locked")
+      return '<button class="play-placeholder" disabled>Chapter locked</button>';
+    if (!this.navigation.isRegistered(node.level))
+      return '<button class="play-placeholder" disabled>Level coming soon</button>';
+    return `<button class="results-preview-button open-level" type="button">${node.state === "cleared" ? "Replay level" : "Start level"}</button>`;
   }
 
   private landscape(): string {
