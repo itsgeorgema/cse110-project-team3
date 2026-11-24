@@ -29,10 +29,32 @@ export class SaveManager {
   load(): SaveData {
     const serialized = this.storage.getItem(this.storageKey);
     if (serialized === null) return this.emptySave();
+    return this.parse(serialized) ?? this.emptySave();
+  }
 
+  /** The stored progress as a JSON file body, for backups and other devices (#3). */
+  exportSave(): string {
+    return `${JSON.stringify(this.load(), null, 2)}\n`;
+  }
+
+  /**
+   * Replaces the stored progress with an exported file body (#3). A version 1
+   * file is upgraded like load() does. Throws, and keeps the current progress,
+   * when the text is not a valid save.
+   */
+  importSave(serialized: string): SaveData {
+    const imported = this.parse(serialized);
+    if (imported === undefined) {
+      throw new Error("This file is not an Escape Route progress file.");
+    }
+    this.write(imported);
+    return imported;
+  }
+
+  private parse(serialized: string): SaveData | undefined {
     try {
       const parsed: unknown = JSON.parse(serialized);
-      if (!this.isStoredSave(parsed)) return this.emptySave();
+      if (!this.isStoredSave(parsed)) return undefined;
       return {
         schemaVersion: SCHEMA_VERSION,
         completedLevels: parsed.completedLevels.map((level) => ({ ...level })),
@@ -50,9 +72,10 @@ export class SaveManager {
               })),
       };
     } catch {
-      return this.emptySave();
+      return undefined;
     }
   }
+
   /** Keeps the saved attempts, so map moves never wipe the history. */
   save(
     completedLevels: readonly LevelAddress[],
