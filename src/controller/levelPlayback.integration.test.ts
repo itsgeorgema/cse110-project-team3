@@ -106,3 +106,60 @@ describe("Minigame 1 Level 1 playback, end to end (#116)", () => {
     expect(frames.waiting).toBe(0);
   });
 });
+
+describe.each([
+  { levelId: 2, input: "displacement" },
+  { levelId: 3, input: "acceleration" },
+])("Minigame 1 Level $levelId playback, end to end", ({ levelId, input }) => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "kinematics",
+      levelId,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const car = new RecordingCar();
+    const animation = new CarAnimation(
+      car,
+      { width: 600, height: 260 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const answer = (value: number) => {
+      controller.submitAnswer({
+        gameId: "kinematics",
+        levelId,
+        fields: { [input]: String(value) },
+      });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    return { level, car, progress, answer };
+  }
+
+  it("plays the right answer to the gate and says Correct!", () => {
+    const { level, car, progress, answer } = playLevel();
+
+    answer(level.expectedUserInput[input]);
+
+    expect(car.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("plays a too-small answer short of the gate", () => {
+    const { level, car, progress, answer } = playLevel();
+
+    answer(level.expectedUserInput[input] / 2);
+
+    expect(car.message?.text).toMatch(/^Short by \d/);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+});
