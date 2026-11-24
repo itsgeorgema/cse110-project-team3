@@ -235,6 +235,110 @@ describe("SaveManager", () => {
   });
 });
 
+describe("SaveManager progress files (#3)", () => {
+  function playedSave() {
+    const manager = new SaveManager(memoryStorage());
+    manager.save([{ gameId: "kinematics", levelId: 1 }], {
+      gameId: "kinematics",
+      levelId: 2,
+    });
+    manager.recordAttempt(
+      result({ gameId: "kinematics", levelId: 1 }, { velocity: 5 }, true),
+    );
+    return manager;
+  }
+
+  it("exports the stored progress as readable JSON", () => {
+    const exported = playedSave().exportSave();
+    expect(exported.endsWith("\n")).toBe(true);
+    expect(exported).toContain('\n  "schemaVersion": 2');
+    expect(JSON.parse(exported)).toEqual({
+      schemaVersion: 2,
+      completedLevels: [{ gameId: "kinematics", levelId: 1 }],
+      currentLevel: { gameId: "kinematics", levelId: 2 },
+      attempts: [
+        {
+          gameId: "kinematics",
+          levelId: 1,
+          values: { velocity: 5 },
+          correct: true,
+        },
+      ],
+    });
+  });
+
+  it("exports an empty save when nothing is stored", () => {
+    expect(JSON.parse(new SaveManager(memoryStorage()).exportSave())).toEqual({
+      schemaVersion: 2,
+      completedLevels: [],
+      currentLevel: null,
+      attempts: [],
+    });
+  });
+
+  it("round trips an exported file onto another device", () => {
+    const exported = playedSave().exportSave();
+    const otherDevice = new SaveManager(memoryStorage());
+
+    const imported = otherDevice.importSave(exported);
+
+    expect(imported).toEqual(JSON.parse(exported));
+    expect(otherDevice.load()).toEqual(JSON.parse(exported));
+  });
+
+  it("replaces existing progress instead of merging with it", () => {
+    const manager = playedSave();
+    manager.importSave(
+      JSON.stringify({
+        schemaVersion: 2,
+        completedLevels: [],
+        currentLevel: null,
+        attempts: [],
+      }),
+    );
+    expect(manager.load()).toEqual({
+      schemaVersion: 2,
+      completedLevels: [],
+      currentLevel: null,
+      attempts: [],
+    });
+  });
+
+  it("upgrades an imported version 1 file", () => {
+    const manager = new SaveManager(memoryStorage());
+    const imported = manager.importSave(
+      JSON.stringify({
+        schemaVersion: 1,
+        completedLevels: [{ gameId: "kinematics", levelId: 1 }],
+      }),
+    );
+    expect(imported).toEqual({
+      schemaVersion: 2,
+      completedLevels: [{ gameId: "kinematics", levelId: 1 }],
+      currentLevel: null,
+      attempts: [],
+    });
+    expect(manager.load()).toEqual(imported);
+  });
+
+  it.each([
+    "",
+    "not json",
+    "null",
+    "[]",
+    JSON.stringify({ schemaVersion: 3, completedLevels: [], attempts: [] }),
+    JSON.stringify({ schemaVersion: 2, completedLevels: [{ levelId: 1 }] }),
+  ])("rejects an invalid file and keeps current progress: %j", (file) => {
+    const manager = playedSave();
+    const before = manager.load();
+
+    expect(() => manager.importSave(file)).toThrow(
+      "This file is not an Escape Route progress file.",
+    );
+    expect(manager.load()).toEqual(before);
+  });
+});
+
 function result(
   level: { gameId: string; levelId: number },
   values: Record<string, number>,

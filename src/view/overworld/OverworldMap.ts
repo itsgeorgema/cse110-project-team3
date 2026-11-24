@@ -3,6 +3,20 @@ import type { OverworldNavigation } from "../../controller/OverworldNavigation.t
 import { chapters, previewNodes } from "./mapPreview.ts";
 import type { MapNode } from "./mapPreview.ts";
 
+/** Progress file and quit actions from the sidebar and top bar (#3). */
+export interface ProgressActions {
+  downloadProgress(): void;
+  /** Resolves to an error message to show, or undefined after a successful import. */
+  importProgress(file: File): Promise<string | undefined>;
+  quit(trigger: HTMLButtonElement): void;
+}
+
+const noProgressActions: ProgressActions = {
+  downloadProgress: () => {},
+  importProgress: async () => undefined,
+  quit: () => {},
+};
+
 type ProgressMapNode = MapNode & {
   readonly state: "cleared" | "current" | "locked";
 };
@@ -22,6 +36,7 @@ export class OverworldMap {
     level: LevelAddress,
     trigger: HTMLButtonElement,
   ) => void;
+  private readonly progressActions: ProgressActions;
 
   constructor(
     container: HTMLDivElement,
@@ -32,12 +47,14 @@ export class OverworldMap {
       level: LevelAddress,
       trigger: HTMLButtonElement,
     ) => void = () => {},
+    progressActions: ProgressActions = noProgressActions,
   ) {
     this.container = container;
     this.navigation = navigation;
     this.saveCurrentLevel = saveCurrentLevel;
     this.resetSavedProgress = resetSavedProgress;
     this.openLevel = openLevel;
+    this.progressActions = progressActions;
     this.render();
   }
 
@@ -66,11 +83,11 @@ export class OverworldMap {
     const cleared = nodes.filter((node) => node.state === "cleared").length;
     const selected = current;
     this.container.innerHTML = `
-      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="preview-badge">Story map</span></header>
+      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="topbar-actions"><span class="preview-badge">Story map</span><button class="quit-game" type="button">Quit</button></span></header>
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
-          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><button class="reset-progress" type="button">Reset progress</button></div>
+          <div class="journey-progress"><div><span>Your journey</span><span>${cleared} <span class="muted">/ ${nodes.length} cleared</span></span></div><progress value="${cleared}" max="${nodes.length}">${cleared} of ${nodes.length} cleared</progress><div class="progress-actions"><button class="reset-progress" type="button">Reset progress</button><button class="reset-progress download-progress" type="button">Download progress</button><button class="reset-progress import-progress" type="button">Import progress</button><input class="import-progress-file" type="file" accept=".json,application/json" hidden aria-label="Progress file to import"></div><p class="progress-file-status" role="status" aria-live="polite"></p></div>
           <nav class="chapter-nav" aria-label="Story chapters">${chapters.map((chapter, index) => `<button class="chapter-link" data-chapter="${index}"><span class="chapter-number">0${index + 1}</span><span><strong>${chapter.title}</strong><small>${index === 0 ? "The story begins" : "Further down the road"}</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("")}</nav>
           <p class="navigation-status" role="status" aria-live="polite"></p>
           <button class="return-button" type="button">◎ &nbsp; Back to your chapter</button>
@@ -142,6 +159,35 @@ export class OverworldMap {
         this.navigation.reset();
         this.render();
       });
+    this.bindProgressActions();
+  }
+
+  private bindProgressActions(): void {
+    const fileInput = this.container.querySelector<HTMLInputElement>(
+      ".import-progress-file",
+    )!;
+    const status = this.container.querySelector(".progress-file-status")!;
+    this.container
+      .querySelector<HTMLButtonElement>(".download-progress")!
+      .addEventListener("click", () => {
+        this.progressActions.downloadProgress();
+        status.textContent = "Progress file downloaded.";
+      });
+    this.container
+      .querySelector<HTMLButtonElement>(".import-progress")!
+      .addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      fileInput.value = "";
+      if (!file) return;
+      const error = await this.progressActions.importProgress(file);
+      if (error !== undefined) status.textContent = error;
+    });
+    this.container
+      .querySelector<HTMLButtonElement>(".quit-game")!
+      .addEventListener("click", (event) =>
+        this.progressActions.quit(event.currentTarget as HTMLButtonElement),
+      );
   }
 
   private scrollTo(top: number): void {
