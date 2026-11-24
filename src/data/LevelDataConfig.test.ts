@@ -652,6 +652,164 @@ describe("createLevelDataConfig for net force game, level 2", () => {
   });
 });
 
+describe("createLevelDataConfig for circular motion game, level 1", () => {
+  const expectValidCircularMotionLevel1Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    const speedMatch = problemStatement.match(/speed of (\d+) m\/s/);
+    const radiusMatch = problemStatement.match(/radius of (\d+) m\./);
+    expect(speedMatch).not.toBeNull();
+    expect(radiusMatch).not.toBeNull();
+
+    const speed = Number(speedMatch?.[1]);
+    const radius = Number(radiusMatch?.[1]);
+
+    // Validate speed and radius.
+    expect(Number.isInteger(speed)).toBe(true);
+    expect(speed).toBeGreaterThanOrEqual(10);
+    expect(speed).toBeLessThanOrEqual(40);
+    expect(Number.isInteger(radius)).toBe(true);
+    expect(radius).toBeGreaterThanOrEqual(5);
+    expect(radius).toBeLessThanOrEqual(40);
+
+    // Validate mathematical consistency: a = v^2 / r.
+    expect(expectedUserInput.acceleration).toBeGreaterThan(0);
+    expect(expectedUserInput.acceleration).toBeCloseTo(
+      (speed * speed) / radius,
+      6,
+    );
+
+    // Validate problem statement variables.
+    expect(problemStatementVariablesValues).toEqual({ speed, radius });
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^When an object moves along a circle, its velocity keeps changing direction, so it is always accelerating toward the center of the circle\. This is called centripetal acceleration, and it equals the speed squared divided by the radius of the circle \(a = v\^2 \/ r\)\. A roller coaster travels at a speed of \d+ m\/s at the top of a loop with a radius of \d+ m\. What is the roller coaster's acceleration at the top of the loop\? Round your answer to two decimal places\.$/,
+    );
+
+    // Validate answer configuration.
+    expect(Object.keys(expectedUserInput)).toEqual(["acceleration"]);
+  };
+
+  it("deterministic test: should generate valid and correctly formatted centripetal acceleration problems", () => {
+    // Fix Math.random() to return 0.5 twice in a row
+    // See LevelDataConfigFactory.randomIntegerInclusive() for implementation
+    // of random integer generator for problem
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0.5) // speed = Math.floor(0.5 * (40 - 10 + 1)) + 10 = 25
+      .mockReturnValueOnce(0.5); // radius = Math.floor(0.5 * (40 - 5 + 1)) + 5 = 23
+
+    try {
+      const levelDataConfig =
+        new LevelDataConfigFactory().createLevelDataConfig("circularMotion", 1);
+
+      expect(levelDataConfig.problemStatementVariablesValues).toEqual({
+        speed: 25,
+        radius: 23,
+      });
+      expect(levelDataConfig.expectedUserInput.acceleration).toBeCloseTo(
+        625 / 23,
+        6,
+      );
+
+      expectValidCircularMotionLevel1Problem(levelDataConfig);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    { random: 0, speed: 10, radius: 5, acceleration: 20 },
+    { random: 0.9999, speed: 40, radius: 40, acceleration: 40 },
+  ])(
+    "generates a valid problem at the range edge: $speed m/s on a $radius m loop",
+    ({ random, speed, radius, acceleration }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      try {
+        const config = new LevelDataConfigFactory().createLevelDataConfig(
+          "circularMotion",
+          1,
+        );
+
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        expect(config.problemStatementVariablesValues).toEqual({
+          speed,
+          radius,
+        });
+        expect(config.expectedUserInput.acceleration).toBeCloseTo(
+          acceleration,
+          6,
+        );
+        expectValidCircularMotionLevel1Problem(config);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it("randomized tests (1000): should generate valid and correctly formatted centripetal acceleration problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    for (let i = 0; i < 1000; i++) {
+      expectValidCircularMotionLevel1Problem(
+        levelDataConfigFactory.createLevelDataConfig("circularMotion", 1),
+      );
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      1,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "circularMotion",
+      levelId: 1,
+      problemStatementVariables: ["speed", "radius"],
+      userInputVariables: ["acceleration"],
+      userInputVariablesUnits: { acceleration: "m/s^2" },
+      toleranceRule: { absolute: 0.01 },
+      bounds: { acceleration: { min: 0 } },
+    });
+  });
+
+  it("accepts the exact answer and the answer rounded to two decimals", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      1,
+    );
+    const validator = new DefaultAnswerValidator();
+    const submit = (acceleration: number) => ({
+      gameId: config.gameId,
+      levelId: config.levelId,
+      values: { acceleration },
+      units: config.userInputVariablesUnits,
+    });
+    const exact = config.expectedUserInput.acceleration;
+
+    expect(validator.validateAnswer(submit(exact), config).correct).toBe(true);
+    expect(
+      validator.validateAnswer(submit(Number(exact.toFixed(2))), config)
+        .correct,
+    ).toBe(true);
+    expect(validator.validateAnswer(submit(exact + 1), config).correct).toBe(
+      false,
+    );
+  });
+});
+
 describe("createLevelDataConfig for circular motion game, level 3", () => {
   it.each([
     { random: 0, mass: 200, radius: 5 },
