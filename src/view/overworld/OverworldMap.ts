@@ -41,6 +41,19 @@ export class OverworldMap {
     this.render();
   }
 
+  /**
+   * Redraws the map from the current progress, keeping the scroll position.
+   * Call it after progress changes off the map, such as a level cleared in
+   * the level panel. Focus lands on the selected level's action button, the
+   * one that opened the level, since the redraw replaces it.
+   */
+  refresh(): void {
+    const scrollTop = this.container.querySelector(".map-scroll")!.scrollTop;
+    this.render();
+    this.container.querySelector(".map-scroll")!.scrollTop = scrollTop;
+    this.container.querySelector<HTMLButtonElement>(".open-level")?.focus();
+  }
+
   private render(): void {
     const nodes: ProgressMapNode[] = previewNodes.map((node) => ({
       ...node,

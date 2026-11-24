@@ -51,7 +51,12 @@ const completedLevels = new Set(
 const levelHost = document.createElement("div");
 container.after(levelHost);
 const levelManager = new LevelManager(createLevelCatalog());
-const levelPanel = new LevelPanel(levelHost, () => levelSession.close());
+// Closing a level redraws the map, so a level cleared inside it shows the
+// next node unlocked at once.
+const levelPanel = new LevelPanel(levelHost, () => {
+  levelSession.close();
+  map.refresh();
+});
 // A correct answer clears its level: the map unlocks the next node, and the
 // save keeps it. savedProgress is updated too, because map moves save from it.
 const clearing = clearOnCorrect({
@@ -114,7 +119,7 @@ const navigation = new OverworldNavigation(
   savedProgress.currentLevel,
 );
 
-new OverworldMap(
+const map = new OverworldMap(
   container,
   navigation,
   (level) => {
