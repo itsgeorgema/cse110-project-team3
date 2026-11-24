@@ -171,4 +171,39 @@ describe("LevelSession", () => {
     // FakeAnimationEngine finishes at once, so the lock opens straight away.
     expect(screen.lockReturn.mock.calls).toEqual([[true], [false]]);
   });
+
+  it("ignores the lock signal from a level that was already left", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const screen = {
+      clear: vi.fn(),
+      showLevel: vi.fn<LevelScreen["showLevel"]>(),
+      showLoadError: vi.fn(),
+      showInputErrors: vi.fn(),
+      showFeedback: vi.fn(),
+      lockReturn: vi.fn(),
+    };
+    // An engine whose run never finishes, so the attempt stays pending.
+    class EndlessEngine extends FakeAnimationEngine {
+      override play(): void {}
+    }
+    const session = new LevelSession(
+      new LevelManager(createLevelCatalog()),
+      screen,
+      () => ({
+        animation: new EndlessEngine(),
+        buildRun: () => [],
+        progress: { recordAttempt: vi.fn() },
+      }),
+    );
+    session.selectLevel(first);
+    screen.showLevel.mock.calls[0][1]({ ...first, fields: { velocity: "5" } });
+    expect(screen.lockReturn.mock.calls).toEqual([[true]]);
+
+    // Leaving disposes the old controller, which reports false; the session
+    // has moved on, so only the screen's own clear() unlocks it.
+    session.close();
+
+    expect(screen.lockReturn.mock.calls).toEqual([[true]]);
+    expect(screen.clear).toHaveBeenCalledTimes(2);
+  });
 });
