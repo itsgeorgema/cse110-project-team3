@@ -33,6 +33,11 @@ flowchart LR
 Dependencies point one way. The view and controller depend on `SimulationState`
 and `PhysicsEngine`, never on `MatterSimulationRunner`.
 
+A run builder simulates the numbers it is given. For an accepted answer those
+are the level's exact answer, not the typed ones, so a correct answer always
+shows the ideal outcome; see
+[answer validation](answer-validation.md#accepted-answers-animate-the-exact-answer-114).
+
 ## `SimulationState.ts`
 
 Plain data shared with the animation side.

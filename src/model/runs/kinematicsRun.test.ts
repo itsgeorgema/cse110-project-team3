@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import { DEFAULT_STEP_MS } from "../SimulationRunner.ts";
-import { buildKinematicsLevel1Run, CAR_ID } from "./kinematicsRun.ts";
+import {
+  buildKinematicsLevel1Run,
+  buildKinematicsLevel2Run,
+  buildKinematicsLevel3Run,
+  CAR_ID,
+} from "./kinematicsRun.ts";
 
 const level = {
   gameId: "kinematics",
@@ -82,4 +87,118 @@ describe("buildKinematicsLevel1Run", () => {
       ).toThrow(/time/);
     },
   );
+});
+
+const level2 = {
+  gameId: "kinematics",
+  levelId: 2,
+  problemStatementVariablesValues: { velocity: 6, time: 3 },
+} as unknown as LevelDataConfig;
+
+function submitDisplacement(displacement: number) {
+  return {
+    gameId: "kinematics",
+    levelId: 2,
+    values: { displacement },
+    units: { displacement: "m" },
+  };
+}
+
+describe("buildKinematicsLevel2Run", () => {
+  it("drives at a steady speed from 0 to the player's displacement", () => {
+    const states = buildKinematicsLevel2Run(submitDisplacement(18), level2);
+    const last = states.length - 1;
+
+    expect(carX(states, 0)).toBe(0);
+    expect(states[last].timeMs).toBe(3000);
+    expect(carX(states, last)).toBeCloseTo(18, 10);
+    const half = states.findIndex((s) => s.timeMs >= 1500);
+    expect(carX(states, half)).toBeCloseTo(
+      (18 * states[half].timeMs) / 3000,
+      10,
+    );
+  });
+
+  it("stops a wrong displacement where the player said", () => {
+    const states = buildKinematicsLevel2Run(submitDisplacement(10), level2);
+
+    expect(carX(states, states.length - 1)).toBeCloseTo(10, 10);
+  });
+
+  it("rejects a displacement that is not a finite number", () => {
+    expect(() =>
+      buildKinematicsLevel2Run(submitDisplacement(Number.NaN), level2),
+    ).toThrow(/displacement/);
+  });
+
+  it("rejects a level time of 0", () => {
+    expect(() =>
+      buildKinematicsLevel2Run(submitDisplacement(18), {
+        ...level2,
+        problemStatementVariablesValues: { velocity: 6, time: 0 },
+      }),
+    ).toThrow(/time/);
+  });
+});
+
+const level3 = {
+  gameId: "kinematics",
+  levelId: 3,
+  problemStatementVariablesValues: {
+    initialVelocity: 5,
+    finalVelocity: 13,
+    time: 4,
+  },
+} as unknown as LevelDataConfig;
+
+function submitAcceleration(acceleration: number) {
+  return {
+    gameId: "kinematics",
+    levelId: 3,
+    values: { acceleration },
+    units: { acceleration: "m/s^2" },
+  };
+}
+
+describe("buildKinematicsLevel3Run", () => {
+  it("ends the right acceleration at the average velocity times time", () => {
+    const states = buildKinematicsLevel3Run(submitAcceleration(2), level3);
+    const last = states.length - 1;
+
+    expect(carX(states, 0)).toBe(0);
+    expect(states[last].timeMs).toBe(4000);
+    // (5 + 13) / 2 * 4 = 36 m, the same as 5 * 4 + 2 * 16 / 2.
+    expect(carX(states, last)).toBeCloseTo(36, 10);
+  });
+
+  it("speeds up: each frame covers more road than the one before", () => {
+    const states = buildKinematicsLevel3Run(submitAcceleration(2), level3);
+
+    for (let i = 2; i < states.length - 1; i++) {
+      const before = carX(states, i - 1) - carX(states, i - 2);
+      const now = carX(states, i) - carX(states, i - 1);
+      expect(now).toBeGreaterThan(before);
+    }
+  });
+
+  it("puts a too-small acceleration short of the right spot", () => {
+    const states = buildKinematicsLevel3Run(submitAcceleration(1), level3);
+
+    expect(carX(states, states.length - 1)).toBeCloseTo(28, 10);
+  });
+
+  it("rejects an acceleration that is not a finite number", () => {
+    expect(() =>
+      buildKinematicsLevel3Run(submitAcceleration(Number.NaN), level3),
+    ).toThrow(/acceleration/);
+  });
+
+  it("rejects a level with no initial velocity", () => {
+    expect(() =>
+      buildKinematicsLevel3Run(submitAcceleration(2), {
+        ...level3,
+        problemStatementVariablesValues: { time: 4 },
+      }),
+    ).toThrow(/initialVelocity/);
+  });
 });
