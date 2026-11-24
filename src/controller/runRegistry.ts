@@ -1,5 +1,9 @@
 import type { LevelAddress } from "../model/LevelAddress.ts";
-import { buildKinematicsLevel1Run } from "../model/runs/kinematicsRun.ts";
+import {
+  buildKinematicsLevel1Run,
+  buildKinematicsLevel2Run,
+  buildKinematicsLevel3Run,
+} from "../model/runs/kinematicsRun.ts";
 import type { RunBuilder } from "./GameController.ts";
 
 /**
@@ -10,7 +14,11 @@ import type { RunBuilder } from "./GameController.ts";
 export const runRegistry: Readonly<
   Record<string, Readonly<Record<number, RunBuilder>>>
 > = {
-  kinematics: { 1: buildKinematicsLevel1Run },
+  kinematics: {
+    1: buildKinematicsLevel1Run,
+    2: buildKinematicsLevel2Run,
+    3: buildKinematicsLevel3Run,
+  },
 };
 
 /** The level's RunBuilder, or undefined when the level has none yet. */

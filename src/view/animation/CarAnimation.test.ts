@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
-import { buildKinematicsLevel1Run } from "../../model/runs/kinematicsRun.ts";
+import {
+  buildKinematicsLevel1Run,
+  buildKinematicsLevel2Run,
+  buildKinematicsLevel3Run,
+} from "../../model/runs/kinematicsRun.ts";
 import {
   CarAnimation,
   type CarMessage,
@@ -168,12 +172,71 @@ describe("CarAnimation", () => {
   });
 
   it("draws no gate and says only 'Not quite' on a level without one", () => {
-    engine.showLevel({ ...level, levelId: 2 });
+    engine.showLevel({ ...level, levelId: 9 });
     expect(car.scene?.gateX).toBeUndefined();
     expect(car.scene?.label).toBe("");
 
     playToEnd(3, false);
 
     expect(car.message).toEqual({ text: "Not quite", correct: false });
+  });
+
+  it("puts Level 2's gate at velocity times time and labels its numbers", () => {
+    const level2 = {
+      gameId: "kinematics",
+      levelId: 2,
+      problemStatementVariablesValues: { velocity: 6, time: 3 },
+    } as unknown as LevelDataConfig;
+    engine.showLevel(level2);
+
+    expect(car.scene?.label).toBe("6 m/s for 3 s");
+    engine.showResult(verdict(0, false));
+    engine.play(
+      buildKinematicsLevel2Run(
+        {
+          gameId: "kinematics",
+          levelId: 2,
+          values: { displacement: 18 },
+          units: { displacement: "m" },
+        },
+        level2,
+      ),
+    );
+    frames.tick(0);
+    frames.tick(5000);
+
+    expect(car.carX).toBeCloseTo(car.scene!.gateX!, 6);
+  });
+
+  it("puts Level 3's gate at the average velocity times time", () => {
+    const level3 = {
+      gameId: "kinematics",
+      levelId: 3,
+      problemStatementVariablesValues: {
+        initialVelocity: 5,
+        finalVelocity: 13,
+        time: 4,
+      },
+    } as unknown as LevelDataConfig;
+    engine.showLevel(level3);
+
+    expect(car.scene?.label).toBe("5 to 13 m/s in 4 s");
+    engine.showResult(verdict(0, false));
+    engine.play(
+      buildKinematicsLevel3Run(
+        {
+          gameId: "kinematics",
+          levelId: 3,
+          values: { acceleration: 1 },
+          units: { acceleration: "m/s^2" },
+        },
+        level3,
+      ),
+    );
+    frames.tick(0);
+    frames.tick(5000);
+
+    // a = 1 instead of 2 ends at 28 m, 8 m short of the 36 m gate.
+    expect(car.message).toEqual({ text: "Short by 8 m", correct: false });
   });
 });
