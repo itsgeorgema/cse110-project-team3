@@ -1180,3 +1180,140 @@ describe("PhysicsEngine.calculateMinimumLoopSpeed", () => {
     ).toThrow(RangeError);
   });
 });
+
+describe.each([
+  "calculateHorizontalLaunchVelocity",
+  "calculateVerticalLaunchVelocity",
+] as const)("PhysicsEngine.%s input validation", (name) => {
+  const call = (speed: unknown, angle: unknown) =>
+    PhysicsEngine[name](speed as number, angle as number);
+
+  it.each([0, -0, -5, -0.001, -Number.MAX_VALUE])(
+    "rejects zero or negative speed: %s m/s",
+    (speed) => {
+      expect(() => call(speed, 45)).toThrow(
+        `PhysicsEngine.${name}.speed must be > 0. Received: ${speed}`,
+      );
+    },
+  );
+
+  it.each([
+    [NaN, 45],
+    [10, NaN],
+    [Infinity, 45],
+    [-Infinity, 45],
+    [10, Infinity],
+    [10, -Infinity],
+    [NaN, NaN],
+  ])("rejects non-finite inputs: %s (speed) and %s (angle)", (speed, angle) => {
+    expect(() => call(speed, angle)).toThrow(
+      new RegExp(
+        `PhysicsEngine\\.${name} input variable (speed|angle) must be finite`,
+      ),
+    );
+  });
+
+  it.each([
+    ["10", 45],
+    [10, "45"],
+    [null, 45],
+    [10, null],
+    [undefined, 45],
+    [10, undefined],
+    [true, 45],
+    [[], 45],
+    [{}, 45],
+    [[], {}],
+  ])(
+    "rejects invalid runtime types: %s (speed) and %s (angle)",
+    (speed, angle) => {
+      expect(() => call(speed, angle)).toThrow(
+        new RegExp(
+          `PhysicsEngine\\.${name} input variable (speed|angle) must be a number`,
+        ),
+      );
+    },
+  );
+});
+
+describe("PhysicsEngine.calculateHorizontalLaunchVelocity", () => {
+  it.each([
+    [10, 0, 10],
+    [10, 60, 5],
+    [10, 90, 0],
+    [10, 45, 7.0710678],
+    [1, 30, 0.8660254],
+  ])(
+    "calculates the horizontal component: speed of %s m/s at %s degrees = %s m/s",
+    (speed, angle, expected) => {
+      expect(
+        PhysicsEngine.calculateHorizontalLaunchVelocity(speed, angle),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("accepts Number.MAX_VALUE m/s at 0 degrees", () => {
+    expect(
+      PhysicsEngine.calculateHorizontalLaunchVelocity(Number.MAX_VALUE, 0),
+    ).toBe(Number.MAX_VALUE);
+  });
+
+  it("accepts Number.MIN_VALUE m/s at 0 degrees", () => {
+    expect(
+      PhysicsEngine.calculateHorizontalLaunchVelocity(Number.MIN_VALUE, 0),
+    ).toBe(Number.MIN_VALUE);
+  });
+});
+
+describe("PhysicsEngine.calculateVerticalLaunchVelocity", () => {
+  it.each([
+    [10, 0, 0],
+    [10, 30, 5],
+    [10, 90, 10],
+    [10, 45, 7.0710678],
+    [1, 60, 0.8660254],
+  ])(
+    "calculates the vertical component: speed of %s m/s at %s degrees = %s m/s",
+    (speed, angle, expected) => {
+      expect(
+        PhysicsEngine.calculateVerticalLaunchVelocity(speed, angle),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("returns zero for Number.MAX_VALUE m/s at 0 degrees", () => {
+    expect(
+      PhysicsEngine.calculateVerticalLaunchVelocity(Number.MAX_VALUE, 0),
+    ).toBe(0);
+  });
+});
+
+describe("PhysicsEngine launch velocity components together", () => {
+  it.each([
+    [5, 5],
+    [13, 18],
+    [20, 30],
+    [10, 45],
+    [7, 85],
+  ])("rebuild the launch speed: %s m/s at %s degrees", (speed, angle) => {
+    const horizontal = PhysicsEngine.calculateHorizontalLaunchVelocity(
+      speed,
+      angle,
+    );
+    const vertical = PhysicsEngine.calculateVerticalLaunchVelocity(
+      speed,
+      angle,
+    );
+    expect(Math.hypot(horizontal, vertical)).toBeCloseTo(
+      speed,
+      DECIMAL_PRECISION,
+    );
+  });
+
+  it("are equal at 45 degrees", () => {
+    expect(PhysicsEngine.calculateVerticalLaunchVelocity(10, 45)).toBeCloseTo(
+      PhysicsEngine.calculateHorizontalLaunchVelocity(10, 45),
+      DECIMAL_PRECISION,
+    );
+  });
+});

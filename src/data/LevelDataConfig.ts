@@ -14,7 +14,7 @@ export interface LevelDataConfig {
   readonly bounds: Readonly<Record<string, AnswerBounds>>;
 }
 
-type GameId = "kinematics" | "netForce" | "circularMotion";
+type GameId = "kinematics" | "netForce" | "cannonTrajectory" | "circularMotion";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
@@ -39,6 +39,13 @@ export class LevelDataConfigFactory {
           case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
+          default:
+            throw new Error("levelId does not exist");
+        }
+      case "cannonTrajectory":
+        switch (levelId) {
+          case 1:
+            return this.createCannonTrajectoryLevel1LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -218,6 +225,70 @@ export class LevelDataConfigFactory {
       expectedUserInput: { gravitationalForce, normalForce, netForce },
       toleranceRule: { absolute: 0.00001 },
       bounds: { gravitationalForce: { min: 0.0 }, normalForce: { min: 0.0 } },
+    };
+  }
+
+  private createCannonTrajectoryLevel1LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81; // TODO: 9.8 vs 9.81, keep consistent
+    const launchSpeed = this.randomIntegerInclusive(5, 20); // m/s, TODO: choose range
+    const launchAngle = this.randomIntegerInclusive(5, 30); // degrees, from the mockup
+
+    const initialHorizontalVelocity =
+      PhysicsEngine.calculateHorizontalLaunchVelocity(launchSpeed, launchAngle);
+    const initialVerticalVelocity =
+      PhysicsEngine.calculateVerticalLaunchVelocity(launchSpeed, launchAngle);
+
+    const problemStatement =
+      `Velocity tells you how fast something moves and in which direction. ` +
+      `A cannon launches a stuntman at ${launchSpeed} m/s at an angle of ` +
+      `${launchAngle} degrees above the ground. Split this launch velocity into a ` +
+      `horizontal part (speed times cos of the angle) and a vertical part ` +
+      `(speed times sin of the angle). Nothing pushes the stuntman sideways, so ` +
+      `the horizontal velocity does not change over time. Gravity ` +
+      `(${gravitationalAcceleration} m/s^2) pulls downward, so the vertical ` +
+      `velocity decreases by that amount every second. ` +
+      `Fill in the blanks for the velocity at time t, where t = 0 at launch: ` +
+      `horizontal velocity = [initial] + [rate] * t, ` +
+      `vertical velocity = [initial] - [rate] * t. ` +
+      `Round your answers to two decimal places.`; // TODO: define terms, give speed, angle and gravity, ask for the equations
+
+    return {
+      gameId: "cannonTrajectory",
+      levelId: 1,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        launchSpeed,
+        launchAngle,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: [
+        "initialHorizontalVelocity",
+        "horizontalVelocityRate",
+        "initialVerticalVelocity",
+        "verticalVelocityRate",
+      ],
+      userInputVariablesUnits: {
+        initialHorizontalVelocity: "m/s",
+        horizontalVelocityRate: "m/s^2",
+        initialVerticalVelocity: "m/s",
+        verticalVelocityRate: "m/s^2",
+      },
+      expectedUserInput: {
+        initialHorizontalVelocity,
+        horizontalVelocityRate: 0,
+        initialVerticalVelocity,
+        verticalVelocityRate: gravitationalAcceleration,
+      },
+      toleranceRule: { absolute: 0.01 }, // TODO: depends on rounding
+      bounds: {
+        initialHorizontalVelocity: { min: 0 },
+        initialVerticalVelocity: { min: 0 },
+      },
     };
   }
 
