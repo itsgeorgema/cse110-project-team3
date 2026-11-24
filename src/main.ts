@@ -20,6 +20,9 @@ import { KonvaStage } from "./view/KonvaStage.ts";
 import { runBuilderFor } from "./controller/runRegistry.ts";
 import { saveAttempts } from "./controller/saveAttempts.ts";
 import type { AttemptRecorder } from "./controller/GameController.ts";
+import { LeaveGuard } from "./controller/LeaveGuard.ts";
+import { downloadProgressFile } from "./view/progressFile.ts";
+import { QuitDialog } from "./view/QuitDialog.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -109,6 +112,35 @@ const levelSession = new LevelSession(levelManager, levelPanel, (config) => {
   };
 });
 
+// Clears the saved and visible progress, for Reset and for quitting with delete.
+function resetProgress(): void {
+  completedLevels.clear();
+  savedProgress = {
+    schemaVersion: 2,
+    completedLevels: [],
+    currentLevel: null,
+    attempts: [],
+  };
+  try {
+    saveManager?.reset();
+  } catch {
+    // Reset the visible session even when browser storage is unavailable.
+  }
+}
+
+// Closing the tab asks the player to use Quit first (#3).
+const leaveGuard = new LeaveGuard(window);
+leaveGuard.arm();
+const quitDialog = new QuitDialog(
+  document.body,
+  container,
+  (choice) => {
+    if (choice === "delete") resetProgress();
+    leaveGuard.disarm();
+  },
+  () => location.reload(),
+);
+
 const navigation = new OverworldNavigation(
   new OverworldGraph(previewNodes, previewConnections),
   levelManager.listLevels(),
@@ -130,20 +162,7 @@ const map = new OverworldMap(
       // The current selection still works for this session without storage.
     }
   },
-  () => {
-    completedLevels.clear();
-    savedProgress = {
-      schemaVersion: 2,
-      completedLevels: [],
-      currentLevel: null,
-      attempts: [],
-    };
-    try {
-      saveManager?.reset();
-    } catch {
-      // Reset the visible session even when browser storage is unavailable.
-    }
-  },
+  resetProgress,
   (level, trigger) => {
     const registered = levelManager
       .listLevels()
@@ -154,5 +173,32 @@ const map = new OverworldMap(
     if (!registered) return;
     levelPanel.open(registered.title, trigger);
     levelSession.selectLevel(level);
+  },
+  {
+    downloadProgress() {
+      let contents: string;
+      try {
+        contents = saveManager!.exportSave();
+      } catch {
+        // Without storage, export what this session has played.
+        contents = `${JSON.stringify(savedProgress, null, 2)}\n`;
+      }
+      downloadProgressFile(contents);
+    },
+    async importProgress(file) {
+      if (!saveManager) {
+        return "Progress can't be imported because this browser blocks saving.";
+      }
+      try {
+        saveManager.importSave(await file.text());
+      } catch {
+        return "That file isn't an Escape Route progress file. Your progress is unchanged.";
+      }
+      // Rebuild the map and level state from the imported save.
+      leaveGuard.disarm();
+      location.reload();
+      return undefined;
+    },
+    quit: (trigger) => quitDialog.open(trigger),
   },
 );
