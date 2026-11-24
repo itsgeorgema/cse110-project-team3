@@ -26,7 +26,10 @@ adapter. The catalog supplies implemented levels to the map-launched level panel
   resets that shape using an injected storage object. The default key is
   `escape-route-progress`. Invalid JSON or an unsupported shape loads as an
   empty save. Storage access errors are allowed to reach the caller so the
-  application can choose a session-only fallback.
+  application can choose a session-only fallback. `exportSave()` returns the
+  stored progress as a JSON file body, and `importSave(text)` replaces the
+  stored progress with such a file (upgrading version 1 files). An invalid file
+  throws and leaves the current progress untouched (#3).
 
 `SaveManager` persists addresses, not answer history, scores, or drafts. Its
 `recordCompletedLevel` helper adds an address once while retaining the current

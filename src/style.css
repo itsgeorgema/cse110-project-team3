@@ -206,6 +206,43 @@ progress::-moz-progress-bar {
   color: #e5e9e0;
 }
 
+.journey-progress > .progress-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.progress-file-status {
+  margin: 6px 0 0;
+  color: #a6b7b3;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.progress-file-status:empty {
+  display: none;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quit-game {
+  border: 1px solid #35494d;
+  border-radius: 20px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #b1c0bb;
+  font-size: 11px;
+}
+
+.quit-game:hover {
+  border-color: #6e8b7c;
+  color: #e5e9e0;
+}
+
 .chapter-nav {
   border-top: 1px solid #2c3d42;
 }
@@ -1305,4 +1342,54 @@ progress::-moz-progress-bar {
 }
 .map-node[aria-disabled="true"] {
   cursor: not-allowed;
+}
+
+.quit-dialog {
+  color: #e5e9e0;
+  background: #182c33;
+  border: 1px solid #6e8b7c;
+  border-radius: 8px;
+  width: min(440px, calc(100vw - 32px));
+  padding: clamp(20px, 4vw, 32px);
+}
+.quit-dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+.quit-dialog h2 {
+  margin-top: 0;
+}
+.quit-dialog p {
+  line-height: 1.6;
+}
+.quit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.quit-dialog button,
+.quit-screen button {
+  background: #29474b;
+  border: 1px solid #6e8b7c;
+  border-radius: 4px;
+  padding: 10px 16px;
+}
+.quit-dialog .quit-primary,
+.quit-screen button {
+  background: #dbb37c;
+  border-color: #dbb37c;
+  color: #17292e;
+  font-weight: 600;
+}
+.quit-screen {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  min-height: 100dvh;
+  padding: 24px;
+  text-align: center;
+}
+.quit-screen p {
+  color: #a6b7b3;
+  margin: 0 0 16px;
 }

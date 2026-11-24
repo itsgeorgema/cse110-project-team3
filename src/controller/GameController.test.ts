@@ -185,6 +185,32 @@ describe("GameController step 4: playback", () => {
     expect(animation.played).toHaveLength(1);
   });
 
+  it("plays the exact answer for an accepted answer inside the tolerance (#114)", () => {
+    const { controller, buildRun, progress } = setupController();
+
+    controller.submitAnswer({
+      ...correctInput,
+      fields: { velocity: "12.009" },
+    });
+
+    expect(buildRun.mock.calls[0][0].values).toEqual({ velocity: 12 });
+    // The attempt still records what the player typed.
+    expect(
+      progress.recordAttempt.mock.calls[0][0].submittedAnswer.values,
+    ).toEqual({ velocity: 12.009 });
+  });
+
+  it("plays the typed value for an answer just outside the tolerance (#114)", () => {
+    const { controller, buildRun, onAnswerValidated } = setupController();
+
+    controller.submitAnswer({ ...correctInput, fields: { velocity: "12.02" } });
+
+    expect(onAnswerValidated).toHaveBeenCalledWith(
+      expect.objectContaining({ correct: false }),
+    );
+    expect(buildRun.mock.calls[0][0].values).toEqual({ velocity: 12.02 });
+  });
+
   it("shows feedback before playback starts", () => {
     const order: string[] = [];
     const animation = new ManualAnimationEngine();
@@ -348,5 +374,71 @@ describe("GameController and the level's scene (#116)", () => {
     controller.submitAnswer({ ...correctInput, fields: { velocity: "abc" } });
 
     expect(animation.calls).toEqual(["showLevel kinematics:1"]);
+  });
+});
+
+describe("GameController and leaving mid-playback", () => {
+  function lockSetup(animation: AnimationEngine = new ManualAnimationEngine()) {
+    const pending: boolean[] = [];
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun: () => frames, progress },
+      (value) => pending.push(value),
+    );
+    return { controller, pending, progress };
+  }
+
+  it("reports pending while an answer plays, and clear once it is recorded", () => {
+    const animation = new ManualAnimationEngine();
+    const { controller, pending, progress } = lockSetup(animation);
+
+    controller.submitAnswer(correctInput);
+    expect(pending).toEqual([true]);
+
+    animation.finish();
+    expect(progress.recordAttempt).toHaveBeenCalledOnce();
+    expect(pending).toEqual([true, false]);
+  });
+
+  it("reports nothing for a replay, which records nothing", () => {
+    const animation = new ManualAnimationEngine();
+    const { controller, pending } = lockSetup(animation);
+    controller.submitAnswer(correctInput);
+    animation.finish();
+
+    animation.replay();
+    animation.finish();
+
+    expect(pending).toEqual([true, false]);
+  });
+
+  it("reports nothing for input that does not parse", () => {
+    const { controller, pending } = lockSetup();
+
+    controller.submitAnswer({ ...correctInput, fields: { velocity: "x" } });
+
+    expect(pending).toEqual([]);
+  });
+
+  it("ends pending at once with the FakeAnimationEngine", () => {
+    const { controller, pending } = lockSetup(new FakeAnimationEngine());
+
+    controller.submitAnswer(correctInput);
+
+    expect(pending).toEqual([true, false]);
+  });
+
+  it("clears pending when disposed mid-playback", () => {
+    const { controller, pending, progress } = lockSetup();
+    controller.submitAnswer(correctInput);
+
+    controller.dispose();
+
+    expect(pending).toEqual([true, false]);
+    expect(progress.recordAttempt).not.toHaveBeenCalled();
   });
 });

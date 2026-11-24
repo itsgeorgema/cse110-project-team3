@@ -15,6 +15,12 @@ current app has a story map that launches registered levels in a shared dialog.
   map with native HTML controls and inline SVG scenery. Marker selection changes
   the current location only when `OverworldNavigation` accepts the destination.
   The controller supplies progression status and validated graph connections.
+  The sidebar offers Reset, Download and Import progress, and the top bar a
+  Quit button; `main.ts` supplies those actions (#3).
+- [`QuitDialog.ts`](./QuitDialog.ts) asks whether to keep or delete progress
+  when quitting, then shows a goodbye screen with **Play again** (#3).
+- [`progressFile.ts`](./progressFile.ts) downloads an exported progress file
+  named `escape-route-progress-YYYY-MM-DD.json`.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,
   positions, route connections, and real addresses for the first four locations.
   Remaining `circus-preview` addresses are upcoming, unregistered locations.

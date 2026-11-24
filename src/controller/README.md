@@ -6,6 +6,10 @@ uses progression queries to control story-map navigation.
 
 ## Implemented files
 
+- [`LeaveGuard.ts`](./LeaveGuard.ts) asks the browser to confirm closing or
+  reloading the tab until the player quits through the Quit button (#3).
+  `arm()` and `disarm()` are idempotent. Browsers show their own prompt text.
+
 - [`OverworldNavigation.ts`](./OverworldNavigation.ts) validates map selections
   against `OverworldGraph`, registered levels, and `ProgressionSystem`. It owns
   current position, restores an available saved destination, and returns typed
