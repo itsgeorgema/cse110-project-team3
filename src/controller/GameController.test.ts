@@ -185,6 +185,32 @@ describe("GameController step 4: playback", () => {
     expect(animation.played).toHaveLength(1);
   });
 
+  it("plays the exact answer for an accepted answer inside the tolerance (#114)", () => {
+    const { controller, buildRun, progress } = setupController();
+
+    controller.submitAnswer({
+      ...correctInput,
+      fields: { velocity: "12.009" },
+    });
+
+    expect(buildRun.mock.calls[0][0].values).toEqual({ velocity: 12 });
+    // The attempt still records what the player typed.
+    expect(
+      progress.recordAttempt.mock.calls[0][0].submittedAnswer.values,
+    ).toEqual({ velocity: 12.009 });
+  });
+
+  it("plays the typed value for an answer just outside the tolerance (#114)", () => {
+    const { controller, buildRun, onAnswerValidated } = setupController();
+
+    controller.submitAnswer({ ...correctInput, fields: { velocity: "12.02" } });
+
+    expect(onAnswerValidated).toHaveBeenCalledWith(
+      expect.objectContaining({ correct: false }),
+    );
+    expect(buildRun.mock.calls[0][0].values).toEqual({ velocity: 12.02 });
+  });
+
   it("shows feedback before playback starts", () => {
     const order: string[] = [];
     const animation = new ManualAnimationEngine();

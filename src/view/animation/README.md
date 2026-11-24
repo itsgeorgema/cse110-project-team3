@@ -23,9 +23,12 @@ Write a function with the `RunBuilder` signature from
 (submission: AnswerSubmission, level: LevelDataConfig) => SimulationState[]
 ```
 
-- `submission.values` holds the player's numbers, keyed like
-  `level.userInputVariables`. Play the player's numbers, right or wrong, so a
-  wrong answer shows what it really does.
+- `submission.values` holds the numbers to play, keyed like
+  `level.userInputVariables`. For a wrong answer they are the player's
+  numbers, so it shows what it really does. For an accepted answer
+  `GameController` passes the level's `expectedUserInput` instead, so a
+  correct answer always lands exactly (#114). The builder plays whatever it
+  is given and never checks the answer itself.
 - Build each frame with `snapshotState(step, timeMs, bodies)`. Frame 0 is the
   starting layout at `timeMs` 0. Every frame gives each object an `id`, a
   `position` and an `angle` in radians.
