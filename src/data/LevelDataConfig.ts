@@ -36,6 +36,8 @@ export class LevelDataConfigFactory {
         }
       case "netForce":
         switch (levelId) {
+          case 1:
+            return this.createNetForceLevel1LevelDataConfig();
           case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
@@ -182,6 +184,30 @@ export class LevelDataConfigFactory {
       bounds: {
         acceleration: { min: 0.0 }, //final?
       },
+    };
+  }
+
+  /** Frictionless pushed crate, F = ma (#18). */
+  private createNetForceLevel1LevelDataConfig(): LevelDataConfig {
+    const mass = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const force = PhysicsEngine.calculateForce(mass, acceleration);
+    return {
+      gameId: "netForce",
+      levelId: 1,
+      problemStatementVariables: ["mass", "acceleration"],
+      problemStatementVariablesValues: { mass, acceleration },
+      problemStatement:
+        `Force changes an object's velocity. Newton's second law states that net force ` +
+        `equals mass times acceleration (F = m*a). The clown pushes a circus crate ` +
+        `with a mass of ${mass} kg toward the blocked gate, accelerating it at ` +
+        `${acceleration} m/s^2. Ignore friction and assume the push is horizontal, ` +
+        `so the pushing force is the net horizontal force. What pushing force is needed?`,
+      userInputVariables: ["force"],
+      userInputVariablesUnits: { force: "N" },
+      expectedUserInput: { force },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { force: { min: 0 } },
     };
   }
 
