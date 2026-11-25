@@ -221,4 +221,58 @@ export class PhysicsEngine {
       this.sqrt(radius),
     );
   }
+
+  public static calculateHorizontalLaunchVelocity(
+    speed: number,
+    angleDegrees: number,
+  ): number {
+    this.validateNumber(
+      speed,
+      "PhysicsEngine.calculateHorizontalLaunchVelocity input variable speed",
+    );
+    this.validateNumber(
+      angleDegrees,
+      "PhysicsEngine.calculateHorizontalLaunchVelocity input variable angle",
+    );
+
+    if (speed <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateHorizontalLaunchVelocity.speed must be > 0. Received: ${speed}`,
+      );
+    }
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateHorizontalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.cos(angleRadians));
+  }
+
+  public static calculateVerticalLaunchVelocity(
+    speed: number,
+    angleDegrees: number,
+  ): number {
+    this.validateNumber(
+      speed,
+      "PhysicsEngine.calculateVerticalLaunchVelocity input variable speed",
+    );
+    this.validateNumber(
+      angleDegrees,
+      "PhysicsEngine.calculateVerticalLaunchVelocity input variable angle",
+    );
+
+    if (speed <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateVerticalLaunchVelocity.speed must be > 0. Received: ${speed}`,
+      );
+    }
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateVerticalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.sin(angleRadians));
+  }
 }

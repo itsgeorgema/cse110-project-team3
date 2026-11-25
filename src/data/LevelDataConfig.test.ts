@@ -41,6 +41,15 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
       levelDataConfigFactory.createLevelDataConfig("circularMotion", levelId),
     ).toThrow("levelId does not exist");
   });
+
+  it.each([0, 2, 99])("rejects cannonTrajectory level %s", (levelId) => {
+    expect(() =>
+      new LevelDataConfigFactory().createLevelDataConfig(
+        "cannonTrajectory",
+        levelId,
+      ),
+    ).toThrow("levelId does not exist");
+  });
 });
 
 describe("createLevelDataConfig for kinematics game, level 1", () => {
@@ -881,4 +890,234 @@ describe("createLevelDataConfig for circular motion game, level 3", () => {
       }
     },
   );
+});
+
+describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
+  const expectValidCannonTrajectoryLevel1Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract the given values from the problem statement.
+    const speedMatch = problemStatement.match(/stuntman at (\d+) m\/s/);
+    const angleMatch = problemStatement.match(/angle of (\d+) degrees/);
+    const gravityMatch = problemStatement.match(
+      /Gravity \((\d+(?:\.\d+)?) m\/s\^2\)/,
+    );
+
+    expect(speedMatch).not.toBeNull();
+    expect(angleMatch).not.toBeNull();
+    expect(gravityMatch).not.toBeNull();
+
+    const launchSpeed = Number(speedMatch?.[1]);
+    const launchAngle = Number(angleMatch?.[1]);
+    const gravitationalAcceleration = Number(gravityMatch?.[1]);
+
+    // Validate launch speed and angle.
+    expect(Number.isInteger(launchSpeed)).toBe(true);
+    expect(launchSpeed).toBeGreaterThanOrEqual(5);
+    expect(launchSpeed).toBeLessThanOrEqual(20);
+    expect(Number.isInteger(launchAngle)).toBe(true);
+    expect(launchAngle).toBeGreaterThanOrEqual(5);
+    expect(launchAngle).toBeLessThanOrEqual(30);
+    expect(gravitationalAcceleration).toBe(9.81);
+
+    // Validate the expected answers against the launch values.
+    const radians = (launchAngle * Math.PI) / 180;
+    const { initialHorizontalVelocity, initialVerticalVelocity } =
+      expectedUserInput;
+    expect(initialHorizontalVelocity).toBeCloseTo(
+      launchSpeed * Math.cos(radians),
+      6,
+    );
+    expect(initialVerticalVelocity).toBeCloseTo(
+      launchSpeed * Math.sin(radians),
+      6,
+    );
+    expect(expectedUserInput.horizontalVelocityRate).toBe(0);
+    expect(expectedUserInput.verticalVelocityRate).toBe(
+      gravitationalAcceleration,
+    );
+
+    // The two components should rebuild the launch speed.
+    expect(
+      Math.hypot(initialHorizontalVelocity, initialVerticalVelocity),
+    ).toBeCloseTo(launchSpeed, 6);
+
+    // Validate problem statement variables.
+    expect(problemStatementVariablesValues).toEqual({
+      launchSpeed,
+      launchAngle,
+      gravitationalAcceleration,
+    });
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^Velocity tells you how fast something moves and in which direction\. A cannon launches a stuntman at \d+ m\/s at an angle of \d+ degrees above the ground\. Split this launch velocity into a horizontal part \(speed times cos of the angle\) and a vertical part \(speed times sin of the angle\)\. Nothing pushes the stuntman sideways, so the horizontal velocity does not change over time\. Gravity \(9\.81 m\/s\^2\) pulls downward, so the vertical velocity decreases by that amount every second\. Fill in the blanks for the velocity at time t, where t = 0 at launch: horizontal velocity = \[initial\] \+ \[rate\] \* t, vertical velocity = \[initial\] - \[rate\] \* t\. Round your answers to two decimal places\.$/,
+    );
+
+    // Validate answer configuration: the student fills in four blanks.
+    expect(Object.keys(expectedUserInput).sort()).toEqual([
+      "horizontalVelocityRate",
+      "initialHorizontalVelocity",
+      "initialVerticalVelocity",
+      "verticalVelocityRate",
+    ]);
+  };
+
+  it("deterministic test: should generate valid and correctly formatted launch velocity equation problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    // Fix Math.random() to return 0.5 twice in a row
+    // See LevelDataConfigFactory.randomIntegerInclusive() for implementation
+    // of random integer generator for problem
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0.5) // speed = Math.floor(0.5 * (20 - 5 + 1)) + 5 = 13
+      .mockReturnValueOnce(0.5); // angle = Math.floor(0.5 * (30 - 5 + 1)) + 5 = 18
+
+    try {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        "cannonTrajectory",
+        1,
+      );
+
+      const { launchSpeed, launchAngle } =
+        levelDataConfig.problemStatementVariablesValues;
+      expect(launchSpeed).toBe(13);
+      expect(launchAngle).toBe(18);
+
+      expectValidCannonTrajectoryLevel1Problem(levelDataConfig);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    { random: 0, launchSpeed: 5, launchAngle: 5 },
+    { random: 0.9999, launchSpeed: 20, launchAngle: 30 },
+  ])(
+    "generates a valid problem at the range edge: $launchSpeed m/s at $launchAngle degrees",
+    ({ random, launchSpeed, launchAngle }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      try {
+        const config = new LevelDataConfigFactory().createLevelDataConfig(
+          "cannonTrajectory",
+          1,
+        );
+        expect(config.problemStatementVariablesValues).toMatchObject({
+          launchSpeed,
+          launchAngle,
+        });
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        expectValidCannonTrajectoryLevel1Problem(config);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it("randomized tests (1000): should generate valid and correctly formatted launch velocity equation problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    // Generate multiple configurations to cover random values.
+    for (let i = 0; i < 1000; i++) {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        "cannonTrajectory",
+        1,
+      );
+      expectValidCannonTrajectoryLevel1Problem(levelDataConfig);
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "cannonTrajectory",
+      1,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "cannonTrajectory",
+      levelId: 1,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "initialHorizontalVelocity",
+        "horizontalVelocityRate",
+        "initialVerticalVelocity",
+        "verticalVelocityRate",
+      ],
+      toleranceRule: { absolute: 0.01 },
+    });
+
+    // toMatchObject ignores extra keys, so check these two exactly:
+    // there must be a unit for every answer and nothing else.
+    expect(config.userInputVariablesUnits).toEqual({
+      initialHorizontalVelocity: "m/s",
+      horizontalVelocityRate: "m/s^2",
+      initialVerticalVelocity: "m/s",
+      verticalVelocityRate: "m/s^2",
+    });
+    expect(config.bounds).toEqual({
+      initialHorizontalVelocity: { min: 0 },
+      initialVerticalVelocity: { min: 0 },
+    });
+  });
+
+  it("accepts exact and two-decimal answers, and treats a flipped sign as wrong", () => {
+    const validator = new DefaultAnswerValidator();
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "cannonTrajectory",
+      1,
+    );
+    const submit = (values: Record<string, number>) => ({
+      gameId: config.gameId,
+      levelId: config.levelId,
+      values,
+      units: config.userInputVariablesUnits,
+    });
+    const rounded = Object.fromEntries(
+      Object.entries(config.expectedUserInput).map(([name, value]) => [
+        name,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    expect(
+      validator.validateAnswer(submit(config.expectedUserInput), config)
+        .correct,
+    ).toBe(true);
+    expect(validator.validateAnswer(submit(rounded), config).correct).toBe(
+      true,
+    );
+
+    // The rates are unbounded, so a flipped sign is valid input but wrong.
+    const flippedRate = {
+      ...config.expectedUserInput,
+      verticalVelocityRate: -config.expectedUserInput.verticalVelocityRate,
+    };
+    expect(validator.validateInput(submit(flippedRate), config)).toBe(true);
+    expect(validator.validateAnswer(submit(flippedRate), config).correct).toBe(
+      false,
+    );
+
+    // The initial velocities are bounded, so a negative one is rejected.
+    const negativeStart = {
+      ...config.expectedUserInput,
+      initialHorizontalVelocity:
+        -config.expectedUserInput.initialHorizontalVelocity,
+    };
+    expect(validator.validateInput(submit(negativeStart), config)).toBe(false);
+  });
 });
