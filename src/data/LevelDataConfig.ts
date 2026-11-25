@@ -233,8 +233,8 @@ export class LevelDataConfigFactory {
   }
 
   private createCannonTrajectoryLevel1LevelDataConfig(): LevelDataConfig {
-    const gravitationalAcceleration = 9.81; // TODO: 9.8 vs 9.81, keep consistent
-    const launchSpeed = this.randomIntegerInclusive(5, 20); // m/s, TODO: choose range
+    const gravitationalAcceleration = 9.81;
+    const launchSpeed = this.randomIntegerInclusive(5, 20); // m/s,
     const launchAngle = this.randomIntegerInclusive(5, 30); // degrees, from the mockup
 
     const initialHorizontalVelocity =
@@ -254,7 +254,7 @@ export class LevelDataConfigFactory {
       `Fill in the blanks for the velocity at time t, where t = 0 at launch: ` +
       `horizontal velocity = [initial] + [rate] * t, ` +
       `vertical velocity = [initial] - [rate] * t. ` +
-      `Round your answers to two decimal places.`; // TODO: define terms, give speed, angle and gravity, ask for the equations
+      `Round your answers to two decimal places.`;
 
     return {
       gameId: "cannonTrajectory",
@@ -288,7 +288,7 @@ export class LevelDataConfigFactory {
         initialVerticalVelocity,
         verticalVelocityRate: gravitationalAcceleration,
       },
-      toleranceRule: { absolute: 0.01 }, // TODO: depends on rounding
+      toleranceRule: { absolute: 0.01 },
       bounds: {
         initialHorizontalVelocity: { min: 0 },
         initialVerticalVelocity: { min: 0 },

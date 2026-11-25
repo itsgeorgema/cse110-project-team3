@@ -255,8 +255,13 @@ export class PhysicsEngine {
         `PhysicsEngine.calculateHorizontalLaunchVelocity.speed must be > 0. Received: ${speed}`,
       );
     }
-
-    return this.multiply(speed, Math.cos((angleDegrees * Math.PI) / 180));
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateHorizontalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.cos(angleRadians));
   }
 
   public static calculateVerticalLaunchVelocity(
@@ -277,7 +282,13 @@ export class PhysicsEngine {
         `PhysicsEngine.calculateVerticalLaunchVelocity.speed must be > 0. Received: ${speed}`,
       );
     }
-    return this.multiply(speed, Math.sin((angleDegrees * Math.PI) / 180));
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateVerticalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.sin(angleRadians));
   }
 
   /** Time for a launched object to come back down to its launch height: 2 * vy / g. */
