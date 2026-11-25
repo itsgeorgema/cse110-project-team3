@@ -819,6 +819,230 @@ describe("createLevelDataConfig for circular motion game, level 1", () => {
   });
 });
 
+describe("createLevelDataConfig for circular motion game, level 2", () => {
+  const gravitationalAcceleration = 9.81;
+
+  // Mocks Math.random() so the factory draws speed, mass, then radius.
+  // See LevelDataConfigFactory.randomIntegerInclusive().
+  const createWithRandomValues = (...randomValues: number[]) => {
+    const spy = vi.spyOn(Math, "random");
+    randomValues.forEach((value) => spy.mockReturnValueOnce(value));
+    return new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+  };
+
+  const submit = (config: LevelDataConfig, values: Record<string, number>) =>
+    new DefaultAnswerValidator().validateAnswer(
+      {
+        gameId: config.gameId,
+        levelId: config.levelId,
+        values,
+        units: config.userInputVariablesUnits,
+      },
+      config,
+    );
+
+  const expectValidCircularMotionLevel2Problem = (config: LevelDataConfig) => {
+    const { problemStatement, problemStatementVariablesValues } = config;
+
+    const massMatch = problemStatement.match(/mass of (\d+) kg/);
+    const speedMatch = problemStatement.match(/speed of (\d+) m\/s/);
+    const radiusMatch = problemStatement.match(/radius of (\d+) m\./);
+    expect(massMatch).not.toBeNull();
+    expect(speedMatch).not.toBeNull();
+    expect(radiusMatch).not.toBeNull();
+
+    const mass = Number(massMatch?.[1]);
+    const speed = Number(speedMatch?.[1]);
+    const radius = Number(radiusMatch?.[1]);
+
+    // Validate generated ranges.
+    expect(speed).toBeGreaterThanOrEqual(13);
+    expect(speed).toBeLessThanOrEqual(25);
+    expect(mass).toBeGreaterThanOrEqual(200);
+    expect(mass).toBeLessThanOrEqual(500);
+    expect(radius).toBeGreaterThanOrEqual(5);
+    expect(radius).toBeLessThanOrEqual(15);
+
+    // The statement and stored values describe the same problem.
+    expect(problemStatementVariablesValues).toEqual({
+      speed,
+      mass,
+      radius,
+      gravitationalAcceleration,
+    });
+
+    // Validate the physics independently of PhysicsEngine.
+    const acceleration = (speed * speed) / radius;
+    const netForce = mass * acceleration;
+    const gravitationalForce = mass * gravitationalAcceleration;
+    const normalForce = netForce - gravitationalForce;
+    expect(Object.keys(config.expectedUserInput)).toEqual(
+      config.userInputVariables,
+    );
+    expect(config.expectedUserInput.acceleration).toBeCloseTo(acceleration, 6);
+    expect(config.expectedUserInput.netForce).toBeCloseTo(netForce, 6);
+    expect(config.expectedUserInput.gravitationalForce).toBeCloseTo(
+      gravitationalForce,
+      6,
+    );
+    expect(config.expectedUserInput.normalForce).toBeCloseTo(normalForce, 6);
+    // The coaster must stay on the track.
+    expect(normalForce).toBeGreaterThan(0);
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+    expect(problemStatement).toMatch(
+      /^At the top of a loop, .* A roller coaster with a mass of \d+ kg travels at a speed of \d+ m\/s at the top of a loop with a radius of \d+ m\. Use 9\.81 m\/s\^2 for gravity and take the direction toward the center as positive\. Calculate the acceleration, net force, normal force, and gravitational force acting on the roller coaster at the top of the loop\. Keep full precision in intermediate steps and round only your final answers to two decimal places\.$/,
+    );
+
+    // The statement defines every symbol it uses.
+    expect(problemStatement).toContain(
+      "a = v^2 / r, where a is the acceleration (m/s^2), v is the coaster's speed (m/s), and r is the radius of the loop (m)",
+    );
+    expect(problemStatement).toContain(
+      "F_net, F_g, and F_N are labels for forces, measured in newtons (N)",
+    );
+    expect(problemStatement).toContain("m is the coaster's mass (kg)");
+    expect(problemStatement).toContain(
+      "g is the acceleration due to gravity (m/s^2)",
+    );
+    expect(problemStatement).toContain("F_net = F_N + F_g");
+
+    expect(() => assertLevelConfig(config)).not.toThrow();
+  };
+
+  it("deterministic test: generates the expected loop-top forces problem", () => {
+    try {
+      // speed = floor(0.5 * 13) + 13 = 19, mass = floor(0.5 * 301) + 200 = 350,
+      // radius = floor(0.5 * 11) + 5 = 10
+      const config = createWithRandomValues(0.5, 0.5, 0.5);
+
+      expect(config.problemStatementVariablesValues).toEqual({
+        speed: 19,
+        mass: 350,
+        radius: 10,
+        gravitationalAcceleration,
+      });
+      expect(config.expectedUserInput.acceleration).toBeCloseTo(36.1, 6);
+      expect(config.expectedUserInput.netForce).toBeCloseTo(12635, 6);
+      expect(config.expectedUserInput.gravitationalForce).toBeCloseTo(
+        3433.5,
+        6,
+      );
+      expect(config.expectedUserInput.normalForce).toBeCloseTo(9201.5, 6);
+      expectValidCircularMotionLevel2Problem(config);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    { name: "smallest values", random: [0, 0, 0], normalForce: 4798 },
+    {
+      name: "slowest speed on the largest loop",
+      random: [0, 0.9999, 0.9999],
+      normalForce: 728.333333,
+    },
+    {
+      name: "largest values",
+      random: [0.9999, 0.9999, 0.9999],
+      normalForce: 15928.333333,
+    },
+  ])(
+    "generates a valid problem at the range edge: $name",
+    ({ random, normalForce }) => {
+      try {
+        const config = createWithRandomValues(...random);
+
+        expect(config.expectedUserInput.normalForce).toBeCloseTo(
+          normalForce,
+          5,
+        );
+        expectValidCircularMotionLevel2Problem(config);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it("randomized tests (1000): should generate valid and correctly formatted loop-top forces problems", () => {
+    const factory = new LevelDataConfigFactory();
+    for (let i = 0; i < 1000; i++) {
+      expectValidCircularMotionLevel2Problem(
+        factory.createLevelDataConfig("circularMotion", 2),
+      );
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "circularMotion",
+      levelId: 2,
+      problemStatementVariables: [
+        "speed",
+        "mass",
+        "radius",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "acceleration",
+        "netForce",
+        "normalForce",
+        "gravitationalForce",
+      ],
+      userInputVariablesUnits: {
+        acceleration: "m/s^2",
+        netForce: "N",
+        normalForce: "N",
+        gravitationalForce: "N",
+      },
+      toleranceRule: { absolute: 0.01 },
+      bounds: {
+        acceleration: { min: 0 },
+        netForce: { min: 0 },
+        normalForce: { min: 0 },
+        gravitationalForce: { min: 0 },
+      },
+    });
+  });
+
+  it("accepts exact answers rounded to two decimals and rejects a wrong sign convention", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+    const { netForce, gravitationalForce } = config.expectedUserInput;
+    const rounded = Object.fromEntries(
+      Object.entries(config.expectedUserInput).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    expect(submit(config, { ...config.expectedUserInput }).correct).toBe(true);
+    expect(submit(config, rounded).correct).toBe(true);
+
+    // Treating gravity as opposing the normal force (F_N = F_net + F_g)
+    // is a common mistake and must be rejected.
+    expect(
+      submit(config, {
+        ...rounded,
+        normalForce: netForce + gravitationalForce,
+      }).correct,
+    ).toBe(false);
+  });
+});
+
 describe("createLevelDataConfig for circular motion game, level 3", () => {
   it.each([
     { random: 0, mass: 200, radius: 5 },

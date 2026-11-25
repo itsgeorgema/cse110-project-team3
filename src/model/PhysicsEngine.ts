@@ -319,4 +319,48 @@ export class PhysicsEngine {
       this.sqrt(gravitationalAcceleration),
     );
   }
+
+  /**
+   * Returns the track's normal force on a coaster at the top of a loop,
+   * taking the direction toward the center (down) as positive.
+   * Gravity and the normal force both point toward the center, so
+   * F_N = m * v^2 / r - m * g. A negative result means the coaster would
+   * leave the track, so it is rejected.
+   */
+  public static calculateNormalForceAtLoopTop(
+    mass: number,
+    speed: number,
+    radius: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateNormalForceAtLoopTop input variable gravitational acceleration",
+    );
+    if (gravitationalAcceleration < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateNormalForceAtLoopTop.gravitationalAcceleration must be >= 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    // calculateCentripetalAcceleration and calculateForce validate
+    // speed, radius, and mass.
+    const netForce = this.calculateForce(
+      mass,
+      this.calculateCentripetalAcceleration(speed, radius),
+    );
+    const gravitationalForce = this.calculateForce(
+      mass,
+      gravitationalAcceleration,
+    );
+    const normalForce = this.subtract(netForce, gravitationalForce);
+
+    if (normalForce < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateNormalForceAtLoopTop: speed ${speed} m/s is too slow to stay on a loop of radius ${radius} m.`,
+      );
+    }
+
+    return normalForce;
+  }
 }
