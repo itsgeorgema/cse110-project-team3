@@ -77,6 +77,13 @@ export class PhysicsEngine {
     return this.divide(displacement, time);
   }
 
+  public static add(a: number, b: number): number {
+    this.validateNumber(a, "PhysicsEngine.add input variable a");
+    this.validateNumber(b, "PhysicsEngine.add input variable b");
+
+    return this.validateResult(a + b, "PhysicsEngine.add");
+  }
+
   public static subtract(a: number, b: number): number {
     this.validateNumber(a, "PhysicsEngine.subtract input variable a");
     this.validateNumber(b, "PhysicsEngine.subtract input variable b");
@@ -137,10 +144,7 @@ export class PhysicsEngine {
     this.validateNumber(startingVelocity, "startingVelocity");
     // calculateDisplacement validates both acceleration and the time interval.
     const change = this.calculateDisplacement(constantAcceleration, time);
-    return this.validateResult(
-      startingVelocity + change / 2,
-      "PhysicsEngine.calculateAverageVelocity",
-    );
+    return this.add(startingVelocity, this.divide(change, 2));
   }
 
   /** Signed displacement v0*t + a*t²/2; distance for forward-only motion (#17). */
