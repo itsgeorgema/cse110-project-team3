@@ -1121,3 +1121,112 @@ describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
     expect(validator.validateInput(submit(negativeStart), config)).toBe(false);
   });
 });
+
+describe("createLevelDataConfig for cannon trajectory game, level 3", () => {
+  it.each([
+    { random: 0, horizontalDistance: 20, targetHeight: 3 },
+    { random: 0.5, horizontalDistance: 30, targetHeight: 6 },
+    { random: 0.9999, horizontalDistance: 40, targetHeight: 8 },
+  ])(
+    "describes the net $horizontalDistance m ahead and $targetHeight m above launch",
+    ({ random, horizontalDistance, targetHeight }) => {
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(random);
+      try {
+        const config = new LevelDataConfigFactory().createLevelDataConfig(
+          "cannonTrajectory",
+          3,
+        );
+        expect(config).toMatchObject({
+          gameId: "cannonTrajectory",
+          levelId: 3,
+          problemStatementVariables: [
+            "horizontalDistance",
+            "targetHeight",
+            "launchAngle",
+            "gravitationalAcceleration",
+          ],
+          problemStatementVariablesValues: {
+            horizontalDistance,
+            targetHeight,
+            launchAngle: 45,
+            gravitationalAcceleration: 9.81,
+          },
+          userInputVariables: ["launchSpeed"],
+          userInputVariablesUnits: { launchSpeed: "m/s" },
+          bounds: { launchSpeed: { min: 0 } },
+        });
+        expect(config.problemStatement).toContain(
+          `The net is ${horizontalDistance} m ahead and ${targetHeight} m above the launch point.`,
+        );
+        expect(config.problemStatement).toContain(
+          "45 degrees above horizontal",
+        );
+        expect(config.problemStatement).toContain("g = 9.81 m/s^2");
+        expect(config.problemStatement).toContain(
+          "The horizontal displacement is x = v * cos(45 degrees) * t, " +
+            "and the vertical displacement is y = v * sin(45 degrees) * t - 0.5 * g * t^2. " +
+            "Use the same value of t in both equations.",
+        );
+        expect(config.problemStatement).toContain(
+          "Round your final answer to two decimal places.",
+        );
+      } finally {
+        randomSpy.mockRestore();
+      }
+    },
+  );
+
+  it("generates reachable targets and grades rounded speeds across the full range", () => {
+    const factory = new LevelDataConfigFactory();
+    const validator = new DefaultAnswerValidator();
+    const randomSpy = vi.spyOn(Math, "random");
+    try {
+      for (
+        let horizontalDistance = 20;
+        horizontalDistance <= 40;
+        horizontalDistance++
+      ) {
+        for (let targetHeight = 3; targetHeight <= 8; targetHeight++) {
+          randomSpy
+            .mockReturnValueOnce((horizontalDistance - 20 + 0.5) / 21)
+            .mockReturnValueOnce((targetHeight - 3 + 0.5) / 6);
+          const config = factory.createLevelDataConfig("cannonTrajectory", 3);
+          assertLevelConfig(config);
+          expect(config.problemStatementVariablesValues).toMatchObject({
+            horizontalDistance,
+            targetHeight,
+          });
+
+          // Independently reconstruct the position and direction at the net.
+          const { launchSpeed } = config.expectedUserInput;
+          const launchVelocityComponent = launchSpeed * Math.SQRT1_2;
+          const timeAtNet = horizontalDistance / launchVelocityComponent;
+          const gravity = 9.81;
+          const heightAtNet =
+            launchVelocityComponent * timeAtNet -
+            (gravity * timeAtNet ** 2) / 2;
+          expect(heightAtNet).toBeCloseTo(targetHeight, 6);
+          expect(launchVelocityComponent - gravity * timeAtNet).toBeLessThan(0);
+
+          const submit = (speed: number) =>
+            validator.validateAnswer(
+              {
+                gameId: config.gameId,
+                levelId: config.levelId,
+                values: { launchSpeed: speed },
+                units: config.userInputVariablesUnits,
+              },
+              config,
+            ).correct;
+          const rounded = Number(launchSpeed.toFixed(2));
+          expect(submit(launchSpeed)).toBe(true);
+          expect(submit(rounded)).toBe(true);
+          expect(submit(Number((rounded - 0.01).toFixed(2)))).toBe(false);
+          expect(submit(Number((rounded + 0.01).toFixed(2)))).toBe(false);
+        }
+      }
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+});
