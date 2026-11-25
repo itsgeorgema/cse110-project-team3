@@ -31,11 +31,15 @@ export class LevelDataConfigFactory {
             return this.createKinematicsLevel2LevelDataConfig();
           case 3:
             return this.createKinematicsLevel3LevelDataConfig();
+          case 4:
+            return this.createKinematicsLevel4LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
       case "netForce":
         switch (levelId) {
+          case 1:
+            return this.createNetForceLevel1LevelDataConfig();
           case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
@@ -46,6 +50,8 @@ export class LevelDataConfigFactory {
         switch (levelId) {
           case 1:
             return this.createCannonTrajectoryLevel1LevelDataConfig();
+          case 2:
+            return this.createCannonTrajectoryLevel2LevelDataConfig();
           case 3:
             return this.createCannonTrajectoryLevel3LevelDataConfig();
           default:
@@ -196,6 +202,64 @@ export class LevelDataConfigFactory {
     };
   }
 
+  /** Constant-acceleration, two-answer problem (#17). */
+  private createKinematicsLevel4LevelDataConfig(): LevelDataConfig {
+    const initialVelocity = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const time = this.randomIntegerInclusive(2, 7);
+    const averageVelocity = PhysicsEngine.calculateAverageVelocity(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    const distance = PhysicsEngine.calculateDistance(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    return {
+      gameId: "kinematics",
+      levelId: 4,
+      problemStatementVariables: ["initialVelocity", "acceleration", "time"],
+      problemStatementVariablesValues: { initialVelocity, acceleration, time },
+      problemStatement:
+        `The getaway car starts at ${initialVelocity} m/s and accelerates at a constant ` +
+        `${acceleration} m/s^2 for ${time} seconds toward the exit. ` +
+        `Average velocity is the initial velocity plus half the acceleration times time ` +
+        `(v_avg = v_0 + a*t/2). Distance traveled is average velocity times time ` +
+        `(d = v_avg*t). What are the car's average velocity and distance traveled?`,
+      userInputVariables: ["averageVelocity", "distance"],
+      userInputVariablesUnits: { averageVelocity: "m/s", distance: "m" },
+      expectedUserInput: { averageVelocity, distance },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { averageVelocity: { min: 0 }, distance: { min: 0 } },
+    };
+  }
+
+  /** Frictionless pushed crate, F = ma (#18). */
+  private createNetForceLevel1LevelDataConfig(): LevelDataConfig {
+    const mass = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const force = PhysicsEngine.calculateForce(mass, acceleration);
+    return {
+      gameId: "netForce",
+      levelId: 1,
+      problemStatementVariables: ["mass", "acceleration"],
+      problemStatementVariablesValues: { mass, acceleration },
+      problemStatement:
+        `Force changes an object's velocity. Newton's second law states that net force ` +
+        `equals mass times acceleration (F = m*a). The clown pushes a circus crate ` +
+        `with a mass of ${mass} kg toward the blocked gate, accelerating it at ` +
+        `${acceleration} m/s^2. Ignore friction and assume the push is horizontal, ` +
+        `so the pushing force is the net horizontal force. What pushing force is needed?`,
+      userInputVariables: ["force"],
+      userInputVariablesUnits: { force: "N" },
+      expectedUserInput: { force },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { force: { min: 0 } },
+    };
+  }
+
   private createNetForceLevel2LevelDataConfig(): LevelDataConfig {
     const gravitationalAcceleration = 9.81; // m/s^2
     const mass = this.randomIntegerInclusive(5, 30); // kg
@@ -294,6 +358,108 @@ export class LevelDataConfigFactory {
       bounds: {
         initialHorizontalVelocity: { min: 0 },
         initialVerticalVelocity: { min: 0 },
+      },
+    };
+  }
+
+  private createCannonTrajectoryLevel2LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81; // m/s^2
+    const launchSpeed = this.randomIntegerInclusive(10, 25); // m/s
+    const launchAngle = this.randomIntegerInclusive(20, 60); // degrees
+
+    const initialHorizontalVelocity =
+      PhysicsEngine.calculateHorizontalLaunchVelocity(launchSpeed, launchAngle);
+    const initialVerticalVelocity =
+      PhysicsEngine.calculateVerticalLaunchVelocity(launchSpeed, launchAngle);
+
+    // Pick t in tenths of a second, strictly before the stuntman lands, so
+    // the vertical displacement is still positive. The shortest flight
+    // (10 m/s at 20 degrees) is about 0.70 s, so t can be 0.1 s to 0.6 s.
+    const flightTime = PhysicsEngine.calculateFlightTime(
+      initialVerticalVelocity,
+      gravitationalAcceleration,
+    );
+    const time =
+      this.randomIntegerInclusive(1, Math.ceil(flightTime * 10) - 1) / 10; // s
+
+    // Horizontal velocity is constant, so its average is its initial value.
+    const averageHorizontalVelocity = PhysicsEngine.calculateAverageVelocity(
+      0,
+      initialHorizontalVelocity,
+      time,
+    );
+    const averageVerticalVelocity = PhysicsEngine.calculateAverageVelocity(
+      -gravitationalAcceleration,
+      initialVerticalVelocity,
+      time,
+    );
+    const horizontalDisplacement = PhysicsEngine.calculateDisplacement(
+      averageHorizontalVelocity,
+      time,
+    );
+    const verticalDisplacement = PhysicsEngine.calculateDisplacement(
+      averageVerticalVelocity,
+      time,
+    );
+
+    const problemStatement =
+      `A cannon launches a stuntman at ${launchSpeed} m/s at an angle of ` +
+      `${launchAngle} degrees above the ground. The initial horizontal velocity ` +
+      `is speed times cos of the angle, and the initial vertical velocity is ` +
+      `speed times sin of the angle. When acceleration is constant, the average ` +
+      `velocity over a time interval is the initial velocity plus the final ` +
+      `velocity, divided by 2: average velocity = initial velocity + ` +
+      `(acceleration * t) / 2. Nothing pushes the stuntman sideways, so the ` +
+      `horizontal acceleration is 0. Gravity (${gravitationalAcceleration} m/s^2) ` +
+      `pulls downward, so the vertical acceleration is -${gravitationalAcceleration} m/s^2. ` +
+      `Displacement is the change in position: displacement = average velocity * t. ` +
+      `From launch to t = ${time} s, what are the stuntman's average horizontal ` +
+      `velocity, average vertical velocity, horizontal displacement (delta x), ` +
+      `and vertical displacement (delta y)? Round your answers to two decimal places.`;
+
+    return {
+      gameId: "cannonTrajectory",
+      levelId: 2,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "time",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        launchSpeed,
+        launchAngle,
+        time,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: [
+        "averageHorizontalVelocity",
+        "averageVerticalVelocity",
+        "horizontalDisplacement",
+        "verticalDisplacement",
+      ],
+      userInputVariablesUnits: {
+        averageHorizontalVelocity: "m/s",
+        averageVerticalVelocity: "m/s",
+        horizontalDisplacement: "m",
+        verticalDisplacement: "m",
+      },
+      expectedUserInput: {
+        averageHorizontalVelocity,
+        averageVerticalVelocity,
+        horizontalDisplacement,
+        verticalDisplacement,
+      },
+      // 0.05 m covers a student who multiplies their rounded average
+      // velocity by t (up to 0.005 m/s * 4.4 s, plus final rounding).
+      toleranceRule: { absolute: 0.05 },
+      // The average vertical velocity turns negative past the peak, so it
+      // has no bound. The stuntman is still in the air, so delta y >= 0.
+      bounds: {
+        averageHorizontalVelocity: { min: 0 },
+        horizontalDisplacement: { min: 0 },
+        verticalDisplacement: { min: 0 },
       },
     };
   }

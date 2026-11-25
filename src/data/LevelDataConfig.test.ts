@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { LevelDataConfigFactory } from "./LevelDataConfig";
 import type { LevelDataConfig } from "./LevelDataConfig";
 import { assertLevelConfig } from "./validateLevelConfig";
 import { DefaultAnswerValidator } from "../model/DefaultAnswerValidator";
+import { GameController } from "../controller/GameController";
+import { FakeAnimationEngine } from "../view/animation/FakeAnimationEngine";
 
 type GameId = Parameters<LevelDataConfigFactory["createLevelDataConfig"]>[0];
 
@@ -42,7 +44,7 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
     ).toThrow("levelId does not exist");
   });
 
-  it.each([0, 2, 99])("rejects cannonTrajectory level %s", (levelId) => {
+  it.each([0, 4, 99])("rejects cannonTrajectory level %s", (levelId) => {
     expect(() =>
       new LevelDataConfigFactory().createLevelDataConfig(
         "cannonTrajectory",
@@ -510,6 +512,129 @@ describe("createLevelDataConfig for kinematics game, level 3", () => {
     });
   });
 });
+
+const netForceLevel1Factory = new LevelDataConfigFactory();
+const netForceLevel1Validator = new DefaultAnswerValidator();
+
+describe("createLevelDataConfig for net force game, level 1", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each([
+    [0, 5, 1, 5],
+    [0.5, 18, 3, 54],
+    [0.99999, 30, 5, 150],
+  ])(
+    "generates a physically specified crate problem at random=%s",
+    (random, mass, acceleration, force) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      const config = netForceLevel1Factory.createLevelDataConfig("netForce", 1);
+      expect(() => assertLevelConfig(config)).not.toThrow();
+      expect(config.problemStatementVariablesValues).toEqual({
+        mass,
+        acceleration,
+      });
+      expect(config.expectedUserInput).toEqual({ force });
+      expect(config.userInputVariablesUnits).toEqual({ force: "N" });
+      expect(config.problemStatement).toContain(`${mass} kg`);
+      expect(config.problemStatement).toContain(`${acceleration} m/s^2`);
+      expect(config.problemStatement).toContain("Ignore friction");
+      expect(config.problemStatement).toContain("push is horizontal");
+      expect(config.problemStatement).toContain("F = m*a");
+    },
+  );
+});
+
+{
+  const gameId = "netForce";
+  const levelId = 1;
+  describe(`${gameId} ${levelId} answer integration`, () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it("accepts generated answers and rejects each independently incorrect or missing field", () => {
+      for (let i = 0; i < 100; i++) {
+        const config = netForceLevel1Factory.createLevelDataConfig(
+          gameId,
+          levelId,
+        );
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        const submit = (values: Record<string, number>) =>
+          netForceLevel1Validator.validateAnswer(
+            { gameId, levelId, values, units: config.userInputVariablesUnits },
+            config,
+          );
+        expect(submit(config.expectedUserInput).correct).toBe(true);
+        for (const field of config.userInputVariables) {
+          expect(
+            submit({
+              ...config.expectedUserInput,
+              [field]: config.expectedUserInput[field] + 1,
+            }).correct,
+          ).toBe(false);
+          expect(
+            submit({ ...config.expectedUserInput, [field]: -1 }).correct,
+          ).toBe(false);
+          const missing = { ...config.expectedUserInput };
+          delete missing[field];
+          expect(submit(missing).correct).toBe(false);
+        }
+      }
+    });
+
+    it("handles invalid input, a wrong answer, and correction through GameController", () => {
+      const config = netForceLevel1Factory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+      const errors = vi.fn();
+      const feedback = vi.fn();
+      const recordAttempt = vi.fn();
+      const controller = new GameController(
+        config,
+        errors,
+        netForceLevel1Validator,
+        feedback,
+        {
+          animation: new FakeAnimationEngine(),
+          buildRun: () => [],
+          progress: { recordAttempt },
+        },
+      );
+      const fields = Object.fromEntries(
+        Object.entries(config.expectedUserInput).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
+      );
+      const field = config.userInputVariables[0];
+      controller.submitAnswer({
+        gameId,
+        levelId,
+        fields: { ...fields, [field]: "letters" },
+      });
+      expect(errors).toHaveBeenLastCalledWith({
+        [field]: "Use digits, like 9.8 or 3e8.",
+      });
+      expect(recordAttempt).not.toHaveBeenCalled();
+      controller.submitAnswer({
+        gameId,
+        levelId,
+        fields: {
+          ...fields,
+          [field]: String(config.expectedUserInput[field] + 1),
+        },
+      });
+      expect(feedback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ correct: false }),
+      );
+      controller.submitAnswer({ gameId, levelId, fields });
+      expect(feedback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ correct: true }),
+      );
+      expect(recordAttempt).toHaveBeenCalledTimes(2);
+      controller.dispose();
+    });
+  });
+}
 
 describe("createLevelDataConfig for net force game, level 2", () => {
   const expectValidNetForceLevel2Problem = (
@@ -1116,6 +1241,143 @@ describe("createLevelDataConfig for circular motion game, level 3", () => {
   );
 });
 
+const kinematicsLevel4Factory = new LevelDataConfigFactory();
+const kinematicsLevel4Validator = new DefaultAnswerValidator();
+
+describe("createLevelDataConfig for kinematics game, level 4", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each([
+    [0, 5, 1, 2, 6, 12],
+    [0.5, 18, 3, 5, 25.5, 127.5],
+    [0.99999, 30, 5, 7, 47.5, 332.5],
+  ])(
+    "generates consistent problems at random=%s",
+    (
+      random,
+      initialVelocity,
+      acceleration,
+      time,
+      averageVelocity,
+      distance,
+    ) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      const config = kinematicsLevel4Factory.createLevelDataConfig(
+        "kinematics",
+        4,
+      );
+      expect(() => assertLevelConfig(config)).not.toThrow();
+      expect(config.problemStatementVariablesValues).toEqual({
+        initialVelocity,
+        acceleration,
+        time,
+      });
+      expect(config.expectedUserInput).toEqual({ averageVelocity, distance });
+      expect(config.userInputVariablesUnits).toEqual({
+        averageVelocity: "m/s",
+        distance: "m",
+      });
+      expect(config.problemStatement).toContain(`${initialVelocity} m/s`);
+      expect(config.problemStatement).toContain(`${acceleration} m/s^2`);
+      expect(config.problemStatement).toContain(`${time} seconds`);
+      expect(config.problemStatement).toContain("v_avg = v_0 + a*t/2");
+      expect(config.problemStatement).toContain("d = v_avg*t");
+    },
+  );
+});
+
+{
+  const gameId = "kinematics";
+  const levelId = 4;
+  describe(`${gameId} ${levelId} answer integration`, () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it("accepts generated answers and rejects each independently incorrect or missing field", () => {
+      for (let i = 0; i < 100; i++) {
+        const config = kinematicsLevel4Factory.createLevelDataConfig(
+          gameId,
+          levelId,
+        );
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        const submit = (values: Record<string, number>) =>
+          kinematicsLevel4Validator.validateAnswer(
+            { gameId, levelId, values, units: config.userInputVariablesUnits },
+            config,
+          );
+        expect(submit(config.expectedUserInput).correct).toBe(true);
+        for (const field of config.userInputVariables) {
+          expect(
+            submit({
+              ...config.expectedUserInput,
+              [field]: config.expectedUserInput[field] + 1,
+            }).correct,
+          ).toBe(false);
+          expect(
+            submit({ ...config.expectedUserInput, [field]: -1 }).correct,
+          ).toBe(false);
+          const missing = { ...config.expectedUserInput };
+          delete missing[field];
+          expect(submit(missing).correct).toBe(false);
+        }
+      }
+    });
+
+    it("handles invalid input, a wrong answer, and correction through GameController", () => {
+      const config = kinematicsLevel4Factory.createLevelDataConfig(
+        gameId,
+        levelId,
+      );
+      const errors = vi.fn();
+      const feedback = vi.fn();
+      const recordAttempt = vi.fn();
+      const controller = new GameController(
+        config,
+        errors,
+        kinematicsLevel4Validator,
+        feedback,
+        {
+          animation: new FakeAnimationEngine(),
+          buildRun: () => [],
+          progress: { recordAttempt },
+        },
+      );
+      const fields = Object.fromEntries(
+        Object.entries(config.expectedUserInput).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
+      );
+      const field = config.userInputVariables[0];
+      controller.submitAnswer({
+        gameId,
+        levelId,
+        fields: { ...fields, [field]: "letters" },
+      });
+      expect(errors).toHaveBeenLastCalledWith({
+        [field]: "Use digits, like 9.8 or 3e8.",
+      });
+      expect(recordAttempt).not.toHaveBeenCalled();
+      controller.submitAnswer({
+        gameId,
+        levelId,
+        fields: {
+          ...fields,
+          [field]: String(config.expectedUserInput[field] + 1),
+        },
+      });
+      expect(feedback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ correct: false }),
+      );
+      controller.submitAnswer({ gameId, levelId, fields });
+      expect(feedback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ correct: true }),
+      );
+      expect(recordAttempt).toHaveBeenCalledTimes(2);
+      controller.dispose();
+    });
+  });
+}
+
 describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
   const expectValidCannonTrajectoryLevel1Problem = (
     levelDataConfig: LevelDataConfig,
@@ -1343,6 +1605,250 @@ describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
         -config.expectedUserInput.initialHorizontalVelocity,
     };
     expect(validator.validateInput(submit(negativeStart), config)).toBe(false);
+  });
+});
+
+describe("createLevelDataConfig for cannon trajectory game, level 2", () => {
+  const createConfig = () =>
+    new LevelDataConfigFactory().createLevelDataConfig("cannonTrajectory", 2);
+
+  const expectValidCannonTrajectoryLevel2Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract the given values from the problem statement.
+    const speedMatch = problemStatement.match(/stuntman at (\d+) m\/s/);
+    const angleMatch = problemStatement.match(/angle of (\d+) degrees/);
+    const timeMatch = problemStatement.match(/to t = (\d+(?:\.\d)?) s,/);
+    expect(speedMatch).not.toBeNull();
+    expect(angleMatch).not.toBeNull();
+    expect(timeMatch).not.toBeNull();
+    const launchSpeed = Number(speedMatch?.[1]);
+    const launchAngle = Number(angleMatch?.[1]);
+    const time = Number(timeMatch?.[1]);
+    const g = 9.81;
+
+    expect(problemStatementVariablesValues).toEqual({
+      launchSpeed,
+      launchAngle,
+      time,
+      gravitationalAcceleration: g,
+    });
+
+    // Validate ranges: integer speed and angle, t in tenths of a second.
+    expect(Number.isInteger(launchSpeed)).toBe(true);
+    expect(launchSpeed).toBeGreaterThanOrEqual(10);
+    expect(launchSpeed).toBeLessThanOrEqual(25);
+    expect(Number.isInteger(launchAngle)).toBe(true);
+    expect(launchAngle).toBeGreaterThanOrEqual(20);
+    expect(launchAngle).toBeLessThanOrEqual(60);
+    expect(time).toBeGreaterThanOrEqual(0.1);
+    expect(time * 10).toBeCloseTo(Math.round(time * 10), 9);
+
+    // t must be before landing, computed independently of PhysicsEngine.
+    const radians = (launchAngle * Math.PI) / 180;
+    const vx = launchSpeed * Math.cos(radians);
+    const vy = launchSpeed * Math.sin(radians);
+    expect(time).toBeLessThan((2 * vy) / g);
+
+    // Validate expected answers against the kinematics equations.
+    const finalVy = vy - g * time;
+    expect(expectedUserInput.averageHorizontalVelocity).toBeCloseTo(vx, 6);
+    expect(expectedUserInput.averageVerticalVelocity).toBeCloseTo(
+      (vy + finalVy) / 2,
+      6,
+    );
+    expect(expectedUserInput.horizontalDisplacement).toBeCloseTo(vx * time, 6);
+    expect(expectedUserInput.verticalDisplacement).toBeCloseTo(
+      vy * time - 0.5 * g * time * time,
+      6,
+    );
+    expect(expectedUserInput.verticalDisplacement).toBeGreaterThan(0);
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^A cannon launches a stuntman at \d+ m\/s at an angle of \d+ degrees above the ground\. The initial horizontal velocity is speed times cos of the angle, and the initial vertical velocity is speed times sin of the angle\. When acceleration is constant, the average velocity over a time interval is the initial velocity plus the final velocity, divided by 2: average velocity = initial velocity \+ \(acceleration \* t\) \/ 2\. Nothing pushes the stuntman sideways, so the horizontal acceleration is 0\. Gravity \(9\.81 m\/s\^2\) pulls downward, so the vertical acceleration is -9\.81 m\/s\^2\. Displacement is the change in position: displacement = average velocity \* t\. From launch to t = \d+(\.\d)? s, what are the stuntman's average horizontal velocity, average vertical velocity, horizontal displacement \(delta x\), and vertical displacement \(delta y\)\? Round your answers to two decimal places\.$/,
+    );
+
+    expect(() => assertLevelConfig(levelDataConfig)).not.toThrow();
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("deterministic test: generates the expected problem for fixed random values", () => {
+    // speed = floor(0.5 * 16) + 10 = 18, angle = floor(0.5 * 41) + 20 = 40
+    // flight time = 2 * 18 * sin(40) / 9.81 = 2.36 s, so t is 1 to 23 tenths
+    // t = (floor(0.5 * 23) + 1) / 10 = 1.2 s
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const config = createConfig();
+
+    expect(config.problemStatementVariablesValues).toEqual({
+      launchSpeed: 18,
+      launchAngle: 40,
+      time: 1.2,
+      gravitationalAcceleration: 9.81,
+    });
+    // Hand-computed answers, rounded to two decimals.
+    expect(config.expectedUserInput.averageHorizontalVelocity).toBeCloseTo(
+      13.79,
+      2,
+    );
+    expect(config.expectedUserInput.averageVerticalVelocity).toBeCloseTo(
+      5.68,
+      2,
+    );
+    expect(config.expectedUserInput.horizontalDisplacement).toBeCloseTo(
+      16.55,
+      2,
+    );
+    expect(config.expectedUserInput.verticalDisplacement).toBeCloseTo(6.82, 2);
+    expectValidCannonTrajectoryLevel2Problem(config);
+  });
+
+  it.each([
+    // Shortest flight (about 0.70 s): t is the earliest tenth.
+    { random: 0, launchSpeed: 10, launchAngle: 20, time: 0.1 },
+    // Longest flight (about 4.41 s): t is the last tenth before landing.
+    { random: 0.9999, launchSpeed: 25, launchAngle: 60, time: 4.4 },
+  ])(
+    "generates a valid problem at the range edge: $launchSpeed m/s, $launchAngle degrees, t = $time s",
+    ({ random, launchSpeed, launchAngle, time }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      const config = createConfig();
+
+      expect(config.problemStatementVariablesValues).toMatchObject({
+        launchSpeed,
+        launchAngle,
+        time,
+      });
+      expectValidCannonTrajectoryLevel2Problem(config);
+    },
+  );
+
+  it("keeps t before landing at the shortest flight", () => {
+    // 10 m/s at 20 degrees lands at 0.697 s, so the latest t must be 0.6 s.
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0.9999);
+    const config = createConfig();
+
+    expect(config.problemStatementVariablesValues.time).toBe(0.6);
+    expectValidCannonTrajectoryLevel2Problem(config);
+  });
+
+  it("randomized tests (1000): generates valid and correctly formatted problems", () => {
+    for (let i = 0; i < 1000; i++) {
+      expectValidCannonTrajectoryLevel2Problem(createConfig());
+    }
+  });
+
+  it("generates the correct level configuration metadata", () => {
+    const config = createConfig();
+
+    expect(config).toMatchObject({
+      gameId: "cannonTrajectory",
+      levelId: 2,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "time",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "averageHorizontalVelocity",
+        "averageVerticalVelocity",
+        "horizontalDisplacement",
+        "verticalDisplacement",
+      ],
+      toleranceRule: { absolute: 0.05 },
+    });
+    expect(config.userInputVariablesUnits).toEqual({
+      averageHorizontalVelocity: "m/s",
+      averageVerticalVelocity: "m/s",
+      horizontalDisplacement: "m",
+      verticalDisplacement: "m",
+    });
+    expect(config.bounds).toEqual({
+      averageHorizontalVelocity: { min: 0 },
+      horizontalDisplacement: { min: 0 },
+      verticalDisplacement: { min: 0 },
+    });
+  });
+
+  it("accepts answers computed from rounded intermediate values, and rejects common mistakes", () => {
+    // Longest flight and latest t, where rounding errors add up the most.
+    vi.spyOn(Math, "random").mockReturnValue(0.9999);
+    const config = createConfig();
+    const validator = new DefaultAnswerValidator();
+    const submit = (values: Record<string, number>) => ({
+      gameId: config.gameId,
+      levelId: config.levelId,
+      values,
+      units: config.userInputVariablesUnits,
+    });
+    const isCorrect = (values: Record<string, number>) =>
+      validator.validateAnswer(submit(values), config).correct;
+    const round2 = (value: number) => Number(value.toFixed(2));
+    const { launchSpeed, launchAngle, time, gravitationalAcceleration } =
+      config.problemStatementVariablesValues;
+    const expected = config.expectedUserInput;
+
+    // A student rounds each average velocity, then multiplies by t.
+    const radians = (launchAngle * Math.PI) / 180;
+    const averageHorizontalVelocity = round2(launchSpeed * Math.cos(radians));
+    const averageVerticalVelocity = round2(
+      launchSpeed * Math.sin(radians) - (gravitationalAcceleration * time) / 2,
+    );
+    const studentAnswer = {
+      averageHorizontalVelocity,
+      averageVerticalVelocity,
+      horizontalDisplacement: round2(averageHorizontalVelocity * time),
+      verticalDisplacement: round2(averageVerticalVelocity * time),
+    };
+    expect(isCorrect(expected)).toBe(true);
+    expect(isCorrect(studentAnswer)).toBe(true);
+
+    // Using the initial vertical velocity instead of the average is wrong.
+    const initialVerticalVelocity = launchSpeed * Math.sin(radians);
+    expect(
+      isCorrect({
+        ...expected,
+        averageVerticalVelocity: initialVerticalVelocity,
+        verticalDisplacement: initialVerticalVelocity * time,
+      }),
+    ).toBe(false);
+
+    // Swapping sin and cos is wrong.
+    expect(
+      isCorrect({
+        ...expected,
+        averageHorizontalVelocity: initialVerticalVelocity,
+      }),
+    ).toBe(false);
+
+    // A negative delta y is out of bounds while the stuntman is in the air.
+    expect(
+      validator.validateInput(
+        submit({
+          ...expected,
+          verticalDisplacement: -expected.verticalDisplacement,
+        }),
+        config,
+      ),
+    ).toBe(false);
   });
 });
 

@@ -77,6 +77,13 @@ export class PhysicsEngine {
     return this.divide(displacement, time);
   }
 
+  public static add(a: number, b: number): number {
+    this.validateNumber(a, "PhysicsEngine.add input variable a");
+    this.validateNumber(b, "PhysicsEngine.add input variable b");
+
+    return this.validateResult(a + b, "PhysicsEngine.add");
+  }
+
   public static subtract(a: number, b: number): number {
     this.validateNumber(a, "PhysicsEngine.subtract input variable a");
     this.validateNumber(b, "PhysicsEngine.subtract input variable b");
@@ -126,6 +133,34 @@ export class PhysicsEngine {
     }
 
     return this.divide(this.subtract(finalVelocity, initialVelocity), time);
+  }
+
+  /** Mean velocity over a nonnegative interval of constant acceleration (#17). */
+  public static calculateAverageVelocity(
+    constantAcceleration: number,
+    startingVelocity: number,
+    time: number,
+  ): number {
+    this.validateNumber(startingVelocity, "startingVelocity");
+    // calculateDisplacement validates both acceleration and the time interval.
+    const change = this.calculateDisplacement(constantAcceleration, time);
+    return this.add(startingVelocity, this.divide(change, 2));
+  }
+
+  /** Signed displacement v0*t + a*t²/2; distance for forward-only motion (#17). */
+  public static calculateDistance(
+    constantAcceleration: number,
+    startingVelocity: number,
+    time: number,
+  ): number {
+    return this.calculateDisplacement(
+      this.calculateAverageVelocity(
+        constantAcceleration,
+        startingVelocity,
+        time,
+      ),
+      time,
+    );
   }
 
   public static calculateForce(mass: number, acceleration: number) {
@@ -274,6 +309,36 @@ export class PhysicsEngine {
     }
     const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
     return this.multiply(speed, Math.sin(angleRadians));
+  }
+
+  /** Time for a launched object to come back down to its launch height: 2 * vy / g. */
+  public static calculateFlightTime(
+    initialVerticalVelocity: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      initialVerticalVelocity,
+      "PhysicsEngine.calculateFlightTime input variable initial vertical velocity",
+    );
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateFlightTime input variable gravitational acceleration",
+    );
+    if (initialVerticalVelocity < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.initialVerticalVelocity must be >= 0. Received: ${initialVerticalVelocity}`,
+      );
+    }
+    if (gravitationalAcceleration <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.gravitationalAcceleration must be > 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    return this.multiply(
+      2,
+      this.divide(initialVerticalVelocity, gravitationalAcceleration),
+    );
   }
 
   /** Returns the initial speed in m/s for a 45-degree launch to a target at or above launch height. */
