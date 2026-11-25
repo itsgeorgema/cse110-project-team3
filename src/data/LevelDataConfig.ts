@@ -14,7 +14,7 @@ export interface LevelDataConfig {
   readonly bounds: Readonly<Record<string, AnswerBounds>>;
 }
 
-type GameId = "kinematics" | "netForce" | "circularMotion";
+type GameId = "kinematics" | "netForce" | "cannonTrajectory" | "circularMotion";
 
 export class LevelDataConfigFactory {
   // caller method, which instantiates the different levels
@@ -44,10 +44,19 @@ export class LevelDataConfigFactory {
           default:
             throw new Error("levelId does not exist");
         }
+      case "cannonTrajectory":
+        switch (levelId) {
+          case 1:
+            return this.createCannonTrajectoryLevel1LevelDataConfig();
+          default:
+            throw new Error("levelId does not exist");
+        }
       case "circularMotion":
         switch (levelId) {
           case 1:
             return this.createCircularMotionLevel1LevelDataConfig();
+          case 2:
+            return this.createCircularMotionLevel2LevelDataConfig();
           case 3:
             return this.createCircularMotionLevel3LevelDataConfig();
           default:
@@ -259,6 +268,70 @@ export class LevelDataConfigFactory {
     };
   }
 
+  private createCannonTrajectoryLevel1LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81;
+    const launchSpeed = this.randomIntegerInclusive(5, 20); // m/s,
+    const launchAngle = this.randomIntegerInclusive(5, 30); // degrees, from the mockup
+
+    const initialHorizontalVelocity =
+      PhysicsEngine.calculateHorizontalLaunchVelocity(launchSpeed, launchAngle);
+    const initialVerticalVelocity =
+      PhysicsEngine.calculateVerticalLaunchVelocity(launchSpeed, launchAngle);
+
+    const problemStatement =
+      `Velocity tells you how fast something moves and in which direction. ` +
+      `A cannon launches a stuntman at ${launchSpeed} m/s at an angle of ` +
+      `${launchAngle} degrees above the ground. Split this launch velocity into a ` +
+      `horizontal part (speed times cos of the angle) and a vertical part ` +
+      `(speed times sin of the angle). Nothing pushes the stuntman sideways, so ` +
+      `the horizontal velocity does not change over time. Gravity ` +
+      `(${gravitationalAcceleration} m/s^2) pulls downward, so the vertical ` +
+      `velocity decreases by that amount every second. ` +
+      `Fill in the blanks for the velocity at time t, where t = 0 at launch: ` +
+      `horizontal velocity = [initial] + [rate] * t, ` +
+      `vertical velocity = [initial] - [rate] * t. ` +
+      `Round your answers to two decimal places.`;
+
+    return {
+      gameId: "cannonTrajectory",
+      levelId: 1,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        launchSpeed,
+        launchAngle,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: [
+        "initialHorizontalVelocity",
+        "horizontalVelocityRate",
+        "initialVerticalVelocity",
+        "verticalVelocityRate",
+      ],
+      userInputVariablesUnits: {
+        initialHorizontalVelocity: "m/s",
+        horizontalVelocityRate: "m/s^2",
+        initialVerticalVelocity: "m/s",
+        verticalVelocityRate: "m/s^2",
+      },
+      expectedUserInput: {
+        initialHorizontalVelocity,
+        horizontalVelocityRate: 0,
+        initialVerticalVelocity,
+        verticalVelocityRate: gravitationalAcceleration,
+      },
+      toleranceRule: { absolute: 0.01 },
+      bounds: {
+        initialHorizontalVelocity: { min: 0 },
+        initialVerticalVelocity: { min: 0 },
+      },
+    };
+  }
+
   private createCircularMotionLevel1LevelDataConfig(): LevelDataConfig {
     const speed = this.randomIntegerInclusive(10, 40); // m/s
     const radius = this.randomIntegerInclusive(5, 40); // m
@@ -286,6 +359,88 @@ export class LevelDataConfigFactory {
       expectedUserInput: { acceleration: centripetalAcceleration },
       toleranceRule: { absolute: 0.01 },
       bounds: { acceleration: { min: 0 } },
+    };
+  }
+
+  private createCircularMotionLevel2LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81; // m/s^2
+    // Every speed in [13, 25] exceeds the minimum loop speed sqrt(g * r)
+    // for every radius in [5, 15] (at most about 12.13 m/s), so the
+    // normal force at the top is always positive.
+    const speed = this.randomIntegerInclusive(13, 25); // m/s
+    const mass = this.randomIntegerInclusive(200, 500); // kg
+    const radius = this.randomIntegerInclusive(5, 15); // m
+
+    const acceleration = PhysicsEngine.calculateCentripetalAcceleration(
+      speed,
+      radius,
+    ); // m/s^2
+    const netForce = PhysicsEngine.calculateForce(mass, acceleration); // N
+    const gravitationalForce = PhysicsEngine.calculateForce(
+      mass,
+      gravitationalAcceleration,
+    ); // N
+    const normalForce = PhysicsEngine.calculateNormalForceAtLoopTop(
+      mass,
+      speed,
+      radius,
+      gravitationalAcceleration,
+    ); // N
+
+    const problemStatement =
+      `At the top of a loop, the roller coaster is moving in a circle, so it accelerates toward the center. ` +
+      `This centripetal acceleration is a = v^2 / r, where a is the acceleration (m/s^2), v is the coaster's speed (m/s), and r is the radius of the loop (m). ` +
+      `In the formulas below, F_net, F_g, and F_N are labels for forces, measured in newtons (N), while m is the coaster's mass (kg) and g is the acceleration due to gravity (m/s^2). ` +
+      `By Newton's second law, the net force F_net is mass times this acceleration (F_net = m * a). ` +
+      `Two forces act on the coaster at the top, and both point toward the center: ` +
+      `the gravitational force F_g = m * g and the normal force F_N from the track pushing on the coaster. ` +
+      `Together they make up the net force (F_net = F_N + F_g). ` +
+      `A roller coaster with a mass of ${mass} kg travels at a speed of ${speed} m/s at the top of a loop with a radius of ${radius} m. ` +
+      `Use ${gravitationalAcceleration} m/s^2 for gravity and take the direction toward the center as positive. ` +
+      `Calculate the acceleration, net force, normal force, and gravitational force acting on the roller coaster at the top of the loop. ` +
+      `Keep full precision in intermediate steps and round only your final answers to two decimal places.`;
+
+    return {
+      gameId: "circularMotion",
+      levelId: 2,
+      problemStatementVariables: [
+        "speed",
+        "mass",
+        "radius",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        speed,
+        mass,
+        radius,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: [
+        "acceleration",
+        "netForce",
+        "normalForce",
+        "gravitationalForce",
+      ],
+      userInputVariablesUnits: {
+        acceleration: "m/s^2",
+        netForce: "N",
+        normalForce: "N",
+        gravitationalForce: "N",
+      },
+      expectedUserInput: {
+        acceleration,
+        netForce,
+        normalForce,
+        gravitationalForce,
+      },
+      toleranceRule: { absolute: 0.01 },
+      bounds: {
+        acceleration: { min: 0 },
+        netForce: { min: 0 },
+        normalForce: { min: 0 },
+        gravitationalForce: { min: 0 },
+      },
     };
   }
 

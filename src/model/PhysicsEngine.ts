@@ -256,4 +256,102 @@ export class PhysicsEngine {
       this.sqrt(radius),
     );
   }
+
+  public static calculateHorizontalLaunchVelocity(
+    speed: number,
+    angleDegrees: number,
+  ): number {
+    this.validateNumber(
+      speed,
+      "PhysicsEngine.calculateHorizontalLaunchVelocity input variable speed",
+    );
+    this.validateNumber(
+      angleDegrees,
+      "PhysicsEngine.calculateHorizontalLaunchVelocity input variable angle",
+    );
+
+    if (speed <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateHorizontalLaunchVelocity.speed must be > 0. Received: ${speed}`,
+      );
+    }
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateHorizontalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.cos(angleRadians));
+  }
+
+  public static calculateVerticalLaunchVelocity(
+    speed: number,
+    angleDegrees: number,
+  ): number {
+    this.validateNumber(
+      speed,
+      "PhysicsEngine.calculateVerticalLaunchVelocity input variable speed",
+    );
+    this.validateNumber(
+      angleDegrees,
+      "PhysicsEngine.calculateVerticalLaunchVelocity input variable angle",
+    );
+
+    if (speed <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateVerticalLaunchVelocity.speed must be > 0. Received: ${speed}`,
+      );
+    }
+    if (angleDegrees < 0 || angleDegrees > 90) {
+      throw new RangeError(
+        `PhysicsEngine.calculateVerticalLaunchVelocity.angle must be between 0 and 90 degrees. Received: ${angleDegrees}`,
+      );
+    }
+    const angleRadians = this.divide(this.multiply(angleDegrees, Math.PI), 180);
+    return this.multiply(speed, Math.sin(angleRadians));
+  }
+
+  /**
+   * Returns the track's normal force on a coaster at the top of a loop,
+   * taking the direction toward the center (down) as positive.
+   * Gravity and the normal force both point toward the center, so
+   * F_N = m * v^2 / r - m * g. A negative result means the coaster would
+   * leave the track, so it is rejected.
+   */
+  public static calculateNormalForceAtLoopTop(
+    mass: number,
+    speed: number,
+    radius: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateNormalForceAtLoopTop input variable gravitational acceleration",
+    );
+    if (gravitationalAcceleration < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateNormalForceAtLoopTop.gravitationalAcceleration must be >= 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    // calculateCentripetalAcceleration and calculateForce validate
+    // speed, radius, and mass.
+    const netForce = this.calculateForce(
+      mass,
+      this.calculateCentripetalAcceleration(speed, radius),
+    );
+    const gravitationalForce = this.calculateForce(
+      mass,
+      gravitationalAcceleration,
+    );
+    const normalForce = this.subtract(netForce, gravitationalForce);
+
+    if (normalForce < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateNormalForceAtLoopTop: speed ${speed} m/s is too slow to stay on a loop of radius ${radius} m.`,
+      );
+    }
+
+    return normalForce;
+  }
 }

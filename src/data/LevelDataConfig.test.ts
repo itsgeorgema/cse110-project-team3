@@ -43,6 +43,15 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
       levelDataConfigFactory.createLevelDataConfig("circularMotion", levelId),
     ).toThrow("levelId does not exist");
   });
+
+  it.each([0, 2, 99])("rejects cannonTrajectory level %s", (levelId) => {
+    expect(() =>
+      new LevelDataConfigFactory().createLevelDataConfig(
+        "cannonTrajectory",
+        levelId,
+      ),
+    ).toThrow("levelId does not exist");
+  });
 });
 
 describe("createLevelDataConfig for kinematics game, level 1", () => {
@@ -812,6 +821,230 @@ describe("createLevelDataConfig for circular motion game, level 1", () => {
   });
 });
 
+describe("createLevelDataConfig for circular motion game, level 2", () => {
+  const gravitationalAcceleration = 9.81;
+
+  // Mocks Math.random() so the factory draws speed, mass, then radius.
+  // See LevelDataConfigFactory.randomIntegerInclusive().
+  const createWithRandomValues = (...randomValues: number[]) => {
+    const spy = vi.spyOn(Math, "random");
+    randomValues.forEach((value) => spy.mockReturnValueOnce(value));
+    return new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+  };
+
+  const submit = (config: LevelDataConfig, values: Record<string, number>) =>
+    new DefaultAnswerValidator().validateAnswer(
+      {
+        gameId: config.gameId,
+        levelId: config.levelId,
+        values,
+        units: config.userInputVariablesUnits,
+      },
+      config,
+    );
+
+  const expectValidCircularMotionLevel2Problem = (config: LevelDataConfig) => {
+    const { problemStatement, problemStatementVariablesValues } = config;
+
+    const massMatch = problemStatement.match(/mass of (\d+) kg/);
+    const speedMatch = problemStatement.match(/speed of (\d+) m\/s/);
+    const radiusMatch = problemStatement.match(/radius of (\d+) m\./);
+    expect(massMatch).not.toBeNull();
+    expect(speedMatch).not.toBeNull();
+    expect(radiusMatch).not.toBeNull();
+
+    const mass = Number(massMatch?.[1]);
+    const speed = Number(speedMatch?.[1]);
+    const radius = Number(radiusMatch?.[1]);
+
+    // Validate generated ranges.
+    expect(speed).toBeGreaterThanOrEqual(13);
+    expect(speed).toBeLessThanOrEqual(25);
+    expect(mass).toBeGreaterThanOrEqual(200);
+    expect(mass).toBeLessThanOrEqual(500);
+    expect(radius).toBeGreaterThanOrEqual(5);
+    expect(radius).toBeLessThanOrEqual(15);
+
+    // The statement and stored values describe the same problem.
+    expect(problemStatementVariablesValues).toEqual({
+      speed,
+      mass,
+      radius,
+      gravitationalAcceleration,
+    });
+
+    // Validate the physics independently of PhysicsEngine.
+    const acceleration = (speed * speed) / radius;
+    const netForce = mass * acceleration;
+    const gravitationalForce = mass * gravitationalAcceleration;
+    const normalForce = netForce - gravitationalForce;
+    expect(Object.keys(config.expectedUserInput)).toEqual(
+      config.userInputVariables,
+    );
+    expect(config.expectedUserInput.acceleration).toBeCloseTo(acceleration, 6);
+    expect(config.expectedUserInput.netForce).toBeCloseTo(netForce, 6);
+    expect(config.expectedUserInput.gravitationalForce).toBeCloseTo(
+      gravitationalForce,
+      6,
+    );
+    expect(config.expectedUserInput.normalForce).toBeCloseTo(normalForce, 6);
+    // The coaster must stay on the track.
+    expect(normalForce).toBeGreaterThan(0);
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+    expect(problemStatement).toMatch(
+      /^At the top of a loop, .* A roller coaster with a mass of \d+ kg travels at a speed of \d+ m\/s at the top of a loop with a radius of \d+ m\. Use 9\.81 m\/s\^2 for gravity and take the direction toward the center as positive\. Calculate the acceleration, net force, normal force, and gravitational force acting on the roller coaster at the top of the loop\. Keep full precision in intermediate steps and round only your final answers to two decimal places\.$/,
+    );
+
+    // The statement defines every symbol it uses.
+    expect(problemStatement).toContain(
+      "a = v^2 / r, where a is the acceleration (m/s^2), v is the coaster's speed (m/s), and r is the radius of the loop (m)",
+    );
+    expect(problemStatement).toContain(
+      "F_net, F_g, and F_N are labels for forces, measured in newtons (N)",
+    );
+    expect(problemStatement).toContain("m is the coaster's mass (kg)");
+    expect(problemStatement).toContain(
+      "g is the acceleration due to gravity (m/s^2)",
+    );
+    expect(problemStatement).toContain("F_net = F_N + F_g");
+
+    expect(() => assertLevelConfig(config)).not.toThrow();
+  };
+
+  it("deterministic test: generates the expected loop-top forces problem", () => {
+    try {
+      // speed = floor(0.5 * 13) + 13 = 19, mass = floor(0.5 * 301) + 200 = 350,
+      // radius = floor(0.5 * 11) + 5 = 10
+      const config = createWithRandomValues(0.5, 0.5, 0.5);
+
+      expect(config.problemStatementVariablesValues).toEqual({
+        speed: 19,
+        mass: 350,
+        radius: 10,
+        gravitationalAcceleration,
+      });
+      expect(config.expectedUserInput.acceleration).toBeCloseTo(36.1, 6);
+      expect(config.expectedUserInput.netForce).toBeCloseTo(12635, 6);
+      expect(config.expectedUserInput.gravitationalForce).toBeCloseTo(
+        3433.5,
+        6,
+      );
+      expect(config.expectedUserInput.normalForce).toBeCloseTo(9201.5, 6);
+      expectValidCircularMotionLevel2Problem(config);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    { name: "smallest values", random: [0, 0, 0], normalForce: 4798 },
+    {
+      name: "slowest speed on the largest loop",
+      random: [0, 0.9999, 0.9999],
+      normalForce: 728.333333,
+    },
+    {
+      name: "largest values",
+      random: [0.9999, 0.9999, 0.9999],
+      normalForce: 15928.333333,
+    },
+  ])(
+    "generates a valid problem at the range edge: $name",
+    ({ random, normalForce }) => {
+      try {
+        const config = createWithRandomValues(...random);
+
+        expect(config.expectedUserInput.normalForce).toBeCloseTo(
+          normalForce,
+          5,
+        );
+        expectValidCircularMotionLevel2Problem(config);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it("randomized tests (1000): should generate valid and correctly formatted loop-top forces problems", () => {
+    const factory = new LevelDataConfigFactory();
+    for (let i = 0; i < 1000; i++) {
+      expectValidCircularMotionLevel2Problem(
+        factory.createLevelDataConfig("circularMotion", 2),
+      );
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "circularMotion",
+      levelId: 2,
+      problemStatementVariables: [
+        "speed",
+        "mass",
+        "radius",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "acceleration",
+        "netForce",
+        "normalForce",
+        "gravitationalForce",
+      ],
+      userInputVariablesUnits: {
+        acceleration: "m/s^2",
+        netForce: "N",
+        normalForce: "N",
+        gravitationalForce: "N",
+      },
+      toleranceRule: { absolute: 0.01 },
+      bounds: {
+        acceleration: { min: 0 },
+        netForce: { min: 0 },
+        normalForce: { min: 0 },
+        gravitationalForce: { min: 0 },
+      },
+    });
+  });
+
+  it("accepts exact answers rounded to two decimals and rejects a wrong sign convention", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+    const { netForce, gravitationalForce } = config.expectedUserInput;
+    const rounded = Object.fromEntries(
+      Object.entries(config.expectedUserInput).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    expect(submit(config, { ...config.expectedUserInput }).correct).toBe(true);
+    expect(submit(config, rounded).correct).toBe(true);
+
+    // Treating gravity as opposing the normal force (F_N = F_net + F_g)
+    // is a common mistake and must be rejected.
+    expect(
+      submit(config, {
+        ...rounded,
+        normalForce: netForce + gravitationalForce,
+      }).correct,
+    ).toBe(false);
+  });
+});
+
 describe("createLevelDataConfig for circular motion game, level 3", () => {
   it.each([
     { random: 0, mass: 200, radius: 5 },
@@ -1021,3 +1254,233 @@ describe("createLevelDataConfig for kinematics game, level 4", () => {
     });
   });
 }
+
+describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
+  const expectValidCannonTrajectoryLevel1Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract the given values from the problem statement.
+    const speedMatch = problemStatement.match(/stuntman at (\d+) m\/s/);
+    const angleMatch = problemStatement.match(/angle of (\d+) degrees/);
+    const gravityMatch = problemStatement.match(
+      /Gravity \((\d+(?:\.\d+)?) m\/s\^2\)/,
+    );
+
+    expect(speedMatch).not.toBeNull();
+    expect(angleMatch).not.toBeNull();
+    expect(gravityMatch).not.toBeNull();
+
+    const launchSpeed = Number(speedMatch?.[1]);
+    const launchAngle = Number(angleMatch?.[1]);
+    const gravitationalAcceleration = Number(gravityMatch?.[1]);
+
+    // Validate launch speed and angle.
+    expect(Number.isInteger(launchSpeed)).toBe(true);
+    expect(launchSpeed).toBeGreaterThanOrEqual(5);
+    expect(launchSpeed).toBeLessThanOrEqual(20);
+    expect(Number.isInteger(launchAngle)).toBe(true);
+    expect(launchAngle).toBeGreaterThanOrEqual(5);
+    expect(launchAngle).toBeLessThanOrEqual(30);
+    expect(gravitationalAcceleration).toBe(9.81);
+
+    // Validate the expected answers against the launch values.
+    const radians = (launchAngle * Math.PI) / 180;
+    const { initialHorizontalVelocity, initialVerticalVelocity } =
+      expectedUserInput;
+    expect(initialHorizontalVelocity).toBeCloseTo(
+      launchSpeed * Math.cos(radians),
+      6,
+    );
+    expect(initialVerticalVelocity).toBeCloseTo(
+      launchSpeed * Math.sin(radians),
+      6,
+    );
+    expect(expectedUserInput.horizontalVelocityRate).toBe(0);
+    expect(expectedUserInput.verticalVelocityRate).toBe(
+      gravitationalAcceleration,
+    );
+
+    // The two components should rebuild the launch speed.
+    expect(
+      Math.hypot(initialHorizontalVelocity, initialVerticalVelocity),
+    ).toBeCloseTo(launchSpeed, 6);
+
+    // Validate problem statement variables.
+    expect(problemStatementVariablesValues).toEqual({
+      launchSpeed,
+      launchAngle,
+      gravitationalAcceleration,
+    });
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^Velocity tells you how fast something moves and in which direction\. A cannon launches a stuntman at \d+ m\/s at an angle of \d+ degrees above the ground\. Split this launch velocity into a horizontal part \(speed times cos of the angle\) and a vertical part \(speed times sin of the angle\)\. Nothing pushes the stuntman sideways, so the horizontal velocity does not change over time\. Gravity \(9\.81 m\/s\^2\) pulls downward, so the vertical velocity decreases by that amount every second\. Fill in the blanks for the velocity at time t, where t = 0 at launch: horizontal velocity = \[initial\] \+ \[rate\] \* t, vertical velocity = \[initial\] - \[rate\] \* t\. Round your answers to two decimal places\.$/,
+    );
+
+    // Validate answer configuration: the student fills in four blanks.
+    expect(Object.keys(expectedUserInput).sort()).toEqual([
+      "horizontalVelocityRate",
+      "initialHorizontalVelocity",
+      "initialVerticalVelocity",
+      "verticalVelocityRate",
+    ]);
+  };
+
+  it("deterministic test: should generate valid and correctly formatted launch velocity equation problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    // Fix Math.random() to return 0.5 twice in a row
+    // See LevelDataConfigFactory.randomIntegerInclusive() for implementation
+    // of random integer generator for problem
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0.5) // speed = Math.floor(0.5 * (20 - 5 + 1)) + 5 = 13
+      .mockReturnValueOnce(0.5); // angle = Math.floor(0.5 * (30 - 5 + 1)) + 5 = 18
+
+    try {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        "cannonTrajectory",
+        1,
+      );
+
+      const { launchSpeed, launchAngle } =
+        levelDataConfig.problemStatementVariablesValues;
+      expect(launchSpeed).toBe(13);
+      expect(launchAngle).toBe(18);
+
+      expectValidCannonTrajectoryLevel1Problem(levelDataConfig);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    { random: 0, launchSpeed: 5, launchAngle: 5 },
+    { random: 0.9999, launchSpeed: 20, launchAngle: 30 },
+  ])(
+    "generates a valid problem at the range edge: $launchSpeed m/s at $launchAngle degrees",
+    ({ random, launchSpeed, launchAngle }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      try {
+        const config = new LevelDataConfigFactory().createLevelDataConfig(
+          "cannonTrajectory",
+          1,
+        );
+        expect(config.problemStatementVariablesValues).toMatchObject({
+          launchSpeed,
+          launchAngle,
+        });
+        expect(() => assertLevelConfig(config)).not.toThrow();
+        expectValidCannonTrajectoryLevel1Problem(config);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it("randomized tests (1000): should generate valid and correctly formatted launch velocity equation problems", () => {
+    const levelDataConfigFactory = new LevelDataConfigFactory();
+
+    // Generate multiple configurations to cover random values.
+    for (let i = 0; i < 1000; i++) {
+      const levelDataConfig = levelDataConfigFactory.createLevelDataConfig(
+        "cannonTrajectory",
+        1,
+      );
+      expectValidCannonTrajectoryLevel1Problem(levelDataConfig);
+    }
+  });
+
+  it("should generate the correct level configuration metadata", () => {
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "cannonTrajectory",
+      1,
+    );
+
+    expect(config).toMatchObject({
+      gameId: "cannonTrajectory",
+      levelId: 1,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "initialHorizontalVelocity",
+        "horizontalVelocityRate",
+        "initialVerticalVelocity",
+        "verticalVelocityRate",
+      ],
+      toleranceRule: { absolute: 0.01 },
+    });
+
+    // toMatchObject ignores extra keys, so check these two exactly:
+    // there must be a unit for every answer and nothing else.
+    expect(config.userInputVariablesUnits).toEqual({
+      initialHorizontalVelocity: "m/s",
+      horizontalVelocityRate: "m/s^2",
+      initialVerticalVelocity: "m/s",
+      verticalVelocityRate: "m/s^2",
+    });
+    expect(config.bounds).toEqual({
+      initialHorizontalVelocity: { min: 0 },
+      initialVerticalVelocity: { min: 0 },
+    });
+  });
+
+  it("accepts exact and two-decimal answers, and treats a flipped sign as wrong", () => {
+    const validator = new DefaultAnswerValidator();
+    const config = new LevelDataConfigFactory().createLevelDataConfig(
+      "cannonTrajectory",
+      1,
+    );
+    const submit = (values: Record<string, number>) => ({
+      gameId: config.gameId,
+      levelId: config.levelId,
+      values,
+      units: config.userInputVariablesUnits,
+    });
+    const rounded = Object.fromEntries(
+      Object.entries(config.expectedUserInput).map(([name, value]) => [
+        name,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    expect(
+      validator.validateAnswer(submit(config.expectedUserInput), config)
+        .correct,
+    ).toBe(true);
+    expect(validator.validateAnswer(submit(rounded), config).correct).toBe(
+      true,
+    );
+
+    // The rates are unbounded, so a flipped sign is valid input but wrong.
+    const flippedRate = {
+      ...config.expectedUserInput,
+      verticalVelocityRate: -config.expectedUserInput.verticalVelocityRate,
+    };
+    expect(validator.validateInput(submit(flippedRate), config)).toBe(true);
+    expect(validator.validateAnswer(submit(flippedRate), config).correct).toBe(
+      false,
+    );
+
+    // The initial velocities are bounded, so a negative one is rejected.
+    const negativeStart = {
+      ...config.expectedUserInput,
+      initialHorizontalVelocity:
+        -config.expectedUserInput.initialHorizontalVelocity,
+    };
+    expect(validator.validateInput(submit(negativeStart), config)).toBe(false);
+  });
+});
