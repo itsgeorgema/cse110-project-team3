@@ -23,7 +23,7 @@ composed into a playable game loop.
 - [`DefaultAnswerValidator.ts`](./DefaultAnswerValidator.ts) checks level
   identity, required finite values, configured bounds, and numerical tolerance.
 - [`PhysicsEngine.ts`](./PhysicsEngine.ts) provides checked arithmetic and
-  constant-velocity kinematics helpers, plus `simulate`, which hands a request
+  constant-velocity and constant-acceleration kinematics helpers, plus `simulate`, which hands a request
   to the `SimulationRunner` it is given and returns that runner's frames. It
   does not import Matter.js and does not step a simulation itself.
 - [`SimulationState.ts`](./SimulationState.ts) declares the frame types
@@ -63,3 +63,13 @@ Tests live beside the implementation as `*.test.ts`. See the
 [progress tracking design](../../docs/progress-tracking.md),
 [physics simulation design](../../docs/physics-simulation.md), and
 [testing plan](../../docs/testing/README.md) for the behavior currently covered.
+
+For [#17](https://github.com/itsgeorgema/cse110-project-team3/issues/17),
+`calculateAverageVelocity(acceleration, startingVelocity, time)` returns
+`v_0 + a*t/2`, and `calculateDistance` takes the same arguments and returns
+that average multiplied by time. Units are meters and seconds. Time must be
+nonnegative; zero time returns the initial velocity and zero displacement.
+Negative velocity or acceleration is allowed. Despite its level-facing name,
+`calculateDistance` returns signed displacement when motion is not entirely
+forward; kinematics level 4 generates only forward motion. Both methods reject
+nonfinite or nonnumeric inputs and nonfinite calculation results.

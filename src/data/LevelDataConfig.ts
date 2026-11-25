@@ -31,11 +31,15 @@ export class LevelDataConfigFactory {
             return this.createKinematicsLevel2LevelDataConfig();
           case 3:
             return this.createKinematicsLevel3LevelDataConfig();
+          case 4:
+            return this.createKinematicsLevel4LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
       case "netForce":
         switch (levelId) {
+          case 1:
+            return this.createNetForceLevel1LevelDataConfig();
           case 2:
             return this.createNetForceLevel2LevelDataConfig();
 
@@ -55,6 +59,8 @@ export class LevelDataConfigFactory {
         switch (levelId) {
           case 1:
             return this.createCircularMotionLevel1LevelDataConfig();
+          case 2:
+            return this.createCircularMotionLevel2LevelDataConfig();
           case 3:
             return this.createCircularMotionLevel3LevelDataConfig();
           default:
@@ -191,6 +197,64 @@ export class LevelDataConfigFactory {
       bounds: {
         acceleration: { min: 0.0 }, //final?
       },
+    };
+  }
+
+  /** Constant-acceleration, two-answer problem (#17). */
+  private createKinematicsLevel4LevelDataConfig(): LevelDataConfig {
+    const initialVelocity = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const time = this.randomIntegerInclusive(2, 7);
+    const averageVelocity = PhysicsEngine.calculateAverageVelocity(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    const distance = PhysicsEngine.calculateDistance(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    return {
+      gameId: "kinematics",
+      levelId: 4,
+      problemStatementVariables: ["initialVelocity", "acceleration", "time"],
+      problemStatementVariablesValues: { initialVelocity, acceleration, time },
+      problemStatement:
+        `The getaway car starts at ${initialVelocity} m/s and accelerates at a constant ` +
+        `${acceleration} m/s^2 for ${time} seconds toward the exit. ` +
+        `Average velocity is the initial velocity plus half the acceleration times time ` +
+        `(v_avg = v_0 + a*t/2). Distance traveled is average velocity times time ` +
+        `(d = v_avg*t). What are the car's average velocity and distance traveled?`,
+      userInputVariables: ["averageVelocity", "distance"],
+      userInputVariablesUnits: { averageVelocity: "m/s", distance: "m" },
+      expectedUserInput: { averageVelocity, distance },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { averageVelocity: { min: 0 }, distance: { min: 0 } },
+    };
+  }
+
+  /** Frictionless pushed crate, F = ma (#18). */
+  private createNetForceLevel1LevelDataConfig(): LevelDataConfig {
+    const mass = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const force = PhysicsEngine.calculateForce(mass, acceleration);
+    return {
+      gameId: "netForce",
+      levelId: 1,
+      problemStatementVariables: ["mass", "acceleration"],
+      problemStatementVariablesValues: { mass, acceleration },
+      problemStatement:
+        `Force changes an object's velocity. Newton's second law states that net force ` +
+        `equals mass times acceleration (F = m*a). The clown pushes a circus crate ` +
+        `with a mass of ${mass} kg toward the blocked gate, accelerating it at ` +
+        `${acceleration} m/s^2. Ignore friction and assume the push is horizontal, ` +
+        `so the pushing force is the net horizontal force. What pushing force is needed?`,
+      userInputVariables: ["force"],
+      userInputVariablesUnits: { force: "N" },
+      expectedUserInput: { force },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { force: { min: 0 } },
     };
   }
 
@@ -425,6 +489,88 @@ export class LevelDataConfigFactory {
       expectedUserInput: { acceleration: centripetalAcceleration },
       toleranceRule: { absolute: 0.01 },
       bounds: { acceleration: { min: 0 } },
+    };
+  }
+
+  private createCircularMotionLevel2LevelDataConfig(): LevelDataConfig {
+    const gravitationalAcceleration = 9.81; // m/s^2
+    // Every speed in [13, 25] exceeds the minimum loop speed sqrt(g * r)
+    // for every radius in [5, 15] (at most about 12.13 m/s), so the
+    // normal force at the top is always positive.
+    const speed = this.randomIntegerInclusive(13, 25); // m/s
+    const mass = this.randomIntegerInclusive(200, 500); // kg
+    const radius = this.randomIntegerInclusive(5, 15); // m
+
+    const acceleration = PhysicsEngine.calculateCentripetalAcceleration(
+      speed,
+      radius,
+    ); // m/s^2
+    const netForce = PhysicsEngine.calculateForce(mass, acceleration); // N
+    const gravitationalForce = PhysicsEngine.calculateForce(
+      mass,
+      gravitationalAcceleration,
+    ); // N
+    const normalForce = PhysicsEngine.calculateNormalForceAtLoopTop(
+      mass,
+      speed,
+      radius,
+      gravitationalAcceleration,
+    ); // N
+
+    const problemStatement =
+      `At the top of a loop, the roller coaster is moving in a circle, so it accelerates toward the center. ` +
+      `This centripetal acceleration is a = v^2 / r, where a is the acceleration (m/s^2), v is the coaster's speed (m/s), and r is the radius of the loop (m). ` +
+      `In the formulas below, F_net, F_g, and F_N are labels for forces, measured in newtons (N), while m is the coaster's mass (kg) and g is the acceleration due to gravity (m/s^2). ` +
+      `By Newton's second law, the net force F_net is mass times this acceleration (F_net = m * a). ` +
+      `Two forces act on the coaster at the top, and both point toward the center: ` +
+      `the gravitational force F_g = m * g and the normal force F_N from the track pushing on the coaster. ` +
+      `Together they make up the net force (F_net = F_N + F_g). ` +
+      `A roller coaster with a mass of ${mass} kg travels at a speed of ${speed} m/s at the top of a loop with a radius of ${radius} m. ` +
+      `Use ${gravitationalAcceleration} m/s^2 for gravity and take the direction toward the center as positive. ` +
+      `Calculate the acceleration, net force, normal force, and gravitational force acting on the roller coaster at the top of the loop. ` +
+      `Keep full precision in intermediate steps and round only your final answers to two decimal places.`;
+
+    return {
+      gameId: "circularMotion",
+      levelId: 2,
+      problemStatementVariables: [
+        "speed",
+        "mass",
+        "radius",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        speed,
+        mass,
+        radius,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: [
+        "acceleration",
+        "netForce",
+        "normalForce",
+        "gravitationalForce",
+      ],
+      userInputVariablesUnits: {
+        acceleration: "m/s^2",
+        netForce: "N",
+        normalForce: "N",
+        gravitationalForce: "N",
+      },
+      expectedUserInput: {
+        acceleration,
+        netForce,
+        normalForce,
+        gravitationalForce,
+      },
+      toleranceRule: { absolute: 0.01 },
+      bounds: {
+        acceleration: { min: 0 },
+        netForce: { min: 0 },
+        normalForce: { min: 0 },
+        gravitationalForce: { min: 0 },
+      },
     };
   }
 
