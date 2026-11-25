@@ -42,4 +42,12 @@ const result = validator.validateAnswer(input, problem);
 ```
 
 Both minigames use the same validator with their own configurations.
+
+## Accepted answers animate the exact answer (#114)
+
+An answer inside the tolerance can still miss by a visible amount. So when
+`validateAnswer` accepts an answer, `GameController` builds the run from the
+level's `expectedUserInput` instead of the typed numbers: the car stops exactly
+at the gate. A rejected answer plays the typed numbers, so the player sees the
+real miss. The recorded attempt always keeps what the player typed.
 Run `npm test` for sample configurations and validation behavior.

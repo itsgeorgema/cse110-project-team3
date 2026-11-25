@@ -13,6 +13,8 @@ export class LevelPanel implements LevelScreen {
   >();
   private returnFocus: HTMLElement | undefined;
   private readonly title = document.createElement("h2");
+  private readonly returnButton = document.createElement("button");
+  private returnLocked = false;
   /** Where main.ts mounts the KonvaStage the level's animation draws on (#116). */
   readonly stageHost = document.createElement("div");
 
@@ -22,10 +24,17 @@ export class LevelPanel implements LevelScreen {
     this.dialog.setAttribute("aria-labelledby", "level-panel-title");
     this.title.id = "level-panel-title";
     this.title.textContent = "Level";
-    const close = document.createElement("button");
+    const close = this.returnButton;
     close.type = "button";
     close.textContent = "Return to story map";
     close.addEventListener("click", () => this.dialog.close());
+    // Escape closes a dialog too; block it while the return is locked.
+    this.dialog.addEventListener("keydown", (event) => {
+      if (this.returnLocked && event.key === "Escape") event.preventDefault();
+    });
+    this.dialog.addEventListener("cancel", (event) => {
+      if (this.returnLocked) event.preventDefault();
+    });
     this.dialog.addEventListener("close", () => {
       onClose();
       this.returnFocus?.focus();
@@ -56,7 +65,20 @@ export class LevelPanel implements LevelScreen {
     this.stageHost.hidden = !visible;
   }
 
+  /**
+   * A level counts once its answer has played to the end, so the way back to
+   * the map waits for it. The label says why, not only the disabled state.
+   */
+  lockReturn(locked: boolean): void {
+    this.returnLocked = locked;
+    this.returnButton.disabled = locked;
+    this.returnButton.textContent = locked
+      ? "Finishing your run…"
+      : "Return to story map";
+  }
+
   clear(): void {
+    this.lockReturn(false);
     this.stageHost.hidden = true;
     this.content.replaceChildren();
     this.fields.clear();

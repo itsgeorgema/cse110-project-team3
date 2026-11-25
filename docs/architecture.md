@@ -58,6 +58,12 @@ display state in fixture order: saved completions are cleared, the first
 remaining node is current, and later nodes are locked. Selecting a marker saves
 the current address. Reset clears persistent progress and rerenders the map.
 
+Players can back up or move progress between devices (#3): **Download
+progress** saves `SaveManager.exportSave()` as a JSON file, and **Import
+progress** passes a chosen file to `SaveManager.importSave()`, then reloads so
+the map is rebuilt from the imported save. **Quit** offers to keep or delete the
+save; until then `LeaveGuard` makes the browser confirm closing the tab.
+
 This preview-specific display algorithm is separate from `ProgressionSystem`.
 Gameplay integration should replace fixture identities and connect real
 progression and completion data in an implementation change before this design

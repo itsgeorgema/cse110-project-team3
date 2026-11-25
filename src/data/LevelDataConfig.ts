@@ -51,6 +51,8 @@ export class LevelDataConfigFactory {
         }
       case "circularMotion":
         switch (levelId) {
+          case 1:
+            return this.createCircularMotionLevel1LevelDataConfig();
           case 3:
             return this.createCircularMotionLevel3LevelDataConfig();
           default:
@@ -289,6 +291,36 @@ export class LevelDataConfigFactory {
         initialHorizontalVelocity: { min: 0 },
         initialVerticalVelocity: { min: 0 },
       },
+    };
+  }
+
+  private createCircularMotionLevel1LevelDataConfig(): LevelDataConfig {
+    const speed = this.randomIntegerInclusive(10, 40); // m/s
+    const radius = this.randomIntegerInclusive(5, 40); // m
+    const centripetalAcceleration =
+      PhysicsEngine.calculateCentripetalAcceleration(speed, radius); // m/s^2
+
+    const problemStatement =
+      `When an object moves along a circle, its velocity keeps changing direction, ` +
+      `so it is always accelerating toward the center of the circle. ` +
+      `This is called centripetal acceleration, and it equals the speed squared ` +
+      `divided by the radius of the circle (a = v^2 / r). ` +
+      `A roller coaster travels at a speed of ${speed} m/s at the top of a loop ` +
+      `with a radius of ${radius} m. ` +
+      `What is the roller coaster's acceleration at the top of the loop? ` +
+      `Round your answer to two decimal places.`;
+
+    return {
+      gameId: "circularMotion",
+      levelId: 1,
+      problemStatementVariables: ["speed", "radius"],
+      problemStatementVariablesValues: { speed, radius },
+      problemStatement,
+      userInputVariables: ["acceleration"],
+      userInputVariablesUnits: { acceleration: "m/s^2" },
+      expectedUserInput: { acceleration: centripetalAcceleration },
+      toleranceRule: { absolute: 0.01 },
+      bounds: { acceleration: { min: 0 } },
     };
   }
 

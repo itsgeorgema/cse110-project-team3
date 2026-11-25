@@ -41,15 +41,35 @@ const MARGIN = 56;
 /** Height of the ground band at the bottom of the stage, in pixels. */
 const GROUND = 28;
 
-/** The gate distance in meters for the kinematics levels that have one. */
+/**
+ * Where each level's gate stands, in meters: where the right answer puts the
+ * car at the level's time. Undefined for a level with no gate.
+ */
 function gateDistance(level: LevelDataConfig): number | undefined {
-  const { displacement } = level.problemStatementVariablesValues;
-  return level.levelId === 1 && displacement > 0 ? displacement : undefined;
+  const v = level.problemStatementVariablesValues;
+  let gate: number | undefined;
+  if (level.levelId === 1) gate = v.displacement;
+  else if (level.levelId === 2) gate = v.velocity * v.time;
+  else if (level.levelId === 3)
+    gate = ((v.initialVelocity + v.finalVelocity) / 2) * v.time;
+  return gate !== undefined && Number.isFinite(gate) && gate > 0
+    ? gate
+    : undefined;
 }
 
+/** The level's given numbers, shown above the track. */
 function sceneLabel(level: LevelDataConfig): string {
-  const { displacement, time } = level.problemStatementVariablesValues;
-  return level.levelId === 1 ? `${displacement} m in ${time} s` : "";
+  const v = level.problemStatementVariablesValues;
+  switch (level.levelId) {
+    case 1:
+      return `${v.displacement} m in ${v.time} s`;
+    case 2:
+      return `${v.velocity} m/s for ${v.time} s`;
+    case 3:
+      return `${v.initialVelocity} to ${v.finalVelocity} m/s in ${v.time} s`;
+    default:
+      return "";
+  }
 }
 
 /** "4.7", "12", never "4.70" or "-0". */
@@ -59,7 +79,7 @@ function meters(value: number): string {
 
 /**
  * The getaway car for Minigame 1 (#6, worked example for #116). Frames come
- * from buildKinematicsRun in meters with the car on y = 0; the car drives
+ * from the kinematics run builders in meters with the car on y = 0; the car drives
  * right toward the gate. The verdict appears when the run ends: "Correct!" or
  * how far short of or past the gate the player's numbers put the car.
  */
