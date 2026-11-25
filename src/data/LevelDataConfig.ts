@@ -293,7 +293,7 @@ export class LevelDataConfigFactory {
       },
     };
   }
-  
+
   private createCircularMotionLevel1LevelDataConfig(): LevelDataConfig {
     const speed = this.randomIntegerInclusive(10, 40); // m/s
     const radius = this.randomIntegerInclusive(5, 40); // m
