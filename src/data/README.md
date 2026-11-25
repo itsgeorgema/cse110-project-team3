@@ -56,7 +56,7 @@ push with no friction, so the applied force equals `m*a`.
 The config uses nonnegative answer bounds and an absolute tolerance of 0.00001.
 Generated answers are integers, so players need no rounding instructions.
 Problem text is supplied through the existing `problemStatement` field; no
-separate controller text generator is needed. `netForceLevel1.test.ts` covers
+separate controller text generator is needed. `LevelDataConfig.test.ts` covers
 range edges, units, formulas, real validator checks, and invalid input / wrong
 answer / correction through `GameController`.
 
