@@ -57,7 +57,7 @@ CI unit suite, including deterministic factory samples and malformed-config test
   0.00001. Generated answers are integers or exact half-integers, so players
   need no rounding instructions. Problem text is supplied through the existing
   `problemStatement` field; no separate controller text generator is needed.
-  `kinematicsLevel4.test.ts` covers range edges, units, formulas, real validator checks,
+  `LevelDataConfig.test.ts` covers range edges, units, formulas, real validator checks,
   and invalid input / wrong answer / correction through `GameController`.
 
 This change implements the physics and problem-generation scope of #17. The new
