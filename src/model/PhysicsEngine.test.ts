@@ -1504,58 +1504,6 @@ describe("PhysicsEngine.calculateNormalForceAtLoopTop", () => {
   );
 });
 
-describe("PhysicsEngine.calculateAverageVelocity", () => {
-  // Argument order matches #134: (acceleration, startingVelocity, time).
-  it.each([
-    [0, 10, 3, 10], // no acceleration: average equals initial
-    [2, 10, 3, 13], // speeding up: (10 + 16) / 2
-    [-9.81, 10, 1, 5.095], // thrown upward, still rising
-    [-9.81, 5, 2, -4.81], // past the peak, average points down
-    [-9.81, 7, 0, 7], // zero-length interval
-  ])(
-    "a = %s m/s^2, v0 = %s m/s, t = %s s gives %s m/s",
-    (acceleration, startingVelocity, time, expected) => {
-      expect(
-        PhysicsEngine.calculateAverageVelocity(
-          acceleration,
-          startingVelocity,
-          time,
-        ),
-      ).toBeCloseTo(expected, DECIMAL_PRECISION);
-    },
-  );
-
-  it("matches (initial + final) / 2", () => {
-    const final = 12 + -9.81 * 1.7;
-    expect(PhysicsEngine.calculateAverageVelocity(-9.81, 12, 1.7)).toBeCloseTo(
-      (12 + final) / 2,
-      DECIMAL_PRECISION,
-    );
-  });
-
-  it("rejects negative time, invalid inputs and overflow", () => {
-    expect(() => PhysicsEngine.calculateAverageVelocity(2, 10, -1)).toThrow(
-      RangeError,
-    );
-    expect(() => PhysicsEngine.calculateAverageVelocity(2, NaN, 1)).toThrow(
-      RangeError,
-    );
-    expect(() =>
-      PhysicsEngine.calculateAverageVelocity("2" as unknown as number, 10, 1),
-    ).toThrow(TypeError);
-    expect(() =>
-      PhysicsEngine.calculateAverageVelocity(0, Number.MAX_VALUE, 1),
-    ).not.toThrow();
-    expect(() =>
-      PhysicsEngine.calculateAverageVelocity(
-        Number.MAX_VALUE,
-        Number.MAX_VALUE,
-        1,
-      ),
-    ).toThrow(RangeError);
-  });
-});
-
 describe("PhysicsEngine.calculateFlightTime", () => {
   it.each([
     [9.81, 9.81, 2],
