@@ -1317,3 +1317,103 @@ describe("PhysicsEngine launch velocity components together", () => {
     );
   });
 });
+
+describe("PhysicsEngine.calculateAverageVelocity", () => {
+  // Argument order matches #134: (acceleration, startingVelocity, time).
+  it.each([
+    [0, 10, 3, 10], // no acceleration: average equals initial
+    [2, 10, 3, 13], // speeding up: (10 + 16) / 2
+    [-9.81, 10, 1, 5.095], // thrown upward, still rising
+    [-9.81, 5, 2, -4.81], // past the peak, average points down
+    [-9.81, 7, 0, 7], // zero-length interval
+  ])(
+    "a = %s m/s^2, v0 = %s m/s, t = %s s gives %s m/s",
+    (acceleration, startingVelocity, time, expected) => {
+      expect(
+        PhysicsEngine.calculateAverageVelocity(
+          acceleration,
+          startingVelocity,
+          time,
+        ),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("matches (initial + final) / 2", () => {
+    const final = 12 + -9.81 * 1.7;
+    expect(PhysicsEngine.calculateAverageVelocity(-9.81, 12, 1.7)).toBeCloseTo(
+      (12 + final) / 2,
+      DECIMAL_PRECISION,
+    );
+  });
+
+  it("rejects negative time, invalid inputs and overflow", () => {
+    expect(() => PhysicsEngine.calculateAverageVelocity(2, 10, -1)).toThrow(
+      RangeError,
+    );
+    expect(() => PhysicsEngine.calculateAverageVelocity(2, NaN, 1)).toThrow(
+      RangeError,
+    );
+    expect(() =>
+      PhysicsEngine.calculateAverageVelocity("2" as unknown as number, 10, 1),
+    ).toThrow(TypeError);
+    expect(() =>
+      PhysicsEngine.calculateAverageVelocity(0, Number.MAX_VALUE, 1),
+    ).not.toThrow();
+    expect(() =>
+      PhysicsEngine.calculateAverageVelocity(
+        Number.MAX_VALUE,
+        Number.MAX_VALUE,
+        1,
+      ),
+    ).toThrow(RangeError);
+  });
+});
+
+describe("PhysicsEngine.calculateFlightTime", () => {
+  it.each([
+    [9.81, 9.81, 2],
+    [19.62, 9.81, 4],
+    [0, 9.81, 0],
+    [5, 10, 1],
+  ])(
+    "vy = %s m/s with g = %s m/s^2 lands after %s s",
+    (initialVerticalVelocity, gravity, expected) => {
+      expect(
+        PhysicsEngine.calculateFlightTime(initialVerticalVelocity, gravity),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("brings the object back to launch height at the flight time", () => {
+    const vy = 11.57;
+    const g = 9.81;
+    const flightTime = PhysicsEngine.calculateFlightTime(vy, g);
+    const averageVy = PhysicsEngine.calculateAverageVelocity(
+      -g,
+      vy,
+      flightTime,
+    );
+    expect(
+      PhysicsEngine.calculateDisplacement(averageVy, flightTime),
+    ).toBeCloseTo(0, DECIMAL_PRECISION);
+  });
+
+  it("rejects negative vertical velocity, non-positive gravity and invalid inputs", () => {
+    expect(() => PhysicsEngine.calculateFlightTime(-1, 9.81)).toThrow(
+      "PhysicsEngine.calculateFlightTime.initialVerticalVelocity must be >= 0. Received: -1",
+    );
+    expect(() => PhysicsEngine.calculateFlightTime(5, 0)).toThrow(
+      "PhysicsEngine.calculateFlightTime.gravitationalAcceleration must be > 0. Received: 0",
+    );
+    expect(() => PhysicsEngine.calculateFlightTime(5, -9.81)).toThrow(
+      RangeError,
+    );
+    expect(() => PhysicsEngine.calculateFlightTime(Infinity, 9.81)).toThrow(
+      RangeError,
+    );
+    expect(() =>
+      PhysicsEngine.calculateFlightTime(null as unknown as number, 9.81),
+    ).toThrow(TypeError);
+  });
+});

@@ -128,6 +128,21 @@ export class PhysicsEngine {
     return this.divide(this.subtract(finalVelocity, initialVelocity), time);
   }
 
+  /** Mean velocity over a nonnegative interval of constant acceleration (#17). */
+  public static calculateAverageVelocity(
+    constantAcceleration: number,
+    startingVelocity: number,
+    time: number,
+  ): number {
+    this.validateNumber(startingVelocity, "startingVelocity");
+    // calculateDisplacement validates both acceleration and the time interval.
+    const change = this.calculateDisplacement(constantAcceleration, time);
+    return this.validateResult(
+      startingVelocity + change / 2,
+      "PhysicsEngine.calculateAverageVelocity",
+    );
+  }
+
   public static calculateForce(mass: number, acceleration: number) {
     this.validateNumber(
       mass,
@@ -263,5 +278,35 @@ export class PhysicsEngine {
       );
     }
     return this.multiply(speed, Math.sin((angleDegrees * Math.PI) / 180));
+  }
+
+  /** Time for a launched object to come back down to its launch height: 2 * vy / g. */
+  public static calculateFlightTime(
+    initialVerticalVelocity: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      initialVerticalVelocity,
+      "PhysicsEngine.calculateFlightTime input variable initial vertical velocity",
+    );
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateFlightTime input variable gravitational acceleration",
+    );
+    if (initialVerticalVelocity < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.initialVerticalVelocity must be >= 0. Received: ${initialVerticalVelocity}`,
+      );
+    }
+    if (gravitationalAcceleration <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.gravitationalAcceleration must be > 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    return this.multiply(
+      2,
+      this.divide(initialVerticalVelocity, gravitationalAcceleration),
+    );
   }
 }
