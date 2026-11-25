@@ -1180,3 +1180,62 @@ describe("PhysicsEngine.calculateMinimumLoopSpeed", () => {
     ).toThrow(RangeError);
   });
 });
+
+describe("PhysicsEngine.calculateNormalForceAtLoopTop", () => {
+  it.each([
+    // [mass, speed, radius, gravity, expected normal force]
+    [100, 10, 5, 10, 1000], // 100 * 20 - 100 * 10
+    [350, 19, 10, 9.81, 9201.5], // 350 * 36.1 - 350 * 9.81
+    [500, 13, 15, 9.81, 728.33333333], // slowest speed on the largest loop
+    [200, 20, 8, 0, 10000], // no gravity: normal force is the whole net force
+  ])(
+    "calculates the normal force for mass %s, speed %s, radius %s, gravity %s",
+    (mass, speed, radius, gravity, expected) => {
+      expect(
+        PhysicsEngine.calculateNormalForceAtLoopTop(
+          mass,
+          speed,
+          radius,
+          gravity,
+        ),
+      ).toBeCloseTo(expected, DECIMAL_PRECISION);
+    },
+  );
+
+  it("is zero at the minimum loop speed, where gravity alone is the net force", () => {
+    const radius = 12;
+    const speed = PhysicsEngine.calculateMinimumLoopSpeed(radius, 10);
+
+    expect(
+      PhysicsEngine.calculateNormalForceAtLoopTop(300, speed, radius, 10),
+    ).toBeCloseTo(0, DECIMAL_PRECISION);
+  });
+
+  it("rejects speeds too slow to stay on the track", () => {
+    expect(() =>
+      PhysicsEngine.calculateNormalForceAtLoopTop(300, 10, 15, 9.81),
+    ).toThrow(/too slow to stay on a loop/);
+  });
+
+  it.each([
+    [0, 15, 10, 9.81],
+    [-300, 15, 10, 9.81],
+    [300, -15, 10, 9.81],
+    [300, 15, 0, 9.81],
+    [300, 15, 10, -9.81],
+    [NaN, 15, 10, 9.81],
+    [300, 15, Infinity, 9.81],
+  ])(
+    "rejects invalid mass %s, speed %s, radius %s, or gravity %s",
+    (mass, speed, radius, gravity) => {
+      expect(() =>
+        PhysicsEngine.calculateNormalForceAtLoopTop(
+          mass,
+          speed,
+          radius,
+          gravity,
+        ),
+      ).toThrow(RangeError);
+    },
+  );
+});
