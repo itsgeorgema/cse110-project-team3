@@ -1,4 +1,5 @@
 import type { LevelAddress } from "../model/LevelAddress.ts";
+import { buildCannonLevel1Run } from "../model/runs/cannonRun.ts";
 import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
@@ -18,6 +19,9 @@ export const runRegistry: Readonly<
     1: buildKinematicsLevel1Run,
     2: buildKinematicsLevel2Run,
     3: buildKinematicsLevel3Run,
+  },
+  cannonTrajectory: {
+    1: buildCannonLevel1Run,
   },
 };
 
