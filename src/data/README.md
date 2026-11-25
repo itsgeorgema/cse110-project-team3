@@ -12,7 +12,8 @@ adapter. The catalog supplies implemented levels to the map-launched level panel
 - [`LevelDataConfig.ts`](./LevelDataConfig.ts) defines the one level shape
   (`gameId`, `levelId`, problem text, `userInputVariables` and their units,
   expected answers, tolerance, bounds). `LevelDataConfigFactory` generates the
-  kinematics levels 1–3 and net-force level 2 with random values. The validator's
+  kinematics levels 1–4, net-force level 2, and circular-motion levels 1 and 3
+  with random values. The validator's
   `AnswerValidationConfig` is derived from this type (#75).
 - [`SaveData.ts`](./SaveData.ts) defines the version 1 save shape: completed
   `LevelAddress` values and the current selection.
@@ -44,3 +45,21 @@ any error at the loading boundary. The check does not mutate data. `LevelManager
 owns this boundary and returns player-facing failure messages to `LevelSession`.
 Run `npm run test:coverage` for the existing
 CI unit suite, including deterministic factory samples and malformed-config tests.
+
+## Kinematics level 4 (#17)
+
+- [#17](https://github.com/itsgeorgema/cse110-project-team3/issues/17):
+  `createLevelDataConfig("kinematics", 4)` asks for `averageVelocity` in m/s
+  and `distance` in m. Initial velocity is 5–30 m/s, constant acceleration
+  is 1–5 m/s², and duration is 2–7 s. Both answers must be correct.
+  The formulas are `v_avg = v_0 + a*t/2` and `d = v_avg*t`.
+  This config uses nonnegative answer bounds and an absolute tolerance of
+  0.00001. Generated answers are integers or exact half-integers, so players
+  need no rounding instructions. Problem text is supplied through the existing
+  `problemStatement` field; no separate controller text generator is needed.
+  `kinematicsLevel4.test.ts` covers range edges, units, formulas, real validator checks,
+  and invalid input / wrong answer / correction through `GameController`.
+
+This change implements the physics and problem-generation scope of #17. The new
+config is not yet registered in the production catalog or placed on the map;
+playback remains separate view integration work.

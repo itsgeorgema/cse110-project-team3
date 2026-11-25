@@ -128,6 +128,37 @@ export class PhysicsEngine {
     return this.divide(this.subtract(finalVelocity, initialVelocity), time);
   }
 
+  /** Mean velocity over a nonnegative interval of constant acceleration (#17). */
+  public static calculateAverageVelocity(
+    constantAcceleration: number,
+    startingVelocity: number,
+    time: number,
+  ): number {
+    this.validateNumber(startingVelocity, "startingVelocity");
+    // calculateDisplacement validates both acceleration and the time interval.
+    const change = this.calculateDisplacement(constantAcceleration, time);
+    return this.validateResult(
+      startingVelocity + change / 2,
+      "PhysicsEngine.calculateAverageVelocity",
+    );
+  }
+
+  /** Signed displacement v0*t + a*t²/2; distance for forward-only motion (#17). */
+  public static calculateDistance(
+    constantAcceleration: number,
+    startingVelocity: number,
+    time: number,
+  ): number {
+    return this.calculateDisplacement(
+      this.calculateAverageVelocity(
+        constantAcceleration,
+        startingVelocity,
+        time,
+      ),
+      time,
+    );
+  }
+
   public static calculateForce(mass: number, acceleration: number) {
     this.validateNumber(
       mass,

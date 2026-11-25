@@ -31,6 +31,8 @@ export class LevelDataConfigFactory {
             return this.createKinematicsLevel2LevelDataConfig();
           case 3:
             return this.createKinematicsLevel3LevelDataConfig();
+          case 4:
+            return this.createKinematicsLevel4LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -182,6 +184,40 @@ export class LevelDataConfigFactory {
       bounds: {
         acceleration: { min: 0.0 }, //final?
       },
+    };
+  }
+
+  /** Constant-acceleration, two-answer problem (#17). */
+  private createKinematicsLevel4LevelDataConfig(): LevelDataConfig {
+    const initialVelocity = this.randomIntegerInclusive(5, 30);
+    const acceleration = this.randomIntegerInclusive(1, 5);
+    const time = this.randomIntegerInclusive(2, 7);
+    const averageVelocity = PhysicsEngine.calculateAverageVelocity(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    const distance = PhysicsEngine.calculateDistance(
+      acceleration,
+      initialVelocity,
+      time,
+    );
+    return {
+      gameId: "kinematics",
+      levelId: 4,
+      problemStatementVariables: ["initialVelocity", "acceleration", "time"],
+      problemStatementVariablesValues: { initialVelocity, acceleration, time },
+      problemStatement:
+        `The getaway car starts at ${initialVelocity} m/s and accelerates at a constant ` +
+        `${acceleration} m/s^2 for ${time} seconds toward the exit. ` +
+        `Average velocity is the initial velocity plus half the acceleration times time ` +
+        `(v_avg = v_0 + a*t/2). Distance traveled is average velocity times time ` +
+        `(d = v_avg*t). What are the car's average velocity and distance traveled?`,
+      userInputVariables: ["averageVelocity", "distance"],
+      userInputVariablesUnits: { averageVelocity: "m/s", distance: "m" },
+      expectedUserInput: { averageVelocity, distance },
+      toleranceRule: { absolute: 0.00001 },
+      bounds: { averageVelocity: { min: 0 }, distance: { min: 0 } },
     };
   }
 
