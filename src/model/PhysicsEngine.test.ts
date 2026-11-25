@@ -1234,6 +1234,18 @@ describe.each([
       );
     },
   );
+  it.each([-90, -1, -0.001, 90.001, 91, 180])(
+    "rejects angle %s outside 0 to 90 degrees",
+    (angle) => {
+      expect(() => call(10, angle)).toThrow(
+        new RegExp(`PhysicsEngine\\.${name}\\.angle must be between 0 and 90`),
+      );
+    },
+  );
+
+  it.each([0, 90])("accepts the boundary angle %s degrees", (angle) => {
+    expect(() => call(10, angle)).not.toThrow();
+  });
 });
 
 describe("PhysicsEngine.calculateHorizontalLaunchVelocity", () => {
