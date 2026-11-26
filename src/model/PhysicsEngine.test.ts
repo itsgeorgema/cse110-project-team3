@@ -532,6 +532,77 @@ describe("PhysicsEngine.calculateDisplacement", () => {
   });
 });
 
+describe("PhysicsEngine.add", () => {
+  // Normal behavior
+  it.each([
+    [10, 2, 12],
+    [-10, 2, -8],
+    [-10, -2, -12],
+    [0, 3252, 3252],
+    [-0, 0, 0],
+    [2.5, 2, 4.5],
+    [0.1, 0.2, 0.3],
+    [322.4353, -2342.355, -2019.9197],
+    [70290108, 278929, 70569037],
+    [7, -7, 0],
+  ])(
+    "adds numbers correctly / within error margin: %s + %s = %s",
+    (a, b, c) => {
+      expect(PhysicsEngine.add(a, b)).toBeCloseTo(c, DECIMAL_PRECISION);
+    },
+  );
+
+  // Non-finite inputs
+  it.each([
+    [NaN, 2],
+    [10, NaN],
+    [Infinity, 2],
+    [-Infinity, 2],
+    [10, Infinity],
+    [10, -Infinity],
+    [Infinity, -Infinity],
+    [NaN, NaN],
+  ])("rejects non-finite inputs: %s + %s", (a, b) => {
+    expect(() => PhysicsEngine.add(a, b)).toThrow(
+      /PhysicsEngine\.add input variable (a|b) must be finite/,
+    );
+  });
+
+  // Overflow
+  it.each([
+    [Number.MAX_VALUE, Number.MAX_VALUE],
+    [-Number.MAX_VALUE, -Number.MAX_VALUE],
+    [1e308, 1e308],
+  ])("rejects infinite results: %s + %s", (a, b) => {
+    expect(() => PhysicsEngine.add(a, b)).toThrow(
+      "PhysicsEngine.add produced a non-finite result.",
+    );
+  });
+
+  // Runtime type validation
+  it.each([
+    ["10", 2],
+    [10, "2"],
+    [null, 2],
+    [10, undefined],
+    [true, 2],
+    [[], {}],
+  ])("rejects invalid runtime types: %s and %s", (a, b) => {
+    expect(() => PhysicsEngine.add(a as number, b as number)).toThrow(
+      /PhysicsEngine\.add input variable (a|b) must be a number/,
+    );
+  });
+
+  // Boundary values
+  it("accepts Number.MAX_VALUE plus zero", () => {
+    expect(PhysicsEngine.add(Number.MAX_VALUE, 0)).toBe(Number.MAX_VALUE);
+  });
+
+  it("returns zero when Number.MAX_VALUE is added to its negative", () => {
+    expect(PhysicsEngine.add(Number.MAX_VALUE, -Number.MAX_VALUE)).toBe(0);
+  });
+});
+
 describe("PhysicsEngine.subtract", () => {
   // Normal behavior
   it.each([
@@ -1177,6 +1248,50 @@ describe("PhysicsEngine.calculateMinimumLoopSpeed", () => {
   ])("rejects invalid radius %s or gravity %s", (radius, gravity) => {
     expect(() =>
       PhysicsEngine.calculateMinimumLoopSpeed(radius, gravity),
+    ).toThrow(RangeError);
+  });
+});
+
+describe("constant-acceleration calculations (#17)", () => {
+  it.each([
+    [3, 18, 5, 25.5, 127.5],
+    [0, 10, 4, 10, 40],
+    [-2, 10, 3, 7, 21],
+    [2, 0, 4, 4, 16],
+    [3, 18, 0, 18, 0],
+    [0, -5, 2, -5, -10],
+  ])("a=%s, v0=%s, t=%s", (a, v0, t, average, distance) => {
+    expect(PhysicsEngine.calculateAverageVelocity(a, v0, t)).toBe(average);
+    expect(PhysicsEngine.calculateDistance(a, v0, t)).toBe(distance);
+  });
+
+  for (const method of [
+    "calculateAverageVelocity",
+    "calculateDistance",
+  ] as const) {
+    it.each([NaN, Infinity, -Infinity, "3", null, undefined])(
+      `${method} rejects invalid arguments %s`,
+      (invalid) => {
+        for (let index = 0; index < 3; index++) {
+          const args: [number, number, number] = [3, 18, 5];
+          args[index] = invalid as number;
+          expect(() => PhysicsEngine[method](...args)).toThrow();
+        }
+      },
+    );
+    it(`${method} rejects negative time and overflow`, () => {
+      expect(() => PhysicsEngine[method](3, 18, -1)).toThrow(RangeError);
+      expect(() => PhysicsEngine[method](Number.MAX_VALUE, 18, 5)).toThrow(
+        RangeError,
+      );
+      expect(() =>
+        PhysicsEngine[method](Number.MAX_VALUE, Number.MAX_VALUE, 1),
+      ).toThrow(RangeError);
+    });
+  }
+  it("rejects overflow in the final distance", () => {
+    expect(() =>
+      PhysicsEngine.calculateDistance(0, Number.MAX_VALUE, 2),
     ).toThrow(RangeError);
   });
 });
