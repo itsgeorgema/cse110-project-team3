@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildCannonLevel1Run } from "../model/runs/cannonRun.ts";
 import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
@@ -19,6 +20,12 @@ describe("runBuilderFor", () => {
     );
     expect(runBuilderFor({ gameId: "kinematics", levelId: 3 })).toBe(
       buildKinematicsLevel3Run,
+    );
+  });
+
+  it("finds the cannon's Level 1 run", () => {
+    expect(runBuilderFor({ gameId: "cannonTrajectory", levelId: 1 })).toBe(
+      buildCannonLevel1Run,
     );
   });
 

@@ -79,11 +79,11 @@ export const previewNodes: readonly MapNode[] = [
   },
   {
     id: "wheel",
-    level: { gameId: "circus-preview", levelId: 5 },
+    level: { gameId: "cannonTrajectory", levelId: 1 },
     title: "The cannon escape",
-    subtitle: "Coming soon · Projectile motion",
+    subtitle: "Projectile motion · Aim for the net",
     story:
-      "The human cannonball’s cannon offers a daring route out. Plan a launch over the circus wall by exploring how launch speed and angle shape a projectile’s path.",
+      "The human cannonball’s cannon offers a daring route out. Split the launch velocity into its horizontal and vertical parts and write how each changes over time, so the flight lands in the safety net.",
     chapter: 1,
     x: 245,
     y: 1030,

@@ -6,6 +6,11 @@ import {
   type CarMessage,
   type CarView,
 } from "../view/animation/CarAnimation.ts";
+import {
+  CannonAnimation,
+  type CannonMessage,
+  type CannonView,
+} from "../view/animation/CannonAnimation.ts";
 import { ManualFrames } from "../view/animation/ManualFrames.ts";
 import { GameController } from "./GameController.ts";
 import { runBuilderFor } from "./runRegistry.ts";
@@ -161,5 +166,97 @@ describe.each([
 
     expect(car.message?.text).toMatch(/^Short by \d/);
     expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+});
+
+/** CannonAnimation's drawing, recorded instead of drawn. */
+class RecordingCannon implements CannonView {
+  message: CannonMessage | undefined;
+  drawScene(): void {}
+  drawTrail(): void {}
+  showMessage(message: CannonMessage | undefined): void {
+    this.message = message;
+  }
+}
+
+describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "cannonTrajectory",
+      1,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const cannon = new RecordingCannon();
+    const animation = new CannonAnimation(
+      cannon,
+      { moveTo: vi.fn() },
+      { width: 600, height: 300 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const answer = (values: Readonly<Record<string, number>>) => {
+      controller.submitAnswer({
+        gameId: "cannonTrajectory",
+        levelId: 1,
+        fields: Object.fromEntries(
+          Object.entries(values).map(([field, value]) => [
+            field,
+            String(value),
+          ]),
+        ),
+      });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    return { level, cannon, progress, answer };
+  }
+
+  it("lands the right answer, rounded to two places, in the net", () => {
+    const { level, cannon, progress, answer } = playLevel();
+    const rounded = Object.fromEntries(
+      Object.entries(level.expectedUserInput).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    answer(rounded);
+
+    expect(cannon.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("flies a too-slow horizontal velocity short of the net", () => {
+    const { level, cannon, progress, answer } = playLevel();
+    const expected = level.expectedUserInput;
+
+    answer({
+      ...expected,
+      initialHorizontalVelocity: expected.initialHorizontalVelocity / 2,
+    });
+
+    expect(cannon.message?.text).toMatch(
+      /^Landed \d+(\.\d)? m short of the net$/,
+    );
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("floats a missing gravity out of the tent", () => {
+    const { level, cannon, answer } = playLevel();
+
+    answer({ ...level.expectedUserInput, verticalVelocityRate: 0 });
+
+    expect(cannon.message?.correct).toBe(false);
+    expect(cannon.message?.text).toMatch(/tent/);
   });
 });

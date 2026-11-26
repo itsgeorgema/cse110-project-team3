@@ -30,5 +30,11 @@ export function createLevelCatalog(
       title: "The blocked gate",
       createConfig: () => factory.createLevelDataConfig("netForce", 2),
     },
+    {
+      gameId: "cannonTrajectory",
+      levelId: 1,
+      title: "The cannon escape",
+      createConfig: () => factory.createLevelDataConfig("cannonTrajectory", 1),
+    },
   ];
 }
