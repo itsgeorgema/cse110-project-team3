@@ -109,7 +109,7 @@ Konva may be imported only under `src/view/` (ESLint enforces it).
 | `AnimationFactory.ts`, `animationRegistry.ts`                   | Game id to engine                                                        |
 | `CarAnimation.ts`, `KonvaCar.ts`                                | Minigame 1 worked example                                                |
 | `CannonAnimation.ts`, `KonvaCannon.ts`                          | Minigame 3: tent, cannon, floor net (L1) or hanging net (L3), trail      |
-| `CoasterAnimation.ts`, `KonvaCoaster.ts`, `KonvaCoasterCart.ts` | Minigame 4: loop track, cart, acceleration arrow and dashed trail        |
+| `CoasterAnimation.ts`, `KonvaCoaster.ts`, `KonvaCoasterCart.ts` | Minigame 4: loop track, cart, arrow (a in L1, F_Normal in L3) and trail  |
 | `DemoAnimation.ts`, `KonvaBall.ts`, `demoPage.ts`               | The smallest engine, on `/demo.html`; the ball is shared with the cannon |
 | `FakeAnimationEngine.ts`, `ManualFrames.ts`                     | Test helpers                                                             |
 | `../../controller/runRegistry.ts`                               | Game id and level id to run builder                                      |

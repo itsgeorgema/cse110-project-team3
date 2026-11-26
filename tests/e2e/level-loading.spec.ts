@@ -279,19 +279,20 @@ test("an unlocked location without a registered config stays unavailable", async
           { gameId: "cannonTrajectory", levelId: 1 },
           { gameId: "cannonTrajectory", levelId: 3 },
           { gameId: "circularMotion", levelId: 1 },
+          { gameId: "circularMotion", levelId: 3 },
         ],
       }),
     );
   });
   await page.goto("./");
   await page
-    .getByRole("button", { name: /Level 8: The final swing/ })
+    .getByRole("button", { name: /Level 9: The final swing/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toHaveText(
     "This level is coming soon.",
   );
   await expect(
-    page.getByRole("button", { name: /Level 7: The midnight loop/ }),
+    page.getByRole("button", { name: /Level 8: Over the top/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });

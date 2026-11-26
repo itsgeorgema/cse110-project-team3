@@ -3,7 +3,10 @@ import {
   buildCannonLevel1Run,
   buildCannonLevel3Run,
 } from "../model/runs/cannonRun.ts";
-import { buildCircularMotionLevel1Run } from "../model/runs/circularMotionRun.ts";
+import {
+  buildCircularMotionLevel1Run,
+  buildCircularMotionLevel3Run,
+} from "../model/runs/circularMotionRun.ts";
 import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
@@ -30,6 +33,7 @@ export const runRegistry: Readonly<
   },
   circularMotion: {
     1: buildCircularMotionLevel1Run,
+    3: buildCircularMotionLevel3Run,
   },
 };
 
