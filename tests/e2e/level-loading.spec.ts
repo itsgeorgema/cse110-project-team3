@@ -277,19 +277,20 @@ test("an unlocked location without a registered config stays unavailable", async
           ...[1, 2, 3].map((levelId) => ({ gameId: "kinematics", levelId })),
           { gameId: "netForce", levelId: 2 },
           { gameId: "cannonTrajectory", levelId: 1 },
+          { gameId: "circularMotion", levelId: 1 },
         ],
       }),
     );
   });
   await page.goto("./");
   await page
-    .getByRole("button", { name: /Level 6: The midnight loop/ })
+    .getByRole("button", { name: /Level 7: The final swing/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toHaveText(
     "This level is coming soon.",
   );
   await expect(
-    page.getByRole("button", { name: /Level 5: The cannon escape/ }),
+    page.getByRole("button", { name: /Level 6: The midnight loop/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });

@@ -90,11 +90,11 @@ export const previewNodes: readonly MapNode[] = [
   },
   {
     id: "fence",
-    level: { gameId: "circus-preview", levelId: 6 },
+    level: { gameId: "circularMotion", levelId: 1 },
     title: "The midnight loop",
-    subtitle: "Coming soon · Circular motion",
+    subtitle: "Circular motion · Stay on the track",
     story:
-      "An abandoned roller coaster winds toward the edge of the carnival. Work out the speed needed to carry your car through its loop and keep your escape on track.",
+      "An abandoned roller coaster winds toward the edge of the carnival. Work out the cart’s acceleration at the top of the loop, so it stays on the track and carries your escape around.",
     chapter: 2,
     x: 410,
     y: 1400,
