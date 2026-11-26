@@ -4,6 +4,7 @@ import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
 import type { Vec2 } from "../../model/SimulationState.ts";
 import {
   buildCircularMotionLevel1Run,
+  buildCircularMotionLevel3Run,
   COASTER_CART_ID,
   COASTER_PAUSE_S,
   coasterTrack,
@@ -108,8 +109,7 @@ describe("CoasterAnimation", () => {
   it("draws the loop on its rise, the ramps and the labels before any answer", () => {
     const scene = view.scene!;
 
-    expect(scene.speedLabel).toBe("20 m/s");
-    expect(scene.radiusLabel).toBe("r = 10 m");
+    expect(scene.labels).toEqual(["20 m/s", "r = 10 m"]);
     expect(scene.floorY).toBeLessThan(stage.height);
     expect(scene.loopCenter.x).toBe(stage.width / 2);
     expect(scene.loopBottom.x).toBe(stage.width / 2);
@@ -329,5 +329,216 @@ describe("CoasterAnimation", () => {
   it("uses the cart id the run builder uses", () => {
     const states = buildCircularMotionLevel1Run(submission(40), level);
     expect(Object.keys(states[0].objects)).toEqual([COASTER_CART_ID]);
+  });
+});
+
+// A 10 m loop with g = 10 m/s²: v_min = √(g r) = 10 m/s.
+const level3 = {
+  gameId: "circularMotion",
+  levelId: 3,
+  problemStatementVariablesValues: {
+    mass: 300,
+    radius: 10,
+    gravitationalAcceleration: 10,
+  },
+} as unknown as LevelDataConfig;
+
+function speedSubmission(minimumSpeed: number) {
+  return {
+    gameId: "circularMotion",
+    levelId: 3,
+    values: { minimumSpeed },
+    units: {},
+  };
+}
+
+describe("CoasterAnimation, Level 3 (#145)", () => {
+  let frames: ManualFrames;
+  let view: RecordingCoaster;
+  let cart: RecordingCart;
+  let engine: CoasterAnimation;
+  let heard: number;
+
+  beforeEach(() => {
+    frames = new ManualFrames();
+    view = new RecordingCoaster();
+    cart = new RecordingCart();
+    engine = new CoasterAnimation(view, cart, stage, frames.schedule);
+    heard = 0;
+    engine.onPlaybackFinished(() => heard++);
+    engine.showLevel(level3);
+  });
+
+  /** Shows the verdict on `typed` and plays `played` to the end. */
+  function playToEnd(typed: number, correct = false, played = typed): void {
+    engine.showResult({
+      submittedAnswer: speedSubmission(typed),
+      correct,
+      feedback: "",
+    });
+    engine.play(buildCircularMotionLevel3Run(speedSubmission(played), level3));
+    frames.tick(0);
+    frames.tick(60_000);
+  }
+
+  function loopTop() {
+    const scene = view.scene!;
+    return { x: scene.loopCenter.x, y: scene.loopCenter.y - scene.loopRadius };
+  }
+
+  it("waits at the top under the F_Normal arrow before any answer", () => {
+    const scene = view.scene!;
+
+    expect(scene.labels).toEqual(["m = 300 kg", "r = 10 m", "g = 10 m/s²"]);
+    expect(cart.at!.position.x).toBeCloseTo(loopTop().x, 9);
+    expect(cart.at!.position.y).toBeCloseTo(loopTop().y, 9);
+    // Upside down, wheels on the track.
+    expect(Math.abs(cart.at!.rotationDeg)).toBeCloseTo(180, 9);
+    const arrow = view.arrow!;
+    expect(arrow.label).toBe("F_Normal");
+    // Down from under the cart, toward the center.
+    expect(arrow.from.x).toBe(scene.loopCenter.x);
+    expect(arrow.to.x).toBe(scene.loopCenter.x);
+    expect(arrow.from.y).toBeGreaterThan(loopTop().y);
+    expect(arrow.to.y).toBeGreaterThan(arrow.from.y);
+    expect(arrow.to.y).toBeLessThan(scene.loopCenter.y);
+    expect(view.message).toBeUndefined();
+    expect(view.trail).toEqual([]);
+  });
+
+  it("leaves out the mass label when the level has none", () => {
+    engine.showLevel({
+      ...level3,
+      problemStatementVariablesValues: {
+        radius: 10,
+        gravitationalAcceleration: 9.81,
+      },
+    });
+    expect(view.scene!.labels).toEqual(["r = 10 m", "g = 9.81 m/s²"]);
+  });
+
+  it("hides the arrow once the cart moves", () => {
+    engine.play(buildCircularMotionLevel3Run(speedSubmission(10), level3));
+    expect(view.arrow?.label).toBe("F_Normal");
+
+    frames.tick(0);
+    frames.tick(100);
+
+    expect(view.arrow).toBeUndefined();
+    frames.tick(60_000);
+    expect(view.arrow).toBeUndefined();
+  });
+
+  it("keeps a correct speed on the track and says so in green", () => {
+    playToEnd(10.004, true, 10);
+
+    expect(view.message).toEqual({
+      text: "Correct minimum velocity. Roller coaster stays on the tracks.",
+      correct: true,
+    });
+    expect(cart.at!.position.x).toBeCloseTo(view.scene!.rampEnd.x, 6);
+    expect(cart.at!.position.y).toBeCloseTo(view.scene!.floorY, 6);
+    expect(heard).toBe(1);
+  });
+
+  it("drops a too-low speed off the track and says so", () => {
+    playToEnd(6);
+
+    expect(view.message).toEqual({
+      text: "Incorrect minimum velocity. Roller coaster falls off the tracks.",
+      correct: false,
+    });
+    const scene = view.scene!;
+    const at = cart.at!.position;
+    // Back on the loop, low on its left side.
+    expect(
+      Math.hypot(at.x - scene.loopCenter.x, at.y - scene.loopCenter.y),
+    ).toBeCloseTo(scene.loopRadius, 6);
+    expect(at.x).toBeLessThan(scene.loopCenter.x);
+    expect(at.y).toBeGreaterThan(scene.loopCenter.y);
+    expect(Math.abs(cart.at!.rotationDeg)).toBeCloseTo(180, 9);
+  });
+
+  it("keeps a too-high speed on, but says it is too high", () => {
+    playToEnd(14);
+
+    expect(view.message).toEqual({
+      text: "Roller coaster stays on the tracks, but your value is too high.",
+      correct: false,
+    });
+    expect(cart.at!.position.x).toBeCloseTo(view.scene!.rampEnd.x, 6);
+  });
+
+  it("says a wrong speed just under v_min falls off", () => {
+    playToEnd(9.98);
+    expect(view.message?.text).toMatch(/falls off the tracks/);
+  });
+
+  it("falls back to a plain verdict when the answer has no speed", () => {
+    engine.showResult({
+      submittedAnswer: {
+        gameId: "circularMotion",
+        levelId: 3,
+        values: {},
+        units: {},
+      },
+      correct: false,
+      feedback: "",
+    });
+    engine.play(buildCircularMotionLevel3Run(speedSubmission(6), level3));
+    frames.tick(0);
+    frames.tick(60_000);
+
+    expect(view.message).toEqual({ text: "Not quite", correct: false });
+  });
+
+  it("shows the arrow and the cart at the top again on replay", () => {
+    playToEnd(6);
+    engine.replay();
+
+    expect(view.message).toBeUndefined();
+    expect(view.arrow?.label).toBe("F_Normal");
+    expect(cart.at!.position.y).toBeCloseTo(loopTop().y, 9);
+
+    frames.tick(100_000);
+    frames.tick(200_000);
+    expect(view.arrow).toBeUndefined();
+    expect(view.message?.text).toMatch(/falls off/);
+    expect(heard).toBe(2);
+  });
+
+  it("goes back to Level 1's scene and verdicts", () => {
+    playToEnd(6);
+    engine.showLevel(level);
+
+    expect(view.scene!.labels).toEqual(["20 m/s", "r = 10 m"]);
+    expect(view.arrow).toBeUndefined();
+    expect(view.message).toBeUndefined();
+    engine.showResult(verdict(20, false));
+    engine.play(buildCircularMotionLevel1Run(submission(20), level));
+    frames.tick(100_000);
+    frames.tick(200_000);
+    expect(view.arrow!.label).toBe("a = 20 m/s²");
+    expect(view.message?.text).toMatch(/^Too small/);
+  });
+
+  it("moves the cart but shows no arrow when no level was shown", () => {
+    const fresh = new CoasterAnimation(view, cart, stage, frames.schedule);
+    view.showArrow(undefined);
+    fresh.play(buildCircularMotionLevel3Run(speedSubmission(6), level3));
+    frames.tick(0);
+    frames.tick(60_000);
+
+    expect(cart.poses.length).toBeGreaterThan(2);
+    expect(view.arrow).toBeUndefined();
+  });
+
+  it("throws a RangeError for a level with no gravity", () => {
+    expect(() =>
+      engine.showLevel({
+        ...level3,
+        problemStatementVariablesValues: { radius: 10 },
+      }),
+    ).toThrow(RangeError);
   });
 });

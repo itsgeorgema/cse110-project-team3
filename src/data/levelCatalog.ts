@@ -48,5 +48,11 @@ export function createLevelCatalog(
       title: "The midnight loop",
       createConfig: () => factory.createLevelDataConfig("circularMotion", 1),
     },
+    {
+      gameId: "circularMotion",
+      levelId: 3,
+      title: "Over the top",
+      createConfig: () => factory.createLevelDataConfig("circularMotion", 3),
+    },
   ];
 }

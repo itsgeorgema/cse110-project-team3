@@ -145,6 +145,7 @@ describe("production level catalog", () => {
       { gameId: "cannonTrajectory", levelId: 1 },
       { gameId: "cannonTrajectory", levelId: 3 },
       { gameId: "circularMotion", levelId: 1 },
+      { gameId: "circularMotion", levelId: 3 },
     ]);
     for (const level of manager.listLevels()) {
       expect(manager.loadModule(level)).toMatchObject({

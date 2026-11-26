@@ -40,10 +40,8 @@ const SIDE = 2.6;
 /** Room above the loop's top, in loop radii. */
 const HEADROOM = 0.35;
 
-/** Where the track and the stage's edges are for a level, in meters. */
-export interface CoasterTrack {
-  /** The level's speed, in m/s. */
-  readonly speed: number;
+/** Where the track and the stage's edges are for a loop, in meters. */
+export interface LoopTrack {
   /** The loop's radius, in meters. */
   readonly radius: number;
   /** The loop's center. */
@@ -61,8 +59,14 @@ export interface CoasterTrack {
   readonly rightX: number;
   /** The stage's top. Nothing reaches it; it only sizes the view. */
   readonly ceilingY: number;
-  /** When the cart reaches the top, in playback seconds. */
+  /** When the cart reaches the top from rampStart, in playback seconds. */
   readonly topS: number;
+}
+
+/** Level 1's track: the loop, and the speed the cart rides it at. */
+export interface CoasterTrack extends LoopTrack {
+  /** The level's speed, in m/s. */
+  readonly speed: number;
 }
 
 /** A finite number > 0, or a RangeError naming the variable. */
@@ -79,29 +83,68 @@ function pace(radius: number): number {
 }
 
 /**
- * The track for a level, from its speed and radius. Throws a RangeError
- * naming either value when it is missing or not > 0.
+ * The loop and stage for a radius. Throws a RangeError when the radius is
+ * missing or not > 0.
  */
-export function coasterTrack(level: LevelDataConfig): CoasterTrack {
-  const v = level.problemStatementVariablesValues;
-  const speed = positive("speed", v.speed);
-  const radius = positive("radius", v.radius);
-  const rise = RAMP_RISE * radius;
-  const run = RAMP_RUN * radius;
-  const top = { x: 0, y: rise + 2 * radius };
+export function loopTrack(radius: number): LoopTrack {
+  const r = positive("radius", radius);
+  const rise = RAMP_RISE * r;
+  const run = RAMP_RUN * r;
+  const top = { x: 0, y: rise + 2 * r };
   return {
-    speed,
-    radius,
-    center: { x: 0, y: rise + radius },
+    radius: r,
+    center: { x: 0, y: rise + r },
     bottom: { x: 0, y: rise },
     top,
     rampStart: { x: -run, y: 0 },
     rampEnd: { x: run, y: 0 },
-    leftX: -SIDE * radius,
-    rightX: SIDE * radius,
-    ceilingY: top.y + HEADROOM * radius,
-    topS: (Math.hypot(run, rise) + Math.PI * radius) / pace(radius),
+    leftX: -SIDE * r,
+    rightX: SIDE * r,
+    ceilingY: top.y + HEADROOM * r,
+    topS: (Math.hypot(run, rise) + Math.PI * r) / pace(r),
   };
+}
+
+/**
+ * Level 1's track, from its speed and radius. Throws a RangeError naming
+ * either value when it is missing or not > 0.
+ */
+export function coasterTrack(level: LevelDataConfig): CoasterTrack {
+  const v = level.problemStatementVariablesValues;
+  const speed = positive("speed", v.speed);
+  return { speed, ...loopTrack(v.radius) };
+}
+
+/** Level 3's loop, its gravity and the slowest speed that stays on at the top. */
+export interface MinimumSpeedLoop {
+  readonly track: LoopTrack;
+  /** The level's gravity, in m/s². */
+  readonly gravity: number;
+  /** v_min = √(g r), in m/s: at this speed the normal force at the top is 0. */
+  readonly minimumSpeed: number;
+}
+
+/**
+ * Level 3's loop, from its radius and gravitationalAcceleration. Throws a
+ * RangeError naming either value when it is missing or not > 0.
+ */
+export function minimumSpeedLoop(level: LevelDataConfig): MinimumSpeedLoop {
+  const v = level.problemStatementVariablesValues;
+  const track = loopTrack(v.radius);
+  const gravity = positive(
+    "gravitationalAcceleration",
+    v.gravitationalAcceleration,
+  );
+  return { track, gravity, minimumSpeed: Math.sqrt(gravity * track.radius) };
+}
+
+/**
+ * Whether a cart going `speed` over the top stays on the loop: the track
+ * would have to pull it (a negative normal force) below v_min. The exact
+ * answer can differ from √(g r) in its last bits, so it counts as on.
+ */
+export function staysOnLoop(speed: number, loop: MinimumSpeedLoop): boolean {
+  return speed >= loop.minimumSpeed * (1 - 1e-9);
 }
 
 /**
@@ -229,6 +272,75 @@ export function buildCircularMotionLevel1Run(
     states.push(frame(step, t * 1000, pose(t)));
     if (t === endS) return states;
   }
+}
+
+/**
+ * Level 3 (#145): the cart starts at the top of the loop and goes over it at
+ * the player's speed. At v_min or more, the track holds it: it rides the rest
+ * of the loop and rolls down the right ramp, on the playback clock like
+ * Level 1. Below v_min, gravity turns it tighter than the loop, so it leaves
+ * the track and falls as a projectile, x = −v t and y = −g t² / 2 from the
+ * top, in real seconds. It keeps the angle it left with, since nothing turns
+ * it, and stops where it meets the track again inside the loop. Frames are
+ * 60 per second.
+ */
+export function buildCircularMotionLevel3Run(
+  submission: AnswerSubmission,
+  level: LevelDataConfig,
+): SimulationState[] {
+  const speed = submission.values.minimumSpeed;
+  if (!(Number.isFinite(speed) && speed >= 0)) {
+    throw new RangeError(
+      `minimumSpeed must be a finite number >= 0, got ${speed}`,
+    );
+  }
+  const loop = minimumSpeedLoop(level);
+  const track = loop.track;
+  const r = track.radius;
+
+  if (staysOnLoop(speed, loop)) {
+    const metersPerS = pace(r);
+    const arcS = (Math.PI * r) / metersPerS;
+    const endS =
+      arcS +
+      Math.hypot(track.rampEnd.x - track.bottom.x, track.bottom.y) / metersPerS;
+    return frames(endS, (t) =>
+      t <= arcS
+        ? arc(track.top, Math.PI, r, t * metersPerS)
+        : line(track.bottom, track.rampEnd, (t - arcS) * metersPerS),
+    );
+  }
+
+  const g = loop.gravity;
+  const fall = (t: number): Vec2 => ({
+    x: track.top.x - speed * t,
+    y: track.top.y - (g * t * t) / 2,
+  });
+  // Distance² from the center less r² is t² (v² − g r) + g² t⁴ / 4, so the
+  // fall is inside the loop until it meets it again at t = 2√(g r − v²) / g.
+  const hitS = (2 * Math.sqrt(g * r - speed * speed)) / g;
+  return frames(hitS, (t) => ({
+    position: t === hitS ? ontoLoop(fall(t), track) : fall(t),
+    angle: Math.PI,
+  }));
+}
+
+/** Frames every DEFAULT_STEP_MS from 0 to endS, the last one at endS. */
+function frames(endS: number, pose: (t: number) => Pose): SimulationState[] {
+  const states: SimulationState[] = [];
+  for (let step = 0; ; step++) {
+    const t = Math.min((step * DEFAULT_STEP_MS) / 1000, endS);
+    states.push(frame(step, t * 1000, pose(t)));
+    if (t === endS) return states;
+  }
+}
+
+/** Puts a point that just reached the loop exactly on it. */
+function ontoLoop(p: Vec2, track: LoopTrack): Vec2 {
+  const dx = p.x - track.center.x;
+  const dy = p.y - track.center.y;
+  const f = track.radius / Math.hypot(dx, dy);
+  return { x: track.center.x + dx * f, y: track.center.y + dy * f };
 }
 
 /**

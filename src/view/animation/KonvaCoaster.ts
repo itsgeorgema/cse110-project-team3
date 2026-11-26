@@ -124,7 +124,7 @@ export class KonvaCoaster implements CoasterView {
       new Konva.Text({
         x: 12,
         y: scene.floorY + 8,
-        text: `${scene.speedLabel}   ${scene.radiusLabel}`,
+        text: scene.labels.join("   "),
         fontSize: 12,
         fill: "#ffffff",
       }),
@@ -163,6 +163,14 @@ export class KonvaCoaster implements CoasterView {
       this.messageText.text(message.text);
       this.message.getTag().fill(message.correct ? "#1f6b45" : "#8f2a2a");
       const stageWidth = this.layer.getStage().width();
+      // Wraps a verdict wider than the stage, as on a phone.
+      this.messageText.width("auto");
+      if (this.messageText.width() > stageWidth - 16) {
+        this.messageText.width(Math.max(stageWidth - 16, 0));
+        this.messageText.align("center");
+      } else {
+        this.messageText.align("left");
+      }
       this.message.position({
         x: Math.max((stageWidth - this.message.width()) / 2, 8),
         y: 12,

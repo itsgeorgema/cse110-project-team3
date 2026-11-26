@@ -404,3 +404,87 @@ describe("Minigame 4 Level 1 playback, end to end (#139)", () => {
     );
   });
 });
+
+describe("Minigame 4 Level 3 playback, end to end (#145)", () => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      3,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const coaster = new RecordingCoaster();
+    const cart = { setLength: vi.fn(), moveTo: vi.fn() };
+    const animation = new CoasterAnimation(
+      coaster,
+      cart,
+      { width: 600, height: 300 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const answer = (minimumSpeed: string) => {
+      controller.submitAnswer({
+        gameId: "circularMotion",
+        levelId: 3,
+        fields: { minimumSpeed },
+      });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    const vMin = level.expectedUserInput.minimumSpeed;
+    return { coaster, cart, progress, answer, vMin };
+  }
+
+  it("keeps the right answer, rounded to two places, on the track", () => {
+    const { coaster, cart, progress, answer, vMin } = playLevel();
+
+    // Rounding can land just under v_min; #114 plays the exact answer.
+    answer(vMin.toFixed(2));
+
+    expect(coaster.message).toEqual({
+      text: "Correct minimum velocity. Roller coaster stays on the tracks.",
+      correct: true,
+    });
+    // Last pose is on the floor past the loop, rolling down to the right.
+    const [position, rotation] = cart.moveTo.mock.calls.at(-1)!;
+    expect(position.x).toBeGreaterThan(300);
+    expect(rotation).toBeGreaterThan(0);
+    expect(rotation).toBeLessThan(90);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("drops a speed 1 m/s too low off the track", () => {
+    const { coaster, cart, progress, answer, vMin } = playLevel();
+
+    answer(String(vMin - 1));
+
+    expect(coaster.message).toEqual({
+      text: "Incorrect minimum velocity. Roller coaster falls off the tracks.",
+      correct: false,
+    });
+    // Still upside down where it lands inside the loop, left of center.
+    const [position, rotation] = cart.moveTo.mock.calls.at(-1)!;
+    expect(position.x).toBeLessThan(300);
+    expect(Math.abs(rotation)).toBeCloseTo(180, 9);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("keeps a speed 1 m/s too high on, but says it is too high", () => {
+    const { coaster, answer, vMin } = playLevel();
+
+    answer(String(vMin + 1));
+
+    expect(coaster.message).toEqual({
+      text: "Roller coaster stays on the tracks, but your value is too high.",
+      correct: false,
+    });
+  });
+});
