@@ -4,8 +4,12 @@ import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import {
   COASTER_CART_ID,
   coasterTrack,
+  minimumSpeedLoop,
+  staysOnLoop,
   turnRadius,
   type CoasterTrack,
+  type LoopTrack,
+  type MinimumSpeedLoop,
 } from "../../model/runs/circularMotionRun.ts";
 import type { AnimationEngine } from "./AnimationEngine.ts";
 import type { FrameScheduler } from "./FrameScheduler.ts";
@@ -29,16 +33,18 @@ export interface CoasterScene {
   /** Where the left ramp leaves the floor and the right ramp reaches it. */
   readonly rampStart: Vec2;
   readonly rampEnd: Vec2;
-  /** The level's numbers, e.g. "20 m/s" and "r = 12 m". */
-  readonly speedLabel: string;
-  readonly radiusLabel: string;
+  /** The level's numbers, e.g. "20 m/s" and "r = 12 m", in order. */
+  readonly labels: readonly string[];
 }
 
-/** The acceleration arrow at the top of the loop, in stage pixels. */
+/** The arrow at the top of the loop, in stage pixels. */
 export interface CoasterArrow {
   readonly from: Vec2;
   readonly to: Vec2;
-  /** The player's acceleration, e.g. "a = 33.33 m/s²". */
+  /**
+   * Level 1: the player's acceleration, e.g. "a = 33.33 m/s²".
+   * Level 3: the normal force, "F_Normal".
+   */
   readonly label: string;
 }
 
@@ -55,7 +61,7 @@ export interface CoasterView {
   drawScene(scene: CoasterScene): void;
   /** The dashed path ridden so far, in stage pixels; empty hides it. */
   drawTrail(points: readonly Vec2[]): void;
-  /** Shows the acceleration arrow; undefined hides it. */
+  /** Shows the arrow at the top of the loop; undefined hides it. */
   showArrow(arrow: CoasterArrow | undefined): void;
   /** Shows a verdict over the scene; undefined hides it. */
   showMessage(message: CoasterMessage | undefined): void;
@@ -90,19 +96,28 @@ function round(value: number, places: number): string {
 }
 
 /**
- * The Breakout's roller coaster for Minigame 4 (#9, #139). Frames come from
- * the circular motion run builders in meters with y up. The cart climbs onto
- * the loop and pauses at the top, where a green arrow points to the center
- * with the player's acceleration. A right answer finishes the loop; a wrong
- * one leaves it on the circle that acceleration turns, and the verdict says
- * how big that circle is.
+ * The Breakout's roller coaster for Minigame 4 (#9, #139, #145). Frames come
+ * from the circular motion run builders in meters with y up.
+ *
+ * Level 1: the cart climbs onto the loop and pauses at the top, where a green
+ * arrow points to the center with the player's acceleration. A right answer
+ * finishes the loop; a wrong one leaves it on the circle that acceleration
+ * turns, and the verdict says how big that circle is.
+ *
+ * Level 3: the cart waits at the top under an F_Normal arrow until the player
+ * answers, then goes over at the typed speed. The verdict says whether it
+ * stayed on, fell off below v_min, or stayed on at more than the minimum.
  */
 export class CoasterAnimation implements AnimationEngine {
   private readonly view: CoasterView;
   private readonly cart: CartView;
   private readonly stage: { readonly width: number; readonly height: number };
   private readonly playback: FramePlayback;
-  private track: CoasterTrack | undefined;
+  private track: LoopTrack | undefined;
+  /** Level 1's track, with its speed; undefined on Level 3. */
+  private level1: CoasterTrack | undefined;
+  /** Level 3's loop, with v_min; undefined on Level 1. */
+  private level3: MinimumSpeedLoop | undefined;
   private world: WorldView;
   private result: AnswerValidationResult | undefined;
   private states: readonly SimulationState[] = [];
@@ -124,9 +139,47 @@ export class CoasterAnimation implements AnimationEngine {
     this.playback.onPlaybackFinished(() => this.showVerdict());
   }
 
-  /** Throws a RangeError when the level has no valid speed or radius. */
+  /**
+   * Throws a RangeError when the level has no valid radius, or no valid speed
+   * (Level 1) or gravity (Level 3).
+   */
   showLevel(level: LevelDataConfig): void {
+    if (level.levelId === 3) {
+      const loop = minimumSpeedLoop(level);
+      this.level1 = undefined;
+      this.level3 = loop;
+      const { mass } = level.problemStatementVariablesValues;
+      this.drawTrack(loop.track, [
+        ...(Number.isFinite(mass) ? [`m = ${mass} kg`] : []),
+        `r = ${loop.track.radius} m`,
+        `g = ${loop.gravity} m/s²`,
+      ]);
+      // Waiting at the top, upside down, under the normal force's arrow.
+      this.cart.moveTo(
+        toScreen(this.world, loop.track.top),
+        toRotation(this.world, Math.PI),
+      );
+      this.setArrow(true, loop.track);
+      return;
+    }
     const track = coasterTrack(level);
+    this.level1 = track;
+    this.level3 = undefined;
+    this.drawTrack(track, [`${track.speed} m/s`, `r = ${track.radius} m`]);
+    this.cart.moveTo(
+      toScreen(this.world, track.rampStart),
+      toRotation(
+        this.world,
+        Math.atan2(
+          track.bottom.y - track.rampStart.y,
+          track.bottom.x - track.rampStart.x,
+        ),
+      ),
+    );
+  }
+
+  /** Fits and draws the track, clears the overlays and sizes the cart. */
+  private drawTrack(track: LoopTrack, labels: readonly string[]): void {
     this.track = track;
     this.result = undefined;
     this.world = this.worldFor(track);
@@ -138,21 +191,10 @@ export class CoasterAnimation implements AnimationEngine {
       loopBottom: screen(track.bottom),
       rampStart: screen(track.rampStart),
       rampEnd: screen(track.rampEnd),
-      speedLabel: `${track.speed} m/s`,
-      radiusLabel: `r = ${track.radius} m`,
+      labels,
     });
     this.hideOverlays();
     this.cart.setLength(CART_LENGTH * track.radius * this.world.scale);
-    this.cart.moveTo(
-      screen(track.rampStart),
-      toRotation(
-        this.world,
-        Math.atan2(
-          track.bottom.y - track.rampStart.y,
-          track.bottom.x - track.rampStart.x,
-        ),
-      ),
-    );
   }
 
   showResult(result: AnswerValidationResult): void {
@@ -182,7 +224,7 @@ export class CoasterAnimation implements AnimationEngine {
   }
 
   /** Fits the whole stage, edge to edge and floor to top, on screen. */
-  private worldFor(track: CoasterTrack): WorldView {
+  private worldFor(track: LoopTrack): WorldView {
     const scale = fitScale(
       { width: track.rightX - track.leftX, height: track.ceilingY },
       {
@@ -218,18 +260,23 @@ export class CoasterAnimation implements AnimationEngine {
     const index = this.states.indexOf(state);
     this.view.drawTrail(this.trail.slice(0, index + 1));
     const track = this.track;
-    if (
-      !this.arrowShown &&
-      track !== undefined &&
-      state.timeMs >= track.topS * 1000
-    ) {
-      this.arrowShown = true;
-      this.view.showArrow(this.arrowFor(track));
+    if (track === undefined) return;
+    if (this.level3 !== undefined) {
+      // Under the waiting cart, gone once it moves.
+      this.setArrow(state.timeMs === 0, track);
+    } else if (state.timeMs >= track.topS * 1000) {
+      this.setArrow(true, track);
     }
   }
 
+  private setArrow(shown: boolean, track: LoopTrack): void {
+    if (shown === this.arrowShown) return;
+    this.arrowShown = shown;
+    this.view.showArrow(shown ? this.arrowFor(track) : undefined);
+  }
+
   /** Down from just under the cart at the top, toward the loop's center. */
-  private arrowFor(track: CoasterTrack): CoasterArrow {
+  private arrowFor(track: LoopTrack): CoasterArrow {
     const top = toScreen(this.world, track.top);
     const pixelsPerRadius = track.radius * this.world.scale;
     const fromY = top.y + ARROW_GAP * CART_LENGTH * pixelsPerRadius;
@@ -237,13 +284,22 @@ export class CoasterAnimation implements AnimationEngine {
     return {
       from: { x: top.x, y: fromY },
       to: { x: top.x, y: fromY + ARROW_LENGTH * pixelsPerRadius },
-      label: Number.isFinite(a) ? `a = ${round(a!, 2)} m/s²` : "a",
+      label:
+        this.level3 !== undefined
+          ? "F_Normal"
+          : Number.isFinite(a)
+            ? `a = ${round(a!, 2)} m/s²`
+            : "a",
     };
   }
 
   private showVerdict(): void {
     const result = this.result;
     if (result === undefined) return;
+    if (this.level3 !== undefined) {
+      this.view.showMessage(this.minimumSpeedVerdict(this.level3, result));
+      return;
+    }
     if (result.correct) {
       this.view.showMessage({ text: "Correct!", correct: true });
       return;
@@ -254,9 +310,32 @@ export class CoasterAnimation implements AnimationEngine {
     });
   }
 
+  /** Level 3: whether the typed speed stays on, as in the #112 mockup. */
+  private minimumSpeedVerdict(
+    loop: MinimumSpeedLoop,
+    result: AnswerValidationResult,
+  ): CoasterMessage {
+    if (result.correct) {
+      return {
+        text: "Correct minimum velocity. Roller coaster stays on the tracks.",
+        correct: true,
+      };
+    }
+    const speed = result.submittedAnswer.values.minimumSpeed;
+    if (!(Number.isFinite(speed) && speed >= 0)) {
+      return { text: "Not quite", correct: false };
+    }
+    return {
+      text: staysOnLoop(speed, loop)
+        ? "Roller coaster stays on the tracks, but your value is too high."
+        : "Incorrect minimum velocity. Roller coaster falls off the tracks.",
+      correct: false,
+    };
+  }
+
   /** What the typed acceleration does at this speed, in words. */
   private missText(acceleration: number | undefined): string {
-    const track = this.track;
+    const track = this.level1;
     if (
       track === undefined ||
       acceleration === undefined ||

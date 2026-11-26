@@ -111,6 +111,17 @@ export const previewNodes: readonly MapNode[] = [
     y: 1400,
   },
   {
+    id: "loop-top",
+    level: { gameId: "circularMotion", levelId: 3 },
+    title: "Over the top",
+    subtitle: "Circular motion · Find the minimum speed",
+    story:
+      "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
+    chapter: 2,
+    x: 250,
+    y: 1510,
+  },
+  {
     id: "dawn",
     level: { gameId: "circus-preview", levelId: 7 },
     title: "The final swing",
@@ -118,8 +129,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "One last trapeze swing stands between you and freedom. Explore momentum and time your release for a final leap beyond the circus fence.",
     chapter: 2,
-    x: 280,
-    y: 1610,
+    x: 330,
+    y: 1625,
   },
 ];
 
@@ -130,5 +141,6 @@ export const previewConnections = [
   ["midway", "wheel"],
   ["wheel", "tent-roof"],
   ["tent-roof", "fence"],
-  ["fence", "dawn"],
+  ["fence", "loop-top"],
+  ["loop-top", "dawn"],
 ] as const;
