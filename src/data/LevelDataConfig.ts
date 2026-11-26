@@ -52,6 +52,8 @@ export class LevelDataConfigFactory {
             return this.createCannonTrajectoryLevel1LevelDataConfig();
           case 2:
             return this.createCannonTrajectoryLevel2LevelDataConfig();
+          case 3:
+            return this.createCannonTrajectoryLevel3LevelDataConfig();
           default:
             throw new Error("levelId does not exist");
         }
@@ -459,6 +461,53 @@ export class LevelDataConfigFactory {
         horizontalDisplacement: { min: 0 },
         verticalDisplacement: { min: 0 },
       },
+    };
+  }
+
+  private createCannonTrajectoryLevel3LevelDataConfig(): LevelDataConfig {
+    const launchAngle = 45; // degrees above horizontal
+    const gravitationalAcceleration = 9.81; // m/s^2
+    const horizontalDistance = this.randomIntegerInclusive(20, 40); // m
+    // At 45 degrees the performer reaches the net on descent if its height
+    // above launch is less than half the horizontal distance.
+    const targetHeight = this.randomIntegerInclusive(3, 8); // m above launch
+    const launchSpeed = PhysicsEngine.calculateLaunchSpeedAt45Degrees(
+      horizontalDistance,
+      targetHeight,
+      gravitationalAcceleration,
+    );
+
+    const problemStatement =
+      `A cannon launches a stunt performer at ${launchAngle} degrees above horizontal toward a safety net. ` +
+      `The net is ${horizontalDistance} m ahead and ${targetHeight} m above the launch point. ` +
+      `Ignore air resistance and use g = ${gravitationalAcceleration} m/s^2 for gravity, with upward taken as positive. ` +
+      `Let v be the initial speed in m/s and t be the time since launch in seconds. ` +
+      `The horizontal displacement is x = v * cos(${launchAngle} degrees) * t, ` +
+      `and the vertical displacement is y = v * sin(${launchAngle} degrees) * t - 0.5 * g * t^2. ` +
+      `Use the same value of t in both equations. ` +
+      `What initial speed will reach the net? Round your final answer to two decimal places.`;
+
+    return {
+      gameId: "cannonTrajectory",
+      levelId: 3,
+      problemStatementVariables: [
+        "horizontalDistance",
+        "targetHeight",
+        "launchAngle",
+        "gravitationalAcceleration",
+      ],
+      problemStatementVariablesValues: {
+        horizontalDistance,
+        targetHeight,
+        launchAngle,
+        gravitationalAcceleration,
+      },
+      problemStatement,
+      userInputVariables: ["launchSpeed"],
+      userInputVariablesUnits: { launchSpeed: "m/s" },
+      expectedUserInput: { launchSpeed },
+      toleranceRule: { absolute: 0.005 },
+      bounds: { launchSpeed: { min: 0 } },
     };
   }
 

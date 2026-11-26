@@ -1445,6 +1445,58 @@ describe("PhysicsEngine launch velocity components together", () => {
   });
 });
 
+describe("PhysicsEngine.calculateLaunchSpeedAt45Degrees", () => {
+  it.each([
+    [24, 8, 9, 18],
+    [16, 0, 9, 12],
+    [4.5, 2.25, 9, 9],
+  ])(
+    "reaches a target %s m ahead and %s m above launch under %s m/s^2 gravity",
+    (horizontalDistance, targetHeight, gravity, expectedSpeed) => {
+      const speed = PhysicsEngine.calculateLaunchSpeedAt45Degrees(
+        horizontalDistance,
+        targetHeight,
+        gravity,
+      );
+      expect(speed).toBeCloseTo(expectedSpeed, DECIMAL_PRECISION);
+    },
+  );
+
+  it.each([
+    [0, 0, 9.81],
+    [-20, 3, 9.81],
+    [20, -1, 9.81],
+    [20, 20, 9.81],
+    [20, 21, 9.81],
+    [20, 3, 0],
+    [20, 3, -9.81],
+    [NaN, 3, 9.81],
+    [20, Infinity, 9.81],
+    [20, 3, Infinity],
+  ])(
+    "rejects out-of-range distances %s and %s with gravity %s",
+    (horizontalDistance, targetHeight, gravity) => {
+      expect(() =>
+        PhysicsEngine.calculateLaunchSpeedAt45Degrees(
+          horizontalDistance,
+          targetHeight,
+          gravity,
+        ),
+      ).toThrow(RangeError);
+    },
+  );
+
+  it("rejects a nonnumeric distance", () => {
+    expect(() =>
+      PhysicsEngine.calculateLaunchSpeedAt45Degrees(
+        "20" as unknown as number,
+        3,
+        9.81,
+      ),
+    ).toThrow(TypeError);
+  });
+});
+
 describe("PhysicsEngine.calculateNormalForceAtLoopTop", () => {
   it.each([
     // [mass, speed, radius, gravity, expected normal force]

@@ -341,6 +341,50 @@ export class PhysicsEngine {
     );
   }
 
+  /** Returns the initial speed in m/s for a 45-degree launch to a target at or above launch height. */
+  public static calculateLaunchSpeedAt45Degrees(
+    horizontalDistance: number,
+    targetHeight: number,
+    gravitationalAcceleration: number,
+  ): number {
+    const operation = "PhysicsEngine.calculateLaunchSpeedAt45Degrees";
+    this.validateNumber(
+      horizontalDistance,
+      `${operation} input variable horizontal distance`,
+    );
+    this.validateNumber(
+      targetHeight,
+      `${operation} input variable target height`,
+    );
+    this.validateNumber(
+      gravitationalAcceleration,
+      `${operation} input variable gravitational acceleration`,
+    );
+
+    if (horizontalDistance <= 0) {
+      throw new RangeError(
+        `${operation}.horizontalDistance must be > 0. Received: ${horizontalDistance}`,
+      );
+    }
+    if (targetHeight < 0 || targetHeight >= horizontalDistance) {
+      throw new RangeError(
+        `${operation}.targetHeight must be >= 0 and less than horizontalDistance. Received: ${targetHeight}`,
+      );
+    }
+    if (gravitationalAcceleration <= 0) {
+      throw new RangeError(
+        `${operation}.gravitationalAcceleration must be > 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    // Eliminating time gives v = x * sqrt(g / (x - y)) at 45 degrees.
+    const dropFromLaunchLine = this.subtract(horizontalDistance, targetHeight);
+    return this.multiply(
+      this.divide(horizontalDistance, this.sqrt(dropFromLaunchLine)),
+      this.sqrt(gravitationalAcceleration),
+    );
+  }
+
   /**
    * Returns the track's normal force on a coaster at the top of a loop,
    * taking the direction toward the center (down) as positive.
