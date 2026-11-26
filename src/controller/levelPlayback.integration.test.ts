@@ -354,7 +354,15 @@ describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
   });
 
   it("says a too-slow speed passed below the net", () => {
+    // A net 30 m away and 6 m up. On a random level, 1 m/s slow can land
+    // short instead (a 3 m net 27 m or more away), so the level is fixed.
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     const { level, cannon, progress, answer } = playLevel();
+    vi.restoreAllMocks();
+    expect(level.problemStatementVariablesValues).toMatchObject({
+      horizontalDistance: 30,
+      targetHeight: 6,
+    });
 
     answer({ launchSpeed: level.expectedUserInput.launchSpeed - 1 });
 
