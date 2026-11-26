@@ -9,6 +9,7 @@ import {
 import {
   CannonAnimation,
   type CannonMessage,
+  type CannonScene,
   type CannonView,
 } from "../view/animation/CannonAnimation.ts";
 import {
@@ -178,7 +179,10 @@ describe.each([
 /** CannonAnimation's drawing, recorded instead of drawn. */
 class RecordingCannon implements CannonView {
   message: CannonMessage | undefined;
-  drawScene(): void {}
+  pause: CannonScene["pause"];
+  drawScene(scene: CannonScene): void {
+    this.pause = scene.pause;
+  }
   drawTrail(): void {}
   showMessage(message: CannonMessage | undefined): void {
     this.message = message;
@@ -186,7 +190,7 @@ class RecordingCannon implements CannonView {
 }
 
 /** A cannon level with the real config, validator, registry and engine. */
-function playCannonLevel(levelId: 1 | 3) {
+function playCannonLevel(levelId: 1 | 2 | 3) {
   const level = new LevelDataConfigFactory().createLevelDataConfig(
     "cannonTrajectory",
     levelId,
@@ -264,6 +268,66 @@ describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
 
     expect(cannon.message?.correct).toBe(false);
     expect(cannon.message?.text).toMatch(/tent/);
+  });
+});
+
+describe("Minigame 3 Level 2 playback, end to end (#142)", () => {
+  const playLevel = () => playCannonLevel(2);
+  const rounded = (values: Readonly<Record<string, number>>) =>
+    Object.fromEntries(
+      Object.entries(values).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+  it("pauses the right answer, rounded to two places, at t with the marker on the ball", () => {
+    const { level, cannon, progress, answer } = playLevel();
+
+    answer(rounded(level.expectedUserInput));
+
+    expect(cannon.pause?.timeLabel).toBe(
+      `At t = ${level.problemStatementVariablesValues.time} s`,
+    );
+    expect(cannon.pause?.horizontal.label).toBe("Δx");
+    expect(cannon.pause?.vertical.label).toBe("Δy");
+    expect(cannon.pause?.guess?.x).toBeCloseTo(cannon.pause!.ball.x, 6);
+    expect(cannon.pause?.guess?.y).toBeCloseTo(cannon.pause!.ball.y, 6);
+    expect(cannon.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("shows the gap and says how far a wrong Δx is", () => {
+    const { level, cannon, progress, answer } = playLevel();
+    const expected = rounded(level.expectedUserInput);
+
+    answer({
+      ...expected,
+      horizontalDisplacement: expected.horizontalDisplacement + 2.3,
+    });
+
+    expect(cannon.pause?.guess?.x).toBeGreaterThan(cannon.pause!.ball.x);
+    expect(cannon.message).toEqual({
+      text: "Δx is 2.3 m too far",
+      correct: false,
+    });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("says a wrong average vertical velocity, the usual sign slip", () => {
+    const { level, cannon, answer } = playLevel();
+    const expected = rounded(level.expectedUserInput);
+    const v = level.problemStatementVariablesValues;
+    // Adding g t / 2 instead of subtracting it.
+    const slip =
+      expected.averageVerticalVelocity + v.gravitationalAcceleration * v.time;
+
+    answer({ ...expected, averageVerticalVelocity: slip });
+
+    expect(cannon.message?.text).toMatch(
+      /^Average vertical velocity is \d+(\.\d+)? m\/s too high$/,
+    );
   });
 });
 

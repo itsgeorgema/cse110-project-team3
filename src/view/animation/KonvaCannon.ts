@@ -4,6 +4,7 @@ import type { KonvaStage } from "../KonvaStage.ts";
 import type {
   CannonGuide,
   CannonMessage,
+  CannonPauseScene,
   CannonScene,
   CannonTargetScene,
   CannonView,
@@ -14,6 +15,8 @@ const BARREL_WIDTH = 18;
 const STRIPE_WIDTH = 36;
 /** Level 3's hanging net is a thin upright frame the ball flies through. */
 const TARGET_WIDTH = 10;
+/** Level 2's marker for the player's point: a ring a little wider than the ball. */
+const GUESS_RADIUS = 13;
 
 /**
  * CannonAnimation's tent, cannon, net and trail on the real canvas (Humble
@@ -95,6 +98,7 @@ export class KonvaCannon implements CannonView {
 
     if (scene.net !== undefined) this.drawFloorNet(scene, scene.net);
     if (scene.target !== undefined) this.drawTarget(scene.target);
+    if (scene.pause !== undefined) this.drawPause(scene, scene.pause);
 
     // Red cannon, barrel along the launch angle, with its labels.
     const { x, y } = scene.cannon;
@@ -179,16 +183,6 @@ export class KonvaCannon implements CannonView {
 
   /** Level 3's hanging net, with dashed guides for its distance and height. */
   private drawTarget(target: CannonTargetScene): void {
-    const guide = (g: CannonGuide) =>
-      new Konva.Line({
-        points: [g.from.x, g.from.y, g.to.x, g.to.y],
-        stroke: "#f4e3b5",
-        strokeWidth: 1.5,
-        dash: [4, 4],
-        opacity: 0.85,
-      });
-    const label = (text: string, x: number, y: number) =>
-      new Konva.Text({ x, y, text, fontSize: 12, fill: "#ffffff" });
     const { horizontal, vertical } = target;
     const stageWidth = this.layer.getStage().width();
     // In the floor band, centered under the horizontal guide.
@@ -219,6 +213,78 @@ export class KonvaCannon implements CannonView {
     );
   }
 
+  /**
+   * Level 2's pause: Δx along the floor, Δy up to the ball, the time above
+   * it, and the player's point and average-velocity line in gold.
+   */
+  private drawPause(scene: CannonScene, pause: CannonPauseScene): void {
+    const { horizontal, vertical } = pause;
+    const stageWidth = this.layer.getStage().width();
+    const keepOnStage = (text: Konva.Text, x: number) =>
+      text.x(Math.max(Math.min(x, stageWidth - text.width() - 4), 0));
+
+    if (pause.average !== undefined) {
+      const average = pause.average;
+      const line = guide(average);
+      line.stroke("#f2c14e");
+      line.dash([2, 5]);
+      const words = label(average.label, 0, 0);
+      words.fill("#f2c14e");
+      // Above the middle of the line, so it stays clear of the floor.
+      words.y((average.from.y + average.to.y) / 2 - 20);
+      keepOnStage(words, (average.from.x + average.to.x) / 2 - words.width());
+      this.scene.add(line, words);
+    }
+
+    const across = label(horizontal.label, 0, horizontal.from.y + 12);
+    across.fontSize(14);
+    across.fontStyle("bold");
+    keepOnStage(
+      across,
+      (horizontal.from.x + horizontal.to.x - across.width()) / 2,
+    );
+    const up = label(vertical.label, 0, (vertical.from.y + vertical.to.y) / 2);
+    up.fontSize(14);
+    up.fontStyle("bold");
+    // Left of the line: a wrong point is most often right of the ball.
+    keepOnStage(up, vertical.to.x - up.width() - 6);
+    // Up and left of the ball, clear of a marker above or right of it.
+    const time = label(pause.timeLabel, 0, pause.ball.y - 26);
+    keepOnStage(time, pause.ball.x - time.width() - 10);
+    this.scene.add(guide(horizontal), guide(vertical), across, up, time);
+
+    if (pause.guess !== undefined) {
+      const x = pause.guess.x;
+      // A point kept at the tent top shows whole, below it.
+      const y = Math.max(pause.guess.y, scene.ceilingY + GUESS_RADIUS);
+      const arm = GUESS_RADIUS + 4;
+      // Right of the marker, clear of the Δy label on the line's left.
+      const words = label("Your Δx, Δy", 0, y - 6);
+      words.fill("#f2c14e");
+      keepOnStage(words, x + arm + 2);
+      this.scene.add(
+        new Konva.Circle({
+          x,
+          y,
+          radius: GUESS_RADIUS,
+          stroke: "#f2c14e",
+          strokeWidth: 2,
+        }),
+        new Konva.Line({
+          points: [x - arm, y, x + arm, y],
+          stroke: "#f2c14e",
+          strokeWidth: 1,
+        }),
+        new Konva.Line({
+          points: [x, y - arm, x, y + arm],
+          stroke: "#f2c14e",
+          strokeWidth: 1,
+        }),
+        words,
+      );
+    }
+  }
+
   drawTrail(points: readonly Vec2[]): void {
     this.trail.points(points.flatMap((p) => [p.x, p.y]));
     this.layer.batchDraw();
@@ -232,6 +298,12 @@ export class KonvaCannon implements CannonView {
       this.messageText.text(message.text);
       this.message.getTag().fill(message.correct ? "#1f6b45" : "#8f2a2a");
       const stageWidth = this.layer.getStage().width();
+      // Wraps a verdict wider than the stage, as on a phone.
+      this.messageText.width("auto");
+      if (this.messageText.width() > stageWidth - 16) {
+        this.messageText.width(Math.max(stageWidth - 16, 0));
+      }
+      this.messageText.align("center");
       this.message.position({
         x: Math.max((stageWidth - this.message.width()) / 2, 8),
         y: 12,
@@ -242,4 +314,19 @@ export class KonvaCannon implements CannonView {
     }
     this.layer.batchDraw();
   }
+}
+
+/** A dashed guide line, e.g. Level 3's distances or Level 2's Δx and Δy. */
+function guide(g: CannonGuide): Konva.Line {
+  return new Konva.Line({
+    points: [g.from.x, g.from.y, g.to.x, g.to.y],
+    stroke: "#f4e3b5",
+    strokeWidth: 1.5,
+    dash: [4, 4],
+    opacity: 0.85,
+  });
+}
+
+function label(text: string, x: number, y: number): Konva.Text {
+  return new Konva.Text({ x, y, text, fontSize: 12, fill: "#ffffff" });
 }

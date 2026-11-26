@@ -3,6 +3,7 @@ import type { AnswerSubmission } from "../AnswerValidator.ts";
 import { DEFAULT_STEP_MS } from "../SimulationRunner.ts";
 import {
   snapshotState,
+  type LiveBody,
   type SimulationState,
   type Vec2,
 } from "../SimulationState.ts";
@@ -15,6 +16,14 @@ import {
 
 /** The object id the stuntman has in every cannon frame. */
 export const CANNON_BALL_ID = "ball";
+
+/**
+ * Level 2's (#142) extra objects, fixed in every frame: the player's point
+ * (horizontalDisplacement, verticalDisplacement), and where their average
+ * velocity carries the ball by the pause, (v̄x t, v̄y t).
+ */
+export const CANNON_GUESS_ID = "guess";
+export const CANNON_AVERAGE_ID = "average";
 
 /** The longest a run plays, in seconds, if nothing else stops it. */
 export const CANNON_TIME_CAP_S = 10;
@@ -39,6 +48,17 @@ export interface CannonArena extends CannonBounds {
   readonly netX: number;
   /** Width of the net. Wide, so the ideal run lands well inside it. */
   readonly netWidth: number;
+}
+
+/**
+ * Level 2's tent (#142): sized to the flight up to the pause, so the Δx and Δy
+ * guides are big enough to read even when the pause comes early.
+ */
+export interface CannonPauseArena extends CannonBounds {
+  /** The pause time, t, in seconds: the level's `time`. */
+  readonly time: number;
+  /** Where the real launch is at t. */
+  readonly ball: Vec2;
 }
 
 /**
@@ -122,6 +142,62 @@ export function cannonArena(level: LevelDataConfig): CannonArena {
     leftX,
     wallX,
     ceilingY: Math.max(0.45 * (wallX - leftX), 1.5 * peak),
+  };
+}
+
+/** Level 2's launch, read from the level's values. */
+interface PauseLaunch {
+  readonly vx: number;
+  readonly vy: number;
+  readonly gravity: number;
+  readonly time: number;
+}
+
+function pauseLaunch(level: LevelDataConfig): PauseLaunch {
+  const v = level.problemStatementVariablesValues;
+  const speed = positive("launchSpeed", v.launchSpeed);
+  const angle = finite("launchAngle", v.launchAngle);
+  if (!(angle > 0 && angle < 90)) {
+    throw new RangeError(
+      `launchAngle must be between 0 and 90 degrees, got ${angle}`,
+    );
+  }
+  const gravity = positive(
+    "gravitationalAcceleration",
+    v.gravitationalAcceleration,
+  );
+  const radians = (angle * Math.PI) / 180;
+  const vx = speed * Math.cos(radians);
+  const vy = speed * Math.sin(radians);
+  const time = positive("time", v.time);
+  if (!(time < (2 * vy) / gravity)) {
+    throw new RangeError(
+      `time must be before the launch lands, at ${(2 * vy) / gravity} s, got ${time}`,
+    );
+  }
+  return { vx, vy, gravity, time };
+}
+
+/**
+ * The tent for Level 2, from its launch speed, launch angle, gravity and pause
+ * time. It fits the flight up to the pause, including its peak if the ball has
+ * passed it. Throws a RangeError naming any value that is missing or out of
+ * range, including a time at or after the landing.
+ */
+export function cannonPauseArena(level: LevelDataConfig): CannonPauseArena {
+  const { vx, vy, gravity, time } = pauseLaunch(level);
+  const ball = { x: vx * time, y: vy * time - (gravity * time * time) / 2 };
+  const highest = time > vy / gravity ? (vy * vy) / (2 * gravity) : ball.y;
+  const leftX = -0.25 * ball.x;
+  const wallX = 1.6 * ball.x;
+  return {
+    time,
+    ball,
+    leftX,
+    wallX,
+    // Lower than the other tents: the view keeps room above it for the
+    // verdict, so a point the player put too high stays in sight.
+    ceilingY: Math.max(0.3 * (wallX - leftX), 1.5 * highest),
   };
 }
 
@@ -289,6 +365,48 @@ export function buildCannonLevel1Run(
 }
 
 /**
+ * Level 2 (#142): the stuntman flies the level's real launch,
+ * x = v cos θ t and y = v sin θ t - g t² / 2, 60 frames per second, and the
+ * run stops exactly at t = the level's `time`, before it lands. Every frame
+ * also carries the player's point and their average velocity times t, which
+ * the view marks at the pause.
+ */
+export function buildCannonLevel2Run(
+  submission: AnswerSubmission,
+  level: LevelDataConfig,
+): SimulationState[] {
+  const values = submission.values;
+  const guess = {
+    x: finite("horizontalDisplacement", values.horizontalDisplacement),
+    y: finite("verticalDisplacement", values.verticalDisplacement),
+  };
+  const averageX = finite(
+    "averageHorizontalVelocity",
+    values.averageHorizontalVelocity,
+  );
+  const averageY = finite(
+    "averageVerticalVelocity",
+    values.averageVerticalVelocity,
+  );
+  const { vx, vy, gravity, time } = pauseLaunch(level);
+  const arena = cannonPauseArena(level);
+  const marks = [
+    { id: CANNON_GUESS_ID, position: guess, angle: 0 },
+    {
+      id: CANNON_AVERAGE_ID,
+      position: { x: averageX * time, y: averageY * time },
+      angle: 0,
+    },
+  ];
+  return flyUntilStopped(
+    (t) => ({ x: vx * t, y: vy * t - (gravity * t * t) / 2 }),
+    arena,
+    time,
+    marks,
+  );
+}
+
+/**
  * Level 3 (#143): the stuntman leaves at the player's launch speed v and the
  * level's angle θ, so x = v cos θ t and y = v sin θ t - g t² / 2. Frames are
  * 60 per second. The ball flies on past the hanging net until it reaches the
@@ -312,12 +430,19 @@ export function buildCannonLevel3Run(
 /**
  * Frames of the ball at `at(t)`, 60 per second from (0, 0). The last frame is
  * where the run stops: exactly on the floor, the tent wall, the tent top or
- * the left edge, or at the time cap.
+ * the left edge, or at the time cap. `marks` ride along unchanged in every frame.
  */
 function flyUntilStopped(
   at: (t: number) => Vec2,
   arena: CannonBounds,
+  capS = CANNON_TIME_CAP_S,
+  marks: readonly LiveBody[] = [],
 ): SimulationState[] {
+  const frame = (step: number, timeMs: number, position: Vec2) =>
+    snapshotState(step, timeMs, [
+      { id: CANNON_BALL_ID, position, angle: 0 },
+      ...marks,
+    ]);
   const stopped = (p: Vec2): boolean =>
     p.y <= 0 ||
     p.x >= arena.wallX ||
@@ -325,7 +450,6 @@ function flyUntilStopped(
     p.y >= arena.ceilingY;
 
   const states: SimulationState[] = [frame(0, 0, { x: 0, y: 0 })];
-  const capS = CANNON_TIME_CAP_S;
   for (let step = 1; ; step++) {
     const previousS = ((step - 1) * DEFAULT_STEP_MS) / 1000;
     const t = Math.min((step * DEFAULT_STEP_MS) / 1000, capS);
@@ -362,10 +486,4 @@ function clampInto(p: Vec2, arena: CannonBounds): Vec2 {
     x: Math.min(Math.max(p.x, arena.leftX), arena.wallX),
     y: Math.min(Math.max(p.y, 0), arena.ceilingY),
   };
-}
-
-function frame(step: number, timeMs: number, position: Vec2): SimulationState {
-  return snapshotState(step, timeMs, [
-    { id: CANNON_BALL_ID, position, angle: 0 },
-  ]);
 }

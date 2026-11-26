@@ -38,6 +38,12 @@ export function createLevelCatalog(
     },
     {
       gameId: "cannonTrajectory",
+      levelId: 2,
+      title: "Caught mid-flight",
+      createConfig: () => factory.createLevelDataConfig("cannonTrajectory", 2),
+    },
+    {
+      gameId: "cannonTrajectory",
       levelId: 3,
       title: "Through the tent roof",
       createConfig: () => factory.createLevelDataConfig("cannonTrajectory", 3),

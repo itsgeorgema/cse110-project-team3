@@ -2,13 +2,17 @@ import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
 import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import {
+  CANNON_AVERAGE_ID,
   CANNON_BALL_ID,
+  CANNON_GUESS_ID,
   cannonArena,
+  cannonPauseArena,
   cannonStop,
   cannonTargetArena,
   cannonTargetOutcome,
   type CannonArena,
   type CannonBounds,
+  type CannonPauseArena,
   type CannonTargetArena,
 } from "../../model/runs/cannonRun.ts";
 import type { AnimationEngine } from "./AnimationEngine.ts";
@@ -33,6 +37,8 @@ export interface CannonScene {
   readonly net?: { readonly leftX: number; readonly rightX: number };
   /** Level 3's hanging net and the distance guides to it. */
   readonly target?: CannonTargetScene;
+  /** Level 2's labels at the pause, once the run reaches t. */
+  readonly pause?: CannonPauseScene;
   /** Where the tent wall starts on the right. */
   readonly wallX: number;
   /** The underside of the tent top. */
@@ -59,6 +65,25 @@ export interface CannonTargetScene {
   readonly vertical: CannonGuide;
 }
 
+/**
+ * Level 2 at the pause (#142): where the ball is at t, its Δx and Δy, and the
+ * player's numbers. Points outside the tent are kept at its edge.
+ */
+export interface CannonPauseScene {
+  /** "At t = 1.2 s", drawn above the ball. */
+  readonly timeLabel: string;
+  /** The ball at t. */
+  readonly ball: Vec2;
+  /** Along the floor from the cannon to below the ball, labelled "Δx". */
+  readonly horizontal: CannonGuide;
+  /** Up from the floor to the ball, labelled "Δy". */
+  readonly vertical: CannonGuide;
+  /** The player's (Δx, Δy). On the ball when they are right. */
+  readonly guess?: Vec2;
+  /** From the cannon to the player's average velocity times t. */
+  readonly average?: CannonGuide;
+}
+
 export interface CannonMessage {
   readonly text: string;
   readonly correct: boolean;
@@ -79,6 +104,11 @@ export interface CannonView {
 
 /** Pixels kept clear at the top and sides of the stage. */
 const MARGIN = 24;
+/**
+ * Level 2's room above the tent, as a share of the stage's height, so a
+ * two-line verdict does not cover a point the player put too high.
+ */
+const PAUSE_HEADROOM = 0.28;
 /** Height of the floor band at the bottom of the stage, in pixels. */
 const FLOOR = 28;
 /** The ball's radius in pixels; registry passes the same size to KonvaBall. */
@@ -95,9 +125,42 @@ function smallMeters(value: number): string {
   return one === "0" ? String(Math.round(Math.abs(value) * 100) / 100) : one;
 }
 
-/** Which tent is up: Level 1's floor net or Level 3's hanging net. */
+/** "1.2", never "1.20": the pause time as the level gives it. */
+function seconds(value: number): string {
+  return String(Math.round(value * 100) / 100);
+}
+
+/**
+ * Level 2's answers, in the order the verdict lists them, with words for a
+ * value that is too big and too small.
+ */
+const PAUSE_ANSWERS = [
+  ["horizontalDisplacement", "Δx", "m", "too far", "too short"],
+  ["verticalDisplacement", "Δy", "m", "too high", "too low"],
+  [
+    "averageHorizontalVelocity",
+    "Average horizontal velocity",
+    "m/s",
+    "too fast",
+    "too slow",
+  ],
+  [
+    "averageVerticalVelocity",
+    "Average vertical velocity",
+    "m/s",
+    "too high",
+    "too low",
+  ],
+] as const;
+
+/** Which tent is up: Level 1's floor net, Level 2's pause or Level 3's net. */
 type CannonLayout =
   | { readonly kind: "net"; readonly arena: CannonArena }
+  | {
+      readonly kind: "pause";
+      readonly arena: CannonPauseArena;
+      readonly level: LevelDataConfig;
+    }
   | {
       readonly kind: "target";
       readonly arena: CannonTargetArena;
@@ -109,8 +172,9 @@ type CannonLayout =
  * cannon run builders in meters with y up; the ball flies from the cannon and
  * leaves a dashed trail. The verdict appears when the run stops: "Correct!",
  * how far short of or past the net it landed, or what it hit instead.
- * Level 3 (#143) hangs the net in the air instead, and says how far above or
- * below it the player's launch speed passed.
+ * Level 2 (#142) has no net: the run stops at t, and the pause labels Δx and
+ * Δy and marks the player's point. Level 3 (#143) hangs the net in the air
+ * instead, and says how far above or below it the player's launch speed passed.
  */
 export class CannonAnimation implements AnimationEngine {
   private readonly view: CannonView;
@@ -137,18 +201,33 @@ export class CannonAnimation implements AnimationEngine {
     this.world = { scale: 1, origin: this.originFor(0, 1), yUp: true };
     this.playback = new FramePlayback((state) => this.draw(state), schedule);
     // Subscribed first, so the verdict is on screen before anyone else hears.
-    this.playback.onPlaybackFinished(() => this.showVerdict());
+    this.playback.onPlaybackFinished(() => {
+      this.showPause();
+      this.showVerdict();
+    });
   }
 
   /**
    * Throws a RangeError when the level's launch values are missing or out of
-   * range: speed, angle and gravity for Level 1; distance, height, angle and
-   * gravity for Level 3.
+   * range: speed, angle and gravity for Level 1; those and a time before the
+   * landing for Level 2; distance, height, angle and gravity for Level 3.
    */
   showLevel(level: LevelDataConfig): void {
     const v = level.problemStatementVariablesValues;
     this.result = undefined;
-    if (level.levelId === 3) {
+    this.states = [];
+    if (level.levelId === 2) {
+      const arena = cannonPauseArena(level);
+      this.layout = { kind: "pause", arena, level };
+      this.world = this.worldFor(
+        arena,
+        Math.max(MARGIN, PAUSE_HEADROOM * this.stage.height),
+      );
+      this.drawScene({
+        ...this.baseScene(arena, v.launchAngle),
+        speedLabel: `${v.launchSpeed} m/s`,
+      });
+    } else if (level.levelId === 3) {
       const arena = cannonTargetArena(level);
       this.layout = { kind: "target", arena, level };
       this.world = this.worldFor(arena);
@@ -191,6 +270,7 @@ export class CannonAnimation implements AnimationEngine {
     this.trail = states.map((state) =>
       toScreen(this.world, this.ballIn(state) ?? { x: 0, y: 0 }),
     );
+    this.hidePause();
     this.view.showMessage(undefined);
     this.playback.play(states);
   }
@@ -200,6 +280,7 @@ export class CannonAnimation implements AnimationEngine {
   }
 
   replay(): void {
+    this.hidePause();
     this.view.showMessage(undefined);
     this.playback.replay();
   }
@@ -253,15 +334,60 @@ export class CannonAnimation implements AnimationEngine {
     };
   }
 
-  /** Fits the whole tent, left edge to wall and floor to top, on the stage. */
-  private worldFor(arena: CannonBounds): WorldView {
+  /** Level 2: takes the pause labels down while the ball flies. */
+  private hidePause(): void {
+    if (this.scene?.pause === undefined) return;
+    this.drawScene({ ...this.scene, pause: undefined });
+  }
+
+  /** Level 2: labels Δx, Δy and the player's numbers where the run paused. */
+  private showPause(): void {
+    const layout = this.layout;
+    // Playback only finishes after play(), which needs at least one frame.
+    const last = this.states[this.states.length - 1];
+    const ball = this.ballIn(last);
+    if (layout?.kind !== "pause" || !this.scene || !ball) return;
+    const arena = layout.arena;
+    // Keeps a point far off the stage at the tent's edge, where it shows.
+    const screen = (p: Vec2) =>
+      toScreen(this.world, {
+        x: Math.min(Math.max(p.x, arena.leftX), arena.wallX),
+        y: Math.min(Math.max(p.y, 0), arena.ceilingY),
+      });
+    const below = screen({ x: ball.x, y: 0 });
+    const guess = last.objects[CANNON_GUESS_ID]?.position;
+    const average = last.objects[CANNON_AVERAGE_ID]?.position;
+    this.drawScene({
+      ...this.scene,
+      pause: {
+        timeLabel: `At t = ${seconds(arena.time)} s`,
+        ball: screen(ball),
+        horizontal: { from: screen({ x: 0, y: 0 }), to: below, label: "Δx" },
+        vertical: { from: below, to: screen(ball), label: "Δy" },
+        ...(guess && { guess: screen(guess) }),
+        ...(average && {
+          average: {
+            from: screen({ x: 0, y: 0 }),
+            to: screen(average),
+            label: "Average velocity × t",
+          },
+        }),
+      },
+    });
+  }
+
+  /**
+   * Fits the whole tent, left edge to wall and floor to top, on the stage,
+   * with `top` pixels clear above it.
+   */
+  private worldFor(arena: CannonBounds, top = MARGIN): WorldView {
     const width = arena.wallX - arena.leftX;
     const scale = fitScale(
       { width, height: arena.ceilingY },
       {
         width: Math.max(this.stage.width - 2 * MARGIN, 0),
         height: Math.max(
-          this.stage.height - MARGIN - FLOOR - CANNON_BALL_RADIUS,
+          this.stage.height - top - FLOOR - CANNON_BALL_RADIUS,
           0,
         ),
       },
@@ -297,14 +423,17 @@ export class CannonAnimation implements AnimationEngine {
       this.view.showMessage({ text: "Correct!", correct: true });
       return;
     }
-    this.view.showMessage({ text: this.missText(), correct: false });
+    this.view.showMessage({ text: this.missText(result), correct: false });
   }
 
   /** What a wrong answer's run did, in words. */
-  private missText(): string {
+  private missText(result: AnswerValidationResult): string {
     const layout = this.layout;
     if (layout === undefined) return "Not quite";
     if (layout.kind === "target") return this.targetMissText(layout);
+    if (layout.kind === "pause") {
+      return this.pauseMissText(layout.level, result.submittedAnswer.values);
+    }
     const arena = layout.arena;
     switch (cannonStop(this.lastBall, arena)) {
       case "wall":
@@ -325,6 +454,29 @@ export class CannonAnimation implements AnimationEngine {
           : `Landed ${meters(gap)} m past the net`;
       }
     }
+  }
+
+  /**
+   * Level 2: each answer outside the level's tolerance, and by how much, one
+   * per line, e.g. "Δx is 2.3 m too far".
+   */
+  private pauseMissText(
+    level: LevelDataConfig,
+    typed: Readonly<Record<string, number>>,
+  ): string {
+    const { absolute, relative = 0 } = level.toleranceRule;
+    const lines: string[] = [];
+    for (const [field, name, unit, over, under] of PAUSE_ANSWERS) {
+      const value = typed[field];
+      const expected = level.expectedUserInput[field];
+      if (value === undefined || expected === undefined) continue;
+      const gap = value - expected;
+      if (Math.abs(gap) <= absolute + relative * Math.abs(expected)) continue;
+      lines.push(
+        `${name} is ${smallMeters(gap)} ${unit} ${gap > 0 ? over : under}`,
+      );
+    }
+    return lines.length > 0 ? lines.join("\n") : "Not quite";
   }
 
   /** Level 3: where the player's launch speed passed the hanging net. */
