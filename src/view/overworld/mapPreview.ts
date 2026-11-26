@@ -67,15 +67,26 @@ export const previewNodes: readonly MapNode[] = [
     y: 565,
   },
   {
+    id: "crate-push",
+    level: { gameId: "netForce", levelId: 1 },
+    title: "Push the crate",
+    subtitle: "Newton’s second law · Shove it to the gate",
+    story:
+      "A heavy circus crate blocks the path to the exit gate. Use its mass and the acceleration you need to work out how hard to push, so the crate slides right up to the gate.",
+    chapter: 1,
+    x: 480,
+    y: 680,
+  },
+  {
     id: "midway",
     level: { gameId: "netForce", levelId: 2 },
     title: "The blocked gate",
     subtitle: "Balanced forces · Investigate the crate",
     story:
-      "A heavy circus crate rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
+      "The crate now rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
     chapter: 1,
-    x: 420,
-    y: 790,
+    x: 440,
+    y: 890,
   },
   {
     id: "wheel",
@@ -148,7 +159,8 @@ export const previewNodes: readonly MapNode[] = [
 export const previewConnections = [
   ["dressing-room", "backstage"],
   ["backstage", "big-top"],
-  ["big-top", "midway"],
+  ["big-top", "crate-push"],
+  ["crate-push", "midway"],
   ["midway", "wheel"],
   ["wheel", "mid-flight"],
   ["mid-flight", "tent-roof"],

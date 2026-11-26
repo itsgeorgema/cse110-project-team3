@@ -1,8 +1,9 @@
 # `src/view/forces/`
 
 A reusable free body diagram for the net force game (#96). It draws a crate
-and one labelled arrow per force into a Konva `Group`. Nothing in the game
-uses it yet; it can be viewed on a dev-only demo page.
+and one labelled arrow per force into a Konva `Group`. The net force game's
+`KonvaCrate` (`../animation/`, #140) draws its crate with it, so the arrows
+move with the crate. It can also be viewed on a dev-only demo page.
 
 ## Files
 
@@ -29,6 +30,9 @@ const diagram = new ForceRenderer(group, {
 diagram.render(forces, "beforeAnswer"); // arrows equal, labels "F_g = ?"
 diagram.render(forces, "afterAnswer"); // arrows scaled, labels "F_g = 98.1 N"
 ```
+
+Arrows and labels are dark (`#162c34`) by default. On a dark stage, pass a
+light color as the third argument: `new ForceRenderer(group, options, { color: "#f4efe6" })`.
 
 Each force is
 `{ label, size?, side, pointing, labelPosition }`:
@@ -74,8 +78,8 @@ any labelled force. Coordinates are Konva's: origin top-left, y down.
   Callers leave room, as the demo does with a margin.
 - No friction or angled forces: four sides, a flat crate, arrows at right
   angles.
-- Level configs don't describe their forces yet, so callers build the force
-  list by hand.
+- Level configs don't describe their forces. `CrateAnimation` builds each net
+  force level's list from the level's numbers and the typed answer (#103).
 
 ## Tests
 
