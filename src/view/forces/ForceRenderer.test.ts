@@ -126,6 +126,22 @@ describe("ForceRenderer", () => {
     expect(group.children.map((shape) => shape.kind)).toEqual(["Rect"]);
   });
 
+  it("draws only the arrows and labels with drawCrate false, placed on the crate box", () => {
+    const [bare, bareKonvaGroup] = newGroup();
+    const options = { ...sampleDiagramOptions, drawCrate: false };
+    new ForceRenderer(bareKonvaGroup, options).render(
+      restingCrateForces,
+      "afterAnswer",
+    );
+    const layout = layoutForces(restingCrateForces, "afterAnswer", options);
+
+    expect(shapes(bare, "Rect")).toEqual([]);
+    expect(shapes(bare, "Arrow").map((arrow) => arrow.attrs.points)).toEqual(
+      layout.map((a) => [a.tail.x, a.tail.y, a.tip.x, a.tip.y]),
+    );
+    expect(shapes(bare, "Text")).toHaveLength(restingCrateForces.length);
+  });
+
   it("replaces the drawing when switching from before to after answering", () => {
     renderer.render(restingCrateForces, "beforeAnswer");
     renderer.render(restingCrateForces, "afterAnswer");

@@ -3,7 +3,24 @@ import type {
   AnswerValidationConfig,
   AnswerValidationResult,
   AnswerValidator,
+  ToleranceRule,
 } from "./AnswerValidator";
+
+/**
+ * Whether `actual` is within the rule's absolute or relative tolerance of
+ * `expected`, inclusive. NaN is never within it.
+ */
+export function withinTolerance(
+  actual: number,
+  expected: number,
+  rule: ToleranceRule,
+): boolean {
+  const allowedError = Math.max(
+    rule.absolute,
+    (rule.relative ?? 0) * Math.abs(expected),
+  );
+  return actual >= expected - allowedError && actual <= expected + allowedError;
+}
 
 /** Numerical answer validation shared by both minigames. */
 export class DefaultAnswerValidator implements AnswerValidator {
@@ -26,17 +43,13 @@ export class DefaultAnswerValidator implements AnswerValidator {
     }
 
     // Check each submitted answer with the configured tolerance.
-    const correct = level.userInputVariables.every((field) => {
-      const expected = level.expectedUserInput[field];
-      const allowedError = Math.max(
-        level.toleranceRule.absolute,
-        (level.toleranceRule.relative ?? 0) * Math.abs(expected),
-      );
-      const actual = input.values[field];
-      return (
-        actual >= expected - allowedError && actual <= expected + allowedError
-      );
-    });
+    const correct = level.userInputVariables.every((field) =>
+      withinTolerance(
+        input.values[field],
+        level.expectedUserInput[field],
+        level.toleranceRule,
+      ),
+    );
 
     return {
       submittedAnswer: input,

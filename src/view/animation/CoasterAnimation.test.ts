@@ -4,6 +4,7 @@ import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
 import type { Vec2 } from "../../model/SimulationState.ts";
 import {
   buildCircularMotionLevel1Run,
+  buildCircularMotionLevel2Run,
   buildCircularMotionLevel3Run,
   COASTER_CART_ID,
   COASTER_PAUSE_S,
@@ -14,6 +15,7 @@ import {
   CoasterAnimation,
   type CartView,
   type CoasterArrow,
+  type CoasterForces,
   type CoasterMessage,
   type CoasterScene,
   type CoasterView,
@@ -26,6 +28,10 @@ class RecordingCoaster implements CoasterView {
   trail: readonly Vec2[] = [];
   arrow: CoasterArrow | undefined;
   arrowsShown = 0;
+  forces: CoasterForces | undefined;
+  showForces(forces: CoasterForces | undefined): void {
+    this.forces = forces;
+  }
   message: CoasterMessage | undefined;
   drawScene(scene: CoasterScene): void {
     this.scene = scene;
@@ -541,4 +547,272 @@ describe("CoasterAnimation, Level 3 (#145)", () => {
       }),
     ).toThrow(RangeError);
   });
+});
+
+// 20 m/s on a 10 m loop, 100 kg, g = 10 m/s²: a = 40 m/s², F_net = 4000 N,
+// F_g = 1000 N and F_N = 3000 N.
+const level2 = {
+  gameId: "circularMotion",
+  levelId: 2,
+  problemStatementVariablesValues: {
+    speed: 20,
+    mass: 100,
+    radius: 10,
+    gravitationalAcceleration: 10,
+  },
+  expectedUserInput: {
+    acceleration: 40,
+    netForce: 4000,
+    normalForce: 3000,
+    gravitationalForce: 1000,
+  },
+  toleranceRule: { absolute: 0.01 },
+} as unknown as LevelDataConfig;
+const right2 = level2.expectedUserInput;
+const top2Ms = coasterTrack(level2).topS * 1000;
+
+function forcesSubmission(values: Record<string, number>) {
+  return {
+    gameId: "circularMotion",
+    levelId: 2,
+    values: { ...right2, ...values },
+    units: {},
+  };
+}
+
+describe("CoasterAnimation, Level 2 (#144)", () => {
+  let frames: ManualFrames;
+  let view: RecordingCoaster;
+  let cart: RecordingCart;
+  let engine: CoasterAnimation;
+  let heard: number;
+
+  beforeEach(() => {
+    frames = new ManualFrames();
+    view = new RecordingCoaster();
+    cart = new RecordingCart();
+    engine = new CoasterAnimation(view, cart, stage, frames.schedule);
+    heard = 0;
+    engine.onPlaybackFinished(() => heard++);
+    engine.showLevel(level2);
+  });
+
+  /** Shows the verdict on `typed` and plays it (or the right answer) to the end. */
+  function playToEnd(
+    typed: Record<string, number>,
+    correct = false,
+    played = correct ? {} : typed,
+  ): void {
+    engine.showResult({
+      submittedAnswer: forcesSubmission(typed),
+      correct,
+      feedback: "",
+    });
+    engine.play(buildCircularMotionLevel2Run(forcesSubmission(played), level2));
+    frames.tick(0);
+    frames.tick(60_000);
+  }
+
+  function loopTop() {
+    const scene = view.scene!;
+    return { x: scene.loopCenter.x, y: scene.loopCenter.y - scene.loopRadius };
+  }
+
+  it("waits at the top under F_gravity and F_Normal arrows that read ?", () => {
+    const scene = view.scene!;
+
+    expect(scene.labels).toEqual([
+      "20 m/s",
+      "m = 100 kg",
+      "r = 10 m",
+      "g = 10 m/s²",
+    ]);
+    expect(cart.at!.position.x).toBeCloseTo(loopTop().x, 9);
+    expect(cart.at!.position.y).toBeCloseTo(loopTop().y, 9);
+    expect(Math.abs(cart.at!.rotationDeg)).toBeCloseTo(180, 9);
+    const forces = view.forces!;
+    expect(forces.state).toBe("beforeAnswer");
+    expect(forces.forces).toEqual([
+      {
+        label: "F_gravity",
+        side: "bottom",
+        pointing: "away",
+        labelPosition: "left",
+      },
+      {
+        label: "F_Normal",
+        side: "bottom",
+        pointing: "away",
+        labelPosition: "right",
+      },
+    ]);
+    // The box hangs from the top of the loop, centred on it, so both arrows
+    // start under the cart's body and point down toward the center.
+    const box = forces.cart;
+    expect(box.x + box.width / 2).toBeCloseTo(loopTop().x, 9);
+    const halfCart = cart.length! / 2;
+    for (const third of [1, 2]) {
+      const x = box.x + (box.width * third) / 3;
+      expect(Math.abs(x - loopTop().x)).toBeGreaterThan(halfCart / 2);
+      expect(Math.abs(x - loopTop().x)).toBeLessThan(halfCart);
+    }
+    expect(box.y).toBeCloseTo(loopTop().y, 9);
+    expect(box.y + box.height + forces.maxArrowLength).toBeLessThan(
+      scene.loopCenter.y,
+    );
+    expect(view.arrow).toBeUndefined();
+    expect(view.message).toBeUndefined();
+  });
+
+  it("hides the forces while the cart climbs, then shows the typed sizes at the top", () => {
+    const typed = { normalForce: 2500 };
+    engine.showResult({
+      submittedAnswer: forcesSubmission(typed),
+      correct: false,
+      feedback: "",
+    });
+    engine.play(buildCircularMotionLevel2Run(forcesSubmission(typed), level2));
+    expect(view.forces).toBeUndefined();
+
+    frames.tick(0);
+    frames.tick(top2Ms - 100);
+    expect(view.forces).toBeUndefined();
+
+    frames.tick(top2Ms + 100);
+    const forces = view.forces!;
+    expect(forces.state).toBe("afterAnswer");
+    expect(forces.forces.map((f) => [f.label, f.size])).toEqual([
+      ["F_gravity", 1000],
+      ["F_Normal", 2500],
+    ]);
+    expect(view.arrow).toBeUndefined();
+  });
+
+  it("leaves out the arrow of a typed force of 0", () => {
+    playToEnd({ normalForce: 0 });
+    expect(view.forces!.forces.map((f) => f.label)).toEqual(["F_gravity"]);
+  });
+
+  it("finishes the loop for the right answer and says so", () => {
+    playToEnd({ netForce: 4000.004 }, true);
+
+    expect(view.message).toEqual({
+      text: "Correct! The cart finishes the loop.",
+      correct: true,
+    });
+    expect(cart.at!.position.x).toBeCloseTo(view.scene!.rampEnd.x, 6);
+    expect(cart.at!.position.y).toBeCloseTo(view.scene!.floorY, 6);
+    expect(heard).toBe(1);
+  });
+
+  it("swings wide for half the net force and names it", () => {
+    playToEnd({ netForce: 2000 });
+
+    expect(view.message).toEqual({
+      text:
+        "Too little net force. F_net should equal F_N + F_g\n" +
+        "a ✓ · F_net ✗ · F_N ✓ · F_g ✓",
+      correct: false,
+    });
+    // Off the track on the left, not down the right ramp.
+    expect(cart.at!.position.x).toBeLessThan(view.scene!.loopCenter.x);
+  });
+
+  it("cuts tight for double the net force", () => {
+    playToEnd({ netForce: 8000 });
+    expect(view.message?.text).toMatch(/^Too much net force\. F_net should/);
+  });
+
+  it("flies straight for no net force", () => {
+    playToEnd({ netForce: 0 });
+    expect(view.message?.text).toMatch(/^No net force\. F_net should/);
+  });
+
+  it("keeps the cart on with the right net force, but names the first wrong answer", () => {
+    playToEnd({ acceleration: 4, gravitationalForce: 100 });
+
+    expect(view.message).toEqual({
+      text:
+        "The cart stays on the loop. a should be v² / r\n" +
+        "a ✗ · F_net ✓ · F_N ✓ · F_g ✗",
+      correct: false,
+    });
+    expect(cart.at!.position.x).toBeCloseTo(view.scene!.rampEnd.x, 6);
+  });
+
+  it.each([
+    ["normalForce", 1000, "F_N should be F_net − F_g"],
+    ["gravitationalForce", 3000, "F_g should be m × g"],
+  ])("says what %s should be", (field, value, hint) => {
+    playToEnd({ [field]: value });
+    expect(view.message?.text.split("\n")[0]).toBe(
+      `The cart stays on the loop. ${hint}`,
+    );
+  });
+
+  it("falls back to a plain verdict when an answer is missing", () => {
+    engine.showResult({
+      submittedAnswer: {
+        gameId: "circularMotion",
+        levelId: 2,
+        values: { netForce: 2000 },
+        units: {},
+      },
+      correct: false,
+      feedback: "",
+    });
+    engine.play(
+      buildCircularMotionLevel2Run(
+        forcesSubmission({ netForce: 2000 }),
+        level2,
+      ),
+    );
+    frames.tick(0);
+    frames.tick(60_000);
+
+    expect(view.message).toEqual({ text: "Not quite", correct: false });
+  });
+
+  it("shows the forces again at the top on replay, and ? on a new level", () => {
+    playToEnd({ netForce: 2000 });
+    engine.replay();
+    expect(view.forces).toBeUndefined();
+    expect(view.message).toBeUndefined();
+
+    frames.tick(100_000);
+    frames.tick(200_000);
+    expect(view.forces?.state).toBe("afterAnswer");
+    expect(heard).toBe(2);
+
+    engine.showLevel(level2);
+    expect(view.forces?.state).toBe("beforeAnswer");
+    expect(view.message).toBeUndefined();
+  });
+
+  it("hides the forces on Level 1", () => {
+    engine.showLevel(level);
+    expect(view.forces).toBeUndefined();
+    engine.showResult(verdict(20, false));
+    engine.play(buildCircularMotionLevel1Run(submission(20), level));
+    frames.tick(100_000);
+    frames.tick(200_000);
+    expect(view.forces).toBeUndefined();
+    expect(view.arrow!.label).toBe("a = 20 m/s²");
+  });
+
+  it.each([["mass"], ["gravitationalAcceleration"]])(
+    "throws a RangeError for a level with no %s",
+    (name) => {
+      const values: Record<string, number> = {
+        ...level2.problemStatementVariablesValues,
+      };
+      delete values[name];
+      expect(() =>
+        engine.showLevel({
+          ...level2,
+          problemStatementVariablesValues: values,
+        }),
+      ).toThrow(RangeError);
+    },
+  );
 });

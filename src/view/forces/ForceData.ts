@@ -37,6 +37,9 @@ export interface CrateBox {
 export interface DiagramOptions {
   readonly crate: CrateBox;
   readonly maxArrowLength: number; // longest arrow, in pixels
+  /** False draws only the arrows and labels, for a body drawn elsewhere
+   *  (the coaster cart, #144); crate then only places them. Defaults to true. */
+  readonly drawCrate?: boolean;
 }
 
 export interface ArrowLayout {

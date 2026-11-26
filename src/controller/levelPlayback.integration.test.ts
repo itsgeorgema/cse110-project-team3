@@ -15,6 +15,7 @@ import {
 import {
   CoasterAnimation,
   type CoasterArrow,
+  type CoasterForces,
   type CoasterMessage,
   type CoasterView,
 } from "../view/animation/CoasterAnimation.ts";
@@ -387,11 +388,15 @@ describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
 /** CoasterAnimation's drawing, recorded instead of drawn. */
 class RecordingCoaster implements CoasterView {
   arrow: CoasterArrow | undefined;
+  forces: CoasterForces | undefined;
   message: CoasterMessage | undefined;
   drawScene(): void {}
   drawTrail(): void {}
   showArrow(arrow: CoasterArrow | undefined): void {
     this.arrow = arrow;
+  }
+  showForces(forces: CoasterForces | undefined): void {
+    this.forces = forces;
   }
   showMessage(message: CoasterMessage | undefined): void {
     this.message = message;
@@ -473,6 +478,109 @@ describe("Minigame 4 Level 1 playback, end to end (#139)", () => {
     expect(coaster.message?.text).toBe(
       `Too big: at ${speed} m/s that turns a tight ${Math.round((radius / 2) * 10) / 10} m circle`,
     );
+  });
+});
+
+describe("Minigame 4 Level 2 playback, end to end (#144)", () => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const coaster = new RecordingCoaster();
+    const cart = { setLength: vi.fn(), moveTo: vi.fn() };
+    const animation = new CoasterAnimation(
+      coaster,
+      cart,
+      { width: 600, height: 300 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const expected = level.expectedUserInput;
+    /** Submits the right answers, rounded to two places, with `changes`. */
+    const answer = (changes: Record<string, number> = {}) => {
+      const fields: Record<string, string> = {};
+      for (const field of level.userInputVariables) {
+        fields[field] = String(changes[field] ?? expected[field].toFixed(2));
+      }
+      controller.submitAnswer({ gameId: "circularMotion", levelId: 2, fields });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    return { level, coaster, cart, progress, answer, expected };
+  }
+
+  it("shows F_gravity and F_Normal as ? at the top before an answer", () => {
+    const { coaster } = playLevel();
+    expect(coaster.forces?.state).toBe("beforeAnswer");
+    expect(coaster.forces?.forces.map((f) => f.label)).toEqual([
+      "F_gravity",
+      "F_Normal",
+    ]);
+  });
+
+  it("finishes the loop for the right answers, rounded to two places", () => {
+    const { coaster, cart, progress, answer, expected } = playLevel();
+
+    answer();
+
+    expect(coaster.message).toEqual({
+      text: "Correct! The cart finishes the loop.",
+      correct: true,
+    });
+    // The arrows show the typed forces; only the path plays the exact ones (#114).
+    expect(coaster.forces?.state).toBe("afterAnswer");
+    expect(coaster.forces?.forces.map((f) => f.size)).toEqual([
+      Number(expected.gravitationalForce.toFixed(2)),
+      Number(expected.normalForce.toFixed(2)),
+    ]);
+    const [position, rotation] = cart.moveTo.mock.calls.at(-1)!;
+    expect(position.x).toBeGreaterThan(300);
+    expect(rotation).toBeGreaterThan(0);
+    expect(rotation).toBeLessThan(90);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("sends half the net force wide off the loop and names it", () => {
+    const { coaster, cart, progress, answer, expected } = playLevel();
+
+    answer({ netForce: expected.netForce / 2 });
+
+    expect(coaster.message).toEqual({
+      text:
+        "Too little net force. F_net should equal F_N + F_g\n" +
+        "a ✓ · F_net ✗ · F_N ✓ · F_g ✓",
+      correct: false,
+    });
+    // Off the loop to the left, not down the right ramp.
+    expect(cart.moveTo.mock.calls.at(-1)![0].x).toBeLessThan(300);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("keeps the cart on for a wrong normal force, but marks it", () => {
+    const { coaster, cart, answer, expected } = playLevel();
+
+    answer({ normalForce: expected.normalForce + 100 });
+
+    expect(coaster.message?.text).toBe(
+      "The cart stays on the loop. F_N should be F_net − F_g\n" +
+        "a ✓ · F_net ✓ · F_N ✗ · F_g ✓",
+    );
+    expect(coaster.forces?.forces[1].size).toBeCloseTo(
+      expected.normalForce + 100,
+      1,
+    );
+    expect(cart.moveTo.mock.calls.at(-1)![0].x).toBeGreaterThan(300);
   });
 });
 
