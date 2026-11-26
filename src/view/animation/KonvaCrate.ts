@@ -8,7 +8,7 @@ import type { CrateMessage, CrateScene, CrateView } from "./CrateAnimation.ts";
 const FORCE_COLOR = "#f4efe6";
 
 /**
- * CrateAnimation's drawing on the real canvas (Humble Object, #140): it makes
+ * CrateAnimation's drawing on the real canvas (Humble Object, #140, #141): it makes
  * no decisions, so it has no unit test; CrateAnimation's tests use a recorder.
  * The crate and its arrows are a ForceRenderer diagram (#102) in one group,
  * so moving the group moves the arrows with the crate.
@@ -57,8 +57,8 @@ export class KonvaCrate implements CrateView {
         fill: "#ffffff",
       }),
     );
+    const gateHeight = scene.crateSize * 1.8;
     if (scene.finishX !== undefined) {
-      const gateHeight = scene.crateSize * 1.8;
       this.scene.add(
         new Konva.Line({
           points: [
@@ -71,8 +71,12 @@ export class KonvaCrate implements CrateView {
           strokeWidth: 2,
           dash: [6, 4],
         }),
+      );
+    }
+    if (scene.gateX !== undefined) {
+      this.scene.add(
         new Konva.Rect({
-          x: scene.finishX + 4,
+          x: scene.gateX + 4,
           y: scene.groundY - gateHeight,
           width: 6,
           height: gateHeight,
@@ -80,7 +84,7 @@ export class KonvaCrate implements CrateView {
         }),
         // Centered above the post, so it stays on a narrow stage.
         new Konva.Text({
-          x: scene.finishX + 7 - 30,
+          x: scene.gateX + 7 - 30,
           y: scene.groundY - gateHeight - 18,
           width: 60,
           align: "center",

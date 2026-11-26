@@ -2,8 +2,8 @@
 
 A reusable free body diagram for the net force game (#96). It draws a crate
 and one labelled arrow per force into a Konva `Group`. The net force game's
-`KonvaCrate` (`../animation/`, #140) draws its crate with it, so the arrows
-move with the crate. It can also be viewed on a dev-only demo page.
+`KonvaCrate` (`../animation/`, #140, #141) draws its crate with it, so the
+arrows move with the crate. It can also be viewed on a dev-only demo page.
 
 ## Files
 
@@ -79,7 +79,16 @@ any labelled force. Coordinates are Konva's: origin top-left, y down.
 - No friction or angled forces: four sides, a flat crate, arrows at right
   angles.
 - Level configs don't describe their forces. `CrateAnimation` builds each net
-  force level's list from the level's numbers and the typed answer (#103).
+  force level's list from the level's numbers and the typed answer (#103):
+
+  | Level            | Before an answer     | After an answer                                 |
+  | ---------------- | -------------------- | ----------------------------------------------- |
+  | 1 (pushed crate) | `F_push = ?`         | `F_g` and `F_N` = mass × 9.81, `F_push` = typed |
+  | 2 (at rest)      | `F_g = ?`, `F_N = ?` | the typed `F_g` and `F_N`; no net force arrow   |
+
+  A typed force of 0 (or one that is not a finite number > 0) has no arrow.
+  The diagram switches when `GameController` calls `showResult`, just before
+  the answer plays, and back to "?" when the level is shown again.
 
 ## Tests
 
