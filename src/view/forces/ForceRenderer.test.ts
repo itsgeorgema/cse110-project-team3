@@ -146,6 +146,32 @@ describe("ForceRenderer", () => {
     expect(group.children).toEqual(before);
   });
 
+  it("draws arrows and labels in the default dark color", () => {
+    renderer.render(restingCrateForces, "beforeAnswer");
+
+    for (const arrow of shapes(group, "Arrow")) {
+      expect(arrow.attrs).toMatchObject({ stroke: "#162c34", fill: "#162c34" });
+    }
+    for (const text of shapes(group, "Text")) {
+      expect(text.attrs.fill).toBe("#162c34");
+    }
+  });
+
+  it("draws arrows and labels in the color it is given, for a dark stage", () => {
+    const [lightGroup, lightKonvaGroup] = newGroup();
+    new ForceRenderer(lightKonvaGroup, sampleDiagramOptions, {
+      color: "#ffffff",
+    }).render(pushedCrateForces, "afterAnswer");
+
+    expect(shapes(lightGroup, "Arrow")).toHaveLength(3);
+    for (const arrow of shapes(lightGroup, "Arrow")) {
+      expect(arrow.attrs).toMatchObject({ stroke: "#ffffff", fill: "#ffffff" });
+    }
+    for (const text of shapes(lightGroup, "Text")) {
+      expect(text.attrs.fill).toBe("#ffffff");
+    }
+  });
+
   it("keeps two diagrams independent", () => {
     const [otherGroup, otherKonvaGroup] = newGroup();
     const other = new ForceRenderer(otherKonvaGroup, sampleDiagramOptions);
