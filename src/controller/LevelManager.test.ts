@@ -147,6 +147,7 @@ describe("production level catalog", () => {
       { gameId: "cannonTrajectory", levelId: 2 },
       { gameId: "cannonTrajectory", levelId: 3 },
       { gameId: "circularMotion", levelId: 1 },
+      { gameId: "circularMotion", levelId: 2 },
       { gameId: "circularMotion", levelId: 3 },
     ]);
     for (const level of manager.listLevels()) {

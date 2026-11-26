@@ -62,6 +62,12 @@ export function createLevelCatalog(
     },
     {
       gameId: "circularMotion",
+      levelId: 2,
+      title: "Hold on at the top",
+      createConfig: () => factory.createLevelDataConfig("circularMotion", 2),
+    },
+    {
+      gameId: "circularMotion",
       levelId: 3,
       title: "Over the top",
       createConfig: () => factory.createLevelDataConfig("circularMotion", 3),

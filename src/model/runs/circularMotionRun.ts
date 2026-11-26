@@ -1,5 +1,6 @@
 import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import type { AnswerSubmission } from "../AnswerValidator.ts";
+import { withinTolerance } from "../DefaultAnswerValidator.ts";
 import { DEFAULT_STEP_MS } from "../SimulationRunner.ts";
 import {
   snapshotState,
@@ -138,6 +139,30 @@ export function minimumSpeedLoop(level: LevelDataConfig): MinimumSpeedLoop {
   return { track, gravity, minimumSpeed: Math.sqrt(gravity * track.radius) };
 }
 
+/** Level 2's loop and speed, with the cart's mass and the level's gravity. */
+export interface ForceLoop {
+  readonly track: CoasterTrack;
+  /** The cart's mass, in kg. */
+  readonly mass: number;
+  /** The level's gravity, in m/s². */
+  readonly gravity: number;
+}
+
+/**
+ * Level 2's loop, from its speed, radius, mass and gravitationalAcceleration.
+ * Throws a RangeError naming any of them when it is missing or not > 0.
+ */
+export function forceLoop(level: LevelDataConfig): ForceLoop {
+  const v = level.problemStatementVariablesValues;
+  const track = coasterTrack(level);
+  const mass = positive("mass", v.mass);
+  const gravity = positive(
+    "gravitationalAcceleration",
+    v.gravitationalAcceleration,
+  );
+  return { track, mass, gravity };
+}
+
 /**
  * Whether a cart going `speed` over the top stays on the loop: the track
  * would have to pull it (a negative normal force) below v_min. The exact
@@ -221,9 +246,49 @@ export function buildCircularMotionLevel1Run(
     );
   }
   const track = coasterTrack(level);
+  return rideLoop(track, turnRadius(track.speed, acceleration));
+}
+
+/**
+ * Level 2 (#144): the same ride as Level 1, but the circle the cart turns
+ * over the top comes from the player's net force, r = m v² / F_net. The right
+ * net force's circle is the loop, and so is any net force within the level's
+ * tolerance of it; any other leaves the track as in Level 1.
+ * The typed normal and gravitational forces only label the arrows, so they
+ * never change the path.
+ */
+export function buildCircularMotionLevel2Run(
+  submission: AnswerSubmission,
+  level: LevelDataConfig,
+): SimulationState[] {
+  const netForce = submission.values.netForce;
+  if (!(Number.isFinite(netForce) && netForce >= 0)) {
+    throw new RangeError(
+      `netForce must be a finite number >= 0, got ${netForce}`,
+    );
+  }
+  const loop = forceLoop(level);
+  const { speed, radius } = loop.track;
+  // A net force the validator would accept rides the loop, not a circle a
+  // hair wider or tighter that goes round once and stops at the top.
+  const rule = level.toleranceRule;
+  const close =
+    rule !== undefined &&
+    withinTolerance(netForce, (loop.mass * speed * speed) / radius, rule);
+  return rideLoop(
+    loop.track,
+    close ? radius : turnRadius(speed, netForce / loop.mass),
+  );
+}
+
+/**
+ * Up the left ramp, round to the top, a pause, then the circle of radius
+ * `typed`: the loop and the right ramp when `typed` is the loop's radius, or
+ * off the track until the floor, a stage edge or a full circle.
+ */
+function rideLoop(track: CoasterTrack, typed: number): SimulationState[] {
   const r = track.radius;
   const metersPerS = pace(r);
-  const typed = turnRadius(track.speed, acceleration);
   // The exact answer can differ from v * v / r in its last bits.
   const onTrack = Math.abs(typed - r) <= 1e-9 * r;
   const turn = onTrack ? r : typed;

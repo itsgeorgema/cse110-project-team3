@@ -21,7 +21,7 @@ async function expectMap(
     page.getByRole("region", { name: "Scrollable story map" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /^Level \d+:/ })).toHaveCount(
-    11,
+    12,
   );
   await expect(
     page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
@@ -38,7 +38,7 @@ async function expectMap(
     "value",
     String(expectedCleared),
   );
-  await expect(page.getByRole("progressbar")).toHaveAttribute("max", "11");
+  await expect(page.getByRole("progressbar")).toHaveAttribute("max", "12");
 }
 
 for (const viewport of [

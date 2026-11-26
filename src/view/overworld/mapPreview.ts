@@ -129,8 +129,19 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "An abandoned roller coaster winds toward the edge of the carnival. Work out the cart’s acceleration at the top of the loop, so it stays on the track and carries your escape around.",
     chapter: 2,
-    x: 410,
-    y: 1400,
+    x: 420,
+    y: 1340,
+  },
+  {
+    id: "loop-forces",
+    level: { gameId: "circularMotion", levelId: 2 },
+    title: "Hold on at the top",
+    subtitle: "Circular motion · Label the forces",
+    story:
+      "Upside down at the top of the loop, the cart is held in its circle by gravity and the track. Work out the acceleration, the net force, and the normal and gravitational forces on the cart, so it holds on all the way round.",
+    chapter: 2,
+    x: 210,
+    y: 1470,
   },
   {
     id: "loop-top",
@@ -140,8 +151,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
     chapter: 2,
-    x: 250,
-    y: 1510,
+    x: 390,
+    y: 1480,
   },
   {
     id: "dawn",
@@ -165,6 +176,7 @@ export const previewConnections = [
   ["wheel", "mid-flight"],
   ["mid-flight", "tent-roof"],
   ["tent-roof", "fence"],
-  ["fence", "loop-top"],
+  ["fence", "loop-forces"],
+  ["loop-forces", "loop-top"],
   ["loop-top", "dawn"],
 ] as const;
