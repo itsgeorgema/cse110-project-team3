@@ -218,7 +218,7 @@ export class CarAnimation implements AnimationEngine {
         : `Past the gate by ${meters(gap)} m`;
     this.view.showMessage({ text, correct: false });
   }
-  
+
   /**
    * Level 4 has two answers. The car ends at the player's distance, so a car
    * on the gate means the distance was right and the average velocity is off.
