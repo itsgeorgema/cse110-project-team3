@@ -31,6 +31,9 @@ current app has a story map that launches registered levels in a shared dialog.
   mounted in `LevelPanel`'s stage area and reset for each level that animates.
 - [`animation/`](./animation/README.md) holds the animation engines and the
   guide to adding one for a level.
+- [`forces/`](./forces/README.md) draws a free body diagram. The net force
+  levels draw their crate with it, labelled "?" before an answer and with the
+  typed values after.
 
 `main.ts` creates the map, loads and saves its selected address through
 `SaveManager`, and falls back to session-only interaction when browser storage

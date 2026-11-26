@@ -101,17 +101,17 @@ Konva may be imported only under `src/view/` (ESLint enforces it).
 
 ## Files at a glance
 
-| File                                                            | Role                                                                                   |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `AnimationEngine.ts`                                            | The interface every game implements                                                    |
-| `FramePlayback.ts`                                              | The shared time loop: play, stop, replay, finished                                     |
-| `worldToScreen.ts`                                              | World units to stage pixels and degrees                                                |
-| `AnimationFactory.ts`, `animationRegistry.ts`                   | Game id to engine                                                                      |
-| `CarAnimation.ts`, `KonvaCar.ts`                                | Minigame 1 worked example                                                              |
-| `CannonAnimation.ts`, `KonvaCannon.ts`                          | Minigame 3: tent, cannon, floor net (L1), pause at t (L2) or hanging net (L3), trail   |
-| `CoasterAnimation.ts`, `KonvaCoaster.ts`, `KonvaCoasterCart.ts` | Minigame 4: loop track, cart, arrow (a in L1, F_Normal in L3) and trail                |
-| `CrateAnimation.ts`, `KonvaCrate.ts`                            | Minigame 2: floor, crate with its free body diagram (`../forces/`), line and gate (L1) |
-| `DemoAnimation.ts`, `KonvaBall.ts`, `demoPage.ts`               | The smallest engine, on `/demo.html`; the ball is shared with the cannon               |
-| `FakeAnimationEngine.ts`, `ManualFrames.ts`                     | Test helpers                                                                           |
-| `../../controller/runRegistry.ts`                               | Game id and level id to run builder                                                    |
-| `../../model/runs/`                                             | Run builders                                                                           |
+| File                                                            | Role                                                                                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `AnimationEngine.ts`                                            | The interface every game implements                                                                                      |
+| `FramePlayback.ts`                                              | The shared time loop: play, stop, replay, finished                                                                       |
+| `worldToScreen.ts`                                              | World units to stage pixels and degrees                                                                                  |
+| `AnimationFactory.ts`, `animationRegistry.ts`                   | Game id to engine                                                                                                        |
+| `CarAnimation.ts`, `KonvaCar.ts`                                | Minigame 1 worked example                                                                                                |
+| `CannonAnimation.ts`, `KonvaCannon.ts`                          | Minigame 3: tent, cannon, floor net (L1), pause at t (L2) or hanging net (L3), trail                                     |
+| `CoasterAnimation.ts`, `KonvaCoaster.ts`, `KonvaCoasterCart.ts` | Minigame 4: loop track, cart, arrow (a in L1, F_Normal in L3) and trail                                                  |
+| `CrateAnimation.ts`, `KonvaCrate.ts`                            | Minigame 2: floor, crate with its free body diagram (`../forces/`), line and gate (L1), lift-off or sinking at rest (L2) |
+| `DemoAnimation.ts`, `KonvaBall.ts`, `demoPage.ts`               | The smallest engine, on `/demo.html`; the ball is shared with the cannon                                                 |
+| `FakeAnimationEngine.ts`, `ManualFrames.ts`                     | Test helpers                                                                                                             |
+| `../../controller/runRegistry.ts`                               | Game id and level id to run builder                                                                                      |
+| `../../model/runs/`                                             | Run builders                                                                                                             |
