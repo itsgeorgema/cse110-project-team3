@@ -11,6 +11,7 @@ import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
   buildKinematicsLevel3Run,
+  buildKinematicsLevel4Run,
 } from "../model/runs/kinematicsRun.ts";
 import { runBuilderFor } from "./runRegistry.ts";
 
@@ -62,9 +63,14 @@ describe("runBuilderFor", () => {
       runBuilderFor({ gameId: "circularMotion", levelId: 2 }),
     ).toBeUndefined();
   });
+  it("finds the getaway car's Level 4 run", () => {
+    expect(runBuilderFor({ gameId: "kinematics", levelId: 4 })).toBe(
+      buildKinematicsLevel4Run,
+    );
+  });
 
   it("returns undefined for a level of a known game that has no run yet", () => {
-    expect(runBuilderFor({ gameId: "kinematics", levelId: 4 })).toBeUndefined();
+    expect(runBuilderFor({ gameId: "kinematics", levelId: 5 })).toBeUndefined();
   });
 
   it("returns undefined for an unknown game", () => {

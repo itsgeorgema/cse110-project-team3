@@ -5,6 +5,7 @@ import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
   buildKinematicsLevel3Run,
+  buildKinematicsLevel4Run,
   CAR_ID,
 } from "./kinematicsRun.ts";
 
@@ -200,5 +201,117 @@ describe("buildKinematicsLevel3Run", () => {
         problemStatementVariablesValues: { time: 4 },
       }),
     ).toThrow(/initialVelocity/);
+  });
+});
+
+const level4 = {
+  gameId: "kinematics",
+  levelId: 4,
+  problemStatementVariablesValues: {
+    initialVelocity: 5,
+    acceleration: 2,
+    time: 4,
+  },
+} as unknown as LevelDataConfig;
+
+function submitLevel4(distance: number, averageVelocity = 9) {
+  return {
+    gameId: "kinematics",
+    levelId: 4,
+    values: { averageVelocity, distance },
+    units: { averageVelocity: "m/s", distance: "m" },
+  };
+}
+
+describe("buildKinematicsLevel4Run", () => {
+  it("ends the right distance at v0*t + a*t^2/2", () => {
+    const states = buildKinematicsLevel4Run(submitLevel4(36), level4);
+    const last = states.length - 1;
+
+    expect(carX(states, 0)).toBe(0);
+    expect(states[last].timeMs).toBe(4000);
+    // 5 * 4 + 2 * 16 / 2 = 36 m
+    expect(carX(states, last)).toBeCloseTo(36, 10);
+  });
+
+  it("speeds up: each frame covers more road than the one before", () => {
+    const states = buildKinematicsLevel4Run(submitLevel4(36), level4);
+
+    for (let i = 2; i < states.length - 1; i++) {
+      const before = carX(states, i - 1) - carX(states, i - 2);
+      const now = carX(states, i) - carX(states, i - 1);
+      expect(now).toBeGreaterThan(before);
+    }
+  });
+
+  it("keeps its speeding-up shape but ends at the player's distance", () => {
+    const states = buildKinematicsLevel4Run(submitLevel4(18), level4);
+    const last = states.length - 1;
+    const mid = states.findIndex((s) => s.timeMs >= 2000);
+    const t = states[mid].timeMs / 1000;
+
+    expect(carX(states, last)).toBeCloseTo(18, 10);
+    // x(t) = distance * s(t) / s(T), with s(t) = 5t + t^2 and s(4) = 36.
+    expect(carX(states, mid)).toBeCloseTo((18 * (5 * t + t * t)) / 36, 10);
+  });
+
+  it("moves the same whatever average velocity the player typed", () => {
+    const a = buildKinematicsLevel4Run(submitLevel4(30, 1), level4);
+    const b = buildKinematicsLevel4Run(submitLevel4(30, 9), level4);
+
+    expect(a.map((s) => s.objects[CAR_ID].position.x)).toEqual(
+      b.map((s) => s.objects[CAR_ID].position.x),
+    );
+  });
+
+  it("rejects a distance that is not a finite number", () => {
+    expect(() =>
+      buildKinematicsLevel4Run(submitLevel4(Number.NaN), level4),
+    ).toThrow(/distance/);
+  });
+
+  it.each(["initialVelocity", "acceleration"])(
+    "rejects a level with no %s",
+    (missing) => {
+      const values: Record<string, number> = {
+        initialVelocity: 5,
+        acceleration: 2,
+        time: 4,
+      };
+      delete values[missing];
+
+      expect(() =>
+        buildKinematicsLevel4Run(submitLevel4(36), {
+          ...level4,
+          problemStatementVariablesValues: values,
+        }),
+      ).toThrow(new RegExp(missing));
+    },
+  );
+
+  it("rejects a level time of 0", () => {
+    expect(() =>
+      buildKinematicsLevel4Run(submitLevel4(36), {
+        ...level4,
+        problemStatementVariablesValues: {
+          initialVelocity: 5,
+          acceleration: 2,
+          time: 0,
+        },
+      }),
+    ).toThrow(/time/);
+  });
+
+  it("rejects a level whose own distance is not > 0", () => {
+    expect(() =>
+      buildKinematicsLevel4Run(submitLevel4(36), {
+        ...level4,
+        problemStatementVariablesValues: {
+          initialVelocity: 5,
+          acceleration: -10,
+          time: 4,
+        },
+      }),
+    ).toThrow(/distance/);
   });
 });

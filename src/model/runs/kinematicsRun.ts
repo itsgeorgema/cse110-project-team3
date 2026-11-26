@@ -93,3 +93,26 @@ export function buildKinematicsLevel3Run(
     (t) => initialVelocity * t + (acceleration * t * t) / 2,
   );
 }
+
+/**
+ * Level 4: the car speeds up at the level's acceleration from its initial
+ * velocity, but ends at the player's distance. Its shape stays s(t) = v0*t + a*t²/2,
+ * scaled so x(T) = distance: x(t) = distance * s(t) / s(T).
+ */
+export function buildKinematicsLevel4Run(
+  submission: AnswerSubmission,
+  level: LevelDataConfig,
+): SimulationState[] {
+  const distance = finite("distance", submission.values.distance);
+  const v = level.problemStatementVariablesValues;
+  const initialVelocity = finite("initialVelocity", v.initialVelocity);
+  const acceleration = finite("acceleration", v.acceleration);
+  const seconds = levelSeconds(level);
+  const traveled = (t: number) =>
+    initialVelocity * t + (acceleration * t * t) / 2;
+  const total = traveled(seconds);
+  if (!(total > 0)) {
+    throw new RangeError(`the level's own distance must be > 0, got ${total}`);
+  }
+  return carRun(seconds, (t) => (distance * traveled(t)) / total);
+}

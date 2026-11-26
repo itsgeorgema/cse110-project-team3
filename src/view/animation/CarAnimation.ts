@@ -52,6 +52,8 @@ function gateDistance(level: LevelDataConfig): number | undefined {
   else if (level.levelId === 2) gate = v.velocity * v.time;
   else if (level.levelId === 3)
     gate = ((v.initialVelocity + v.finalVelocity) / 2) * v.time;
+  else if (level.levelId === 4)
+    gate = v.initialVelocity * v.time + (v.acceleration * v.time * v.time) / 2;
   return gate !== undefined && Number.isFinite(gate) && gate > 0
     ? gate
     : undefined;
@@ -67,6 +69,8 @@ function sceneLabel(level: LevelDataConfig): string {
       return `${v.velocity} m/s for ${v.time} s`;
     case 3:
       return `${v.initialVelocity} to ${v.finalVelocity} m/s in ${v.time} s`;
+    case 4:
+      return `${v.initialVelocity} m/s, +${v.acceleration} m/s² for ${v.time} s`;
     default:
       return "";
   }
@@ -91,6 +95,8 @@ export class CarAnimation implements AnimationEngine {
   private gate: number | undefined;
   private result: AnswerValidationResult | undefined;
   private lastCarX = 0;
+  private level: LevelDataConfig | undefined;
+  private scene: CarScene | undefined;
 
   constructor(
     view: CarView,
@@ -106,11 +112,12 @@ export class CarAnimation implements AnimationEngine {
   }
 
   showLevel(level: LevelDataConfig): void {
+    this.level = level;
     this.gate = gateDistance(level);
     this.result = undefined;
     this.world = this.worldFor((this.gate ?? 10) * (1 + RUN_OFF));
     const origin = this.world.origin;
-    this.view.drawScene({
+    const scene: CarScene = {
       groundY: origin.y,
       startX: origin.x,
       gateX:
@@ -118,13 +125,28 @@ export class CarAnimation implements AnimationEngine {
           ? undefined
           : toScreen(this.world, { x: this.gate, y: 0 }).x,
       label: sceneLabel(level),
-    });
+    };
+    this.scene = scene;
+    this.view.drawScene(scene);
     this.view.showMessage(undefined);
     this.placeCar(0);
   }
 
   showResult(result: AnswerValidationResult): void {
     this.result = result;
+    // Level 4 also labels the player's average velocity, known only now.
+    const average = result.submittedAnswer.values.averageVelocity;
+    if (
+      this.level?.levelId === 4 &&
+      this.scene !== undefined &&
+      Number.isFinite(average)
+    ) {
+      const shown = Math.round(average * 100) / 100;
+      this.view.drawScene({
+        ...this.scene,
+        label: `${this.scene.label}\nYour average velocity: ${shown} m/s`,
+      });
+    }
   }
 
   play(states: readonly SimulationState[]): void {
@@ -183,10 +205,28 @@ export class CarAnimation implements AnimationEngine {
       return;
     }
     const gap = this.gate - this.lastCarX;
+    if (this.reachedGateButWrong(gap)) {
+      this.view.showMessage({
+        text: "Average velocity should be (start + end) / 2",
+        correct: false,
+      });
+      return;
+    }
     const text =
       gap >= 0
         ? `Short by ${meters(gap)} m`
         : `Past the gate by ${meters(gap)} m`;
     this.view.showMessage({ text, correct: false });
+  }
+  
+  /**
+   * Level 4 has two answers. The car ends at the player's distance, so a car
+   * on the gate means the distance was right and the average velocity is off.
+   */
+  private reachedGateButWrong(gap: number): boolean {
+    const level = this.level;
+    return (
+      level?.levelId === 4 && Math.abs(gap) <= level.toleranceRule.absolute
+    );
   }
 }
