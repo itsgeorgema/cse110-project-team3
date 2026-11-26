@@ -101,15 +101,16 @@ Konva may be imported only under `src/view/` (ESLint enforces it).
 
 ## Files at a glance
 
-| File                                              | Role                                                                     |
-| ------------------------------------------------- | ------------------------------------------------------------------------ |
-| `AnimationEngine.ts`                              | The interface every game implements                                      |
-| `FramePlayback.ts`                                | The shared time loop: play, stop, replay, finished                       |
-| `worldToScreen.ts`                                | World units to stage pixels and degrees                                  |
-| `AnimationFactory.ts`, `animationRegistry.ts`     | Game id to engine                                                        |
-| `CarAnimation.ts`, `KonvaCar.ts`                  | Minigame 1 worked example                                                |
-| `CannonAnimation.ts`, `KonvaCannon.ts`            | Minigame 3: tent, cannon, net and dashed trail                           |
-| `DemoAnimation.ts`, `KonvaBall.ts`, `demoPage.ts` | The smallest engine, on `/demo.html`; the ball is shared with the cannon |
-| `FakeAnimationEngine.ts`, `ManualFrames.ts`       | Test helpers                                                             |
-| `../../controller/runRegistry.ts`                 | Game id and level id to run builder                                      |
-| `../../model/runs/`                               | Run builders                                                             |
+| File                                                            | Role                                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `AnimationEngine.ts`                                            | The interface every game implements                                      |
+| `FramePlayback.ts`                                              | The shared time loop: play, stop, replay, finished                       |
+| `worldToScreen.ts`                                              | World units to stage pixels and degrees                                  |
+| `AnimationFactory.ts`, `animationRegistry.ts`                   | Game id to engine                                                        |
+| `CarAnimation.ts`, `KonvaCar.ts`                                | Minigame 1 worked example                                                |
+| `CannonAnimation.ts`, `KonvaCannon.ts`                          | Minigame 3: tent, cannon, net and dashed trail                           |
+| `CoasterAnimation.ts`, `KonvaCoaster.ts`, `KonvaCoasterCart.ts` | Minigame 4: loop track, cart, acceleration arrow and dashed trail        |
+| `DemoAnimation.ts`, `KonvaBall.ts`, `demoPage.ts`               | The smallest engine, on `/demo.html`; the ball is shared with the cannon |
+| `FakeAnimationEngine.ts`, `ManualFrames.ts`                     | Test helpers                                                             |
+| `../../controller/runRegistry.ts`                               | Game id and level id to run builder                                      |
+| `../../model/runs/`                                             | Run builders                                                             |

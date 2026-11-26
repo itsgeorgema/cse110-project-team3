@@ -11,6 +11,12 @@ import {
   type CannonMessage,
   type CannonView,
 } from "../view/animation/CannonAnimation.ts";
+import {
+  CoasterAnimation,
+  type CoasterArrow,
+  type CoasterMessage,
+  type CoasterView,
+} from "../view/animation/CoasterAnimation.ts";
 import { ManualFrames } from "../view/animation/ManualFrames.ts";
 import { GameController } from "./GameController.ts";
 import { runBuilderFor } from "./runRegistry.ts";
@@ -258,5 +264,97 @@ describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
 
     expect(cannon.message?.correct).toBe(false);
     expect(cannon.message?.text).toMatch(/tent/);
+  });
+});
+
+/** CoasterAnimation's drawing, recorded instead of drawn. */
+class RecordingCoaster implements CoasterView {
+  arrow: CoasterArrow | undefined;
+  message: CoasterMessage | undefined;
+  drawScene(): void {}
+  drawTrail(): void {}
+  showArrow(arrow: CoasterArrow | undefined): void {
+    this.arrow = arrow;
+  }
+  showMessage(message: CoasterMessage | undefined): void {
+    this.message = message;
+  }
+}
+
+describe("Minigame 4 Level 1 playback, end to end (#139)", () => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      1,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const coaster = new RecordingCoaster();
+    const cart = { setLength: vi.fn(), moveTo: vi.fn() };
+    const animation = new CoasterAnimation(
+      coaster,
+      cart,
+      { width: 600, height: 300 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const answer = (acceleration: string) => {
+      controller.submitAnswer({
+        gameId: "circularMotion",
+        levelId: 1,
+        fields: { acceleration },
+      });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    const { speed, radius } = level.problemStatementVariablesValues;
+    return { level, coaster, cart, progress, answer, speed, radius };
+  }
+
+  it("keeps the right answer, rounded to two places, on the loop", () => {
+    const { level, coaster, cart, progress, answer } = playLevel();
+    const typed = level.expectedUserInput.acceleration.toFixed(2);
+
+    answer(typed);
+
+    expect(coaster.message).toEqual({ text: "Correct!", correct: true });
+    expect(coaster.arrow?.label).toBe(`a = ${Number(typed)} m/s²`);
+    // Last pose is on the floor, rolling right, past the loop.
+    const [position, rotation] = cart.moveTo.mock.calls.at(-1)!;
+    expect(position.x).toBeGreaterThan(300);
+    expect(rotation).toBeGreaterThan(0);
+    expect(rotation).toBeLessThan(90);
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("swings half the acceleration wide off the loop", () => {
+    const { level, coaster, progress, answer, speed, radius } = playLevel();
+
+    answer(String(level.expectedUserInput.acceleration / 2));
+
+    expect(coaster.message).toEqual({
+      text: `Too small: at ${speed} m/s that only turns a ${2 * radius} m circle`,
+      correct: false,
+    });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("cuts double the acceleration inside the loop", () => {
+    const { level, coaster, answer, speed, radius } = playLevel();
+
+    answer(String(level.expectedUserInput.acceleration * 2));
+
+    expect(coaster.message?.text).toBe(
+      `Too big: at ${speed} m/s that turns a tight ${Math.round((radius / 2) * 10) / 10} m circle`,
+    );
   });
 });

@@ -22,7 +22,7 @@ current app has a story map that launches registered levels in a shared dialog.
 - [`progressFile.ts`](./progressFile.ts) downloads an exported progress file
   named `escape-route-progress-YYYY-MM-DD.json`.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,
-  positions, route connections, and real addresses for the first five locations.
+  positions, route connections, and real addresses for the first six locations.
   Remaining `circus-preview` addresses are upcoming, unregistered locations.
 - [`overworld/ResultsSummary.ts`](./overworld/ResultsSummary.ts) is the legacy
   mock results dialog; the map no longer mounts it. Cleared nodes replay their

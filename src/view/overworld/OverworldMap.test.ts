@@ -43,8 +43,8 @@ describe("overworld data integration", () => {
       createLevelCatalog(),
       { isCompleted: () => true },
     );
-    expect(navigation.current.id).toBe("wheel");
-    expect(navigation.selectLevel(previewNodes[5].level)).toMatchObject({
+    expect(navigation.current.id).toBe("fence");
+    expect(navigation.selectLevel(previewNodes[6].level)).toMatchObject({
       ok: false,
       reason: "unimplemented",
     });
