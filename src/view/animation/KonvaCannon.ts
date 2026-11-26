@@ -2,18 +2,22 @@ import Konva from "konva";
 import type { Vec2 } from "../../model/SimulationState.ts";
 import type { KonvaStage } from "../KonvaStage.ts";
 import type {
+  CannonGuide,
   CannonMessage,
   CannonScene,
+  CannonTargetScene,
   CannonView,
 } from "./CannonAnimation.ts";
 
 const BARREL_LENGTH = 46;
 const BARREL_WIDTH = 18;
 const STRIPE_WIDTH = 36;
+/** Level 3's hanging net is a thin upright frame the ball flies through. */
+const TARGET_WIDTH = 10;
 
 /**
  * CannonAnimation's tent, cannon, net and trail on the real canvas (Humble
- * Object, #138): it makes no decisions, so it has no unit test;
+ * Object, #138, #143): it makes no decisions, so it has no unit test;
  * CannonAnimation's tests use a recorder. The ball is a separate KonvaBall.
  */
 export class KonvaCannon implements CannonView {
@@ -89,30 +93,8 @@ export class KonvaCannon implements CannonView {
       }),
     );
 
-    // Landing net: a low frame with a mesh across it.
-    const netTop = scene.floorY - 10;
-    const net = new Konva.Group();
-    net.add(
-      new Konva.Rect({
-        x: scene.netLeftX,
-        y: netTop,
-        width: scene.netRightX - scene.netLeftX,
-        height: 10,
-        fill: "rgba(255, 255, 255, 0.18)",
-        stroke: "#e8e8f0",
-        strokeWidth: 2,
-      }),
-    );
-    for (let x = scene.netLeftX + 6; x < scene.netRightX; x += 6) {
-      net.add(
-        new Konva.Line({
-          points: [x, netTop, x, scene.floorY],
-          stroke: "#e8e8f0",
-          strokeWidth: 0.75,
-        }),
-      );
-    }
-    this.scene.add(net);
+    if (scene.net !== undefined) this.drawFloorNet(scene, scene.net);
+    if (scene.target !== undefined) this.drawTarget(scene.target);
 
     // Red cannon, barrel along the launch angle, with its labels.
     const { x, y } = scene.cannon;
@@ -163,6 +145,78 @@ export class KonvaCannon implements CannonView {
       }),
     );
     this.layer.batchDraw();
+  }
+
+  /** Level 1's landing net: a low frame with a mesh across it. */
+  private drawFloorNet(
+    scene: CannonScene,
+    { leftX, rightX }: NonNullable<CannonScene["net"]>,
+  ): void {
+    const netTop = scene.floorY - 10;
+    const net = new Konva.Group();
+    net.add(
+      new Konva.Rect({
+        x: leftX,
+        y: netTop,
+        width: rightX - leftX,
+        height: 10,
+        fill: "rgba(255, 255, 255, 0.18)",
+        stroke: "#e8e8f0",
+        strokeWidth: 2,
+      }),
+    );
+    for (let x = leftX + 6; x < rightX; x += 6) {
+      net.add(
+        new Konva.Line({
+          points: [x, netTop, x, scene.floorY],
+          stroke: "#e8e8f0",
+          strokeWidth: 0.75,
+        }),
+      );
+    }
+    this.scene.add(net);
+  }
+
+  /** Level 3's hanging net, with dashed guides for its distance and height. */
+  private drawTarget(target: CannonTargetScene): void {
+    const guide = (g: CannonGuide) =>
+      new Konva.Line({
+        points: [g.from.x, g.from.y, g.to.x, g.to.y],
+        stroke: "#f4e3b5",
+        strokeWidth: 1.5,
+        dash: [4, 4],
+        opacity: 0.85,
+      });
+    const label = (text: string, x: number, y: number) =>
+      new Konva.Text({ x, y, text, fontSize: 12, fill: "#ffffff" });
+    const { horizontal, vertical } = target;
+    const stageWidth = this.layer.getStage().width();
+    // In the floor band, centered under the horizontal guide.
+    const across = label(horizontal.label, 0, horizontal.from.y + 12);
+    across.x((horizontal.from.x + horizontal.to.x - across.width()) / 2);
+    // Right of the net, level with its center, kept on the stage.
+    const up = label(vertical.label, 0, vertical.to.y - 6);
+    up.x(
+      Math.max(
+        Math.min(vertical.to.x + TARGET_WIDTH, stageWidth - up.width() - 4),
+        0,
+      ),
+    );
+    this.scene.add(
+      guide(horizontal),
+      guide(vertical),
+      across,
+      up,
+      new Konva.Rect({
+        x: target.x - TARGET_WIDTH / 2,
+        y: target.topY,
+        width: TARGET_WIDTH,
+        height: target.bottomY - target.topY,
+        fill: "rgba(255, 255, 255, 0.18)",
+        stroke: "#e8e8f0",
+        strokeWidth: 2,
+      }),
+    );
   }
 
   drawTrail(points: readonly Vec2[]): void {

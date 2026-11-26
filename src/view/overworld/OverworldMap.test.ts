@@ -35,6 +35,7 @@ describe("overworld data integration", () => {
       "locked",
       "locked",
       "locked",
+      "locked",
     ]);
   });
   it("keeps unimplemented locations out of navigation after completing earlier levels", () => {
@@ -44,7 +45,7 @@ describe("overworld data integration", () => {
       { isCompleted: () => true },
     );
     expect(navigation.current.id).toBe("fence");
-    expect(navigation.selectLevel(previewNodes[6].level)).toMatchObject({
+    expect(navigation.selectLevel(previewNodes[7].level)).toMatchObject({
       ok: false,
       reason: "unimplemented",
     });

@@ -185,46 +185,46 @@ class RecordingCannon implements CannonView {
   }
 }
 
+/** A cannon level with the real config, validator, registry and engine. */
+function playCannonLevel(levelId: 1 | 3) {
+  const level = new LevelDataConfigFactory().createLevelDataConfig(
+    "cannonTrajectory",
+    levelId,
+  );
+  const buildRun = runBuilderFor(level);
+  if (buildRun === undefined) throw new Error("level has no run builder");
+  const frames = new ManualFrames();
+  const cannon = new RecordingCannon();
+  const animation = new CannonAnimation(
+    cannon,
+    { moveTo: vi.fn() },
+    { width: 600, height: 300 },
+    frames.schedule,
+  );
+  const progress = { recordAttempt: vi.fn() };
+  const controller = new GameController(
+    level,
+    vi.fn(),
+    new DefaultAnswerValidator(),
+    vi.fn(),
+    { animation, buildRun, progress },
+  );
+  const answer = (values: Readonly<Record<string, number>>) => {
+    controller.submitAnswer({
+      gameId: "cannonTrajectory",
+      levelId,
+      fields: Object.fromEntries(
+        Object.entries(values).map(([field, value]) => [field, String(value)]),
+      ),
+    });
+    frames.tick(0);
+    frames.tick(60_000);
+  };
+  return { level, cannon, progress, answer };
+}
+
 describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
-  function playLevel() {
-    const level = new LevelDataConfigFactory().createLevelDataConfig(
-      "cannonTrajectory",
-      1,
-    );
-    const buildRun = runBuilderFor(level);
-    if (buildRun === undefined) throw new Error("level has no run builder");
-    const frames = new ManualFrames();
-    const cannon = new RecordingCannon();
-    const animation = new CannonAnimation(
-      cannon,
-      { moveTo: vi.fn() },
-      { width: 600, height: 300 },
-      frames.schedule,
-    );
-    const progress = { recordAttempt: vi.fn() };
-    const controller = new GameController(
-      level,
-      vi.fn(),
-      new DefaultAnswerValidator(),
-      vi.fn(),
-      { animation, buildRun, progress },
-    );
-    const answer = (values: Readonly<Record<string, number>>) => {
-      controller.submitAnswer({
-        gameId: "cannonTrajectory",
-        levelId: 1,
-        fields: Object.fromEntries(
-          Object.entries(values).map(([field, value]) => [
-            field,
-            String(value),
-          ]),
-        ),
-      });
-      frames.tick(0);
-      frames.tick(60_000);
-    };
-    return { level, cannon, progress, answer };
-  }
+  const playLevel = () => playCannonLevel(1);
 
   it("lands the right answer, rounded to two places, in the net", () => {
     const { level, cannon, progress, answer } = playLevel();
@@ -264,6 +264,52 @@ describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
 
     expect(cannon.message?.correct).toBe(false);
     expect(cannon.message?.text).toMatch(/tent/);
+  });
+});
+
+describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
+  const playLevel = () => playCannonLevel(3);
+
+  it("flies the right speed, rounded to two places, through the net", () => {
+    const { level, cannon, progress, answer } = playLevel();
+
+    answer({
+      launchSpeed: Number(level.expectedUserInput.launchSpeed.toFixed(2)),
+    });
+
+    expect(cannon.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("says a too-slow speed passed below the net", () => {
+    const { level, cannon, progress, answer } = playLevel();
+
+    answer({ launchSpeed: level.expectedUserInput.launchSpeed - 1 });
+
+    expect(cannon.message?.text).toMatch(
+      /^Passed \d+(\.\d+)? m below the net$/,
+    );
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("says a too-fast speed passed above the net", () => {
+    const { level, cannon, answer } = playLevel();
+
+    answer({ launchSpeed: level.expectedUserInput.launchSpeed + 1 });
+
+    expect(cannon.message?.text).toMatch(
+      /^Passed \d+(\.\d+)? m above the net$/,
+    );
+  });
+
+  it("lands a speed far too slow short of the net", () => {
+    const { cannon, answer } = playLevel();
+
+    answer({ launchSpeed: 5 });
+
+    expect(cannon.message?.text).toMatch(
+      /^Landed \d+(\.\d)? m short of the net$/,
+    );
   });
 });
 

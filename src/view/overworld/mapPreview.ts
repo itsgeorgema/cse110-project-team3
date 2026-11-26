@@ -75,7 +75,7 @@ export const previewNodes: readonly MapNode[] = [
       "A heavy circus crate rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
     chapter: 1,
     x: 420,
-    y: 830,
+    y: 790,
   },
   {
     id: "wheel",
@@ -86,7 +86,18 @@ export const previewNodes: readonly MapNode[] = [
       "The human cannonball’s cannon offers a daring route out. Split the launch velocity into its horizontal and vertical parts and write how each changes over time, so the flight lands in the safety net.",
     chapter: 1,
     x: 245,
-    y: 1030,
+    y: 910,
+  },
+  {
+    id: "tent-roof",
+    level: { gameId: "cannonTrajectory", levelId: 3 },
+    title: "Through the tent roof",
+    subtitle: "Projectile motion · Find the launch speed",
+    story:
+      "A torn gap in the tent roof is the only way past the guards. The cannon is fixed at 45 degrees, so work out the launch speed that carries the flight through the net hanging below the gap.",
+    chapter: 1,
+    x: 300,
+    y: 1115,
   },
   {
     id: "fence",
@@ -117,6 +128,7 @@ export const previewConnections = [
   ["backstage", "big-top"],
   ["big-top", "midway"],
   ["midway", "wheel"],
-  ["wheel", "fence"],
+  ["wheel", "tent-roof"],
+  ["tent-roof", "fence"],
   ["fence", "dawn"],
 ] as const;
