@@ -4,7 +4,6 @@ import type { SimulationState } from "../SimulationState.ts";
 import { DEFAULT_STEP_MS } from "../SimulationRunner.ts";
 import {
   buildCannonLevel2Run,
-  CANNON_AVERAGE_ID,
   CANNON_BALL_ID,
   CANNON_GUESS_ID,
   cannonPauseArena,
@@ -166,8 +165,6 @@ describe("buildCannonLevel2Run", () => {
 
     expect(at(states, -1, CANNON_GUESS_ID).x).toBeCloseTo(ball.x, 10);
     expect(at(states, -1, CANNON_GUESS_ID).y).toBeCloseTo(ball.y, 10);
-    expect(at(states, -1, CANNON_AVERAGE_ID).x).toBeCloseTo(ball.x, 10);
-    expect(at(states, -1, CANNON_AVERAGE_ID).y).toBeCloseTo(ball.y, 10);
   });
 
   it("puts a wrong answer's point where the player's numbers say", () => {
@@ -182,19 +179,12 @@ describe("buildCannonLevel2Run", () => {
     );
 
     expect(at(states, -1, CANNON_GUESS_ID)).toEqual({ x: 20, y: 3 });
-    // Average velocity times t, with t = 1 s.
-    expect(at(states, -1, CANNON_AVERAGE_ID)).toEqual({ x: 15, y: 10 });
+    expect(Object.keys(states.at(-1)!.objects)).toEqual([
+      CANNON_BALL_ID,
+      CANNON_GUESS_ID,
+    ]);
     // The ball still flies the real launch.
     expect(at(states, -1, CANNON_BALL_ID).x).toBeCloseTo(vx, 10);
-  });
-
-  it("scales the average-velocity point by t", () => {
-    const states = buildCannonLevel2Run(
-      submit({ averageHorizontalVelocity: 10, averageVerticalVelocity: 4 }),
-      withValues({ time: 0.5 }),
-    );
-
-    expect(at(states, -1, CANNON_AVERAGE_ID)).toEqual({ x: 5, y: 2 });
   });
 
   it("carries the player's marks unchanged in every frame", () => {
@@ -217,19 +207,20 @@ describe("buildCannonLevel2Run", () => {
     );
   });
 
-  it.each([
-    "horizontalDisplacement",
-    "verticalDisplacement",
-    "averageHorizontalVelocity",
-    "averageVerticalVelocity",
-  ])("rejects a %s that is not a finite number", (name) => {
-    expect(() =>
-      buildCannonLevel2Run(submit({ [name]: Number.NaN }), level),
-    ).toThrow(new RegExp(name));
-    expect(() =>
-      buildCannonLevel2Run(submit({ [name]: Number.POSITIVE_INFINITY }), level),
-    ).toThrow(RangeError);
-  });
+  it.each(["horizontalDisplacement", "verticalDisplacement"])(
+    "rejects a %s that is not a finite number",
+    (name) => {
+      expect(() =>
+        buildCannonLevel2Run(submit({ [name]: Number.NaN }), level),
+      ).toThrow(new RegExp(name));
+      expect(() =>
+        buildCannonLevel2Run(
+          submit({ [name]: Number.POSITIVE_INFINITY }),
+          level,
+        ),
+      ).toThrow(RangeError);
+    },
+  );
 
   it("rejects a missing answer", () => {
     expect(() =>

@@ -676,18 +676,12 @@ describe("CannonAnimation, Level 2 (#142)", () => {
     expect(up / across).toBeCloseTo(dy / vx2, 9);
   });
 
-  it("snaps a correct answer's marker and average line onto the ball, and says Correct!", () => {
+  it("snaps a correct answer's marker onto the ball, and says Correct!", () => {
     playToPause({ horizontalDisplacement: vx2 + 0.03 }, true);
 
     const pause = view.scene!.pause!;
     expect(pause.guess!.x).toBeCloseTo(pause.ball.x, 9);
     expect(pause.guess!.y).toBeCloseTo(pause.ball.y, 9);
-    expect(pause.average).toMatchObject({
-      from: view.scene!.cannon,
-      label: "Average velocity × t",
-    });
-    expect(pause.average!.to.x).toBeCloseTo(pause.ball.x, 9);
-    expect(pause.average!.to.y).toBeCloseTo(pause.ball.y, 9);
     expect(view.message).toEqual({ text: "Correct!", correct: true });
   });
 
@@ -715,13 +709,14 @@ describe("CannonAnimation, Level 2 (#142)", () => {
     expect(view.message!.text).toBe("Δy is 0.4 m too low");
   });
 
-  it("says which average velocity is off, and ends its line off the ball", () => {
+  it("says which average velocity is off, leaving the marker on the ball", () => {
     playToPause({ averageHorizontalVelocity: vx2 + 1 });
     expect(view.message!.text).toBe(
       "Average horizontal velocity is 1 m/s too fast",
     );
-    expect(view.scene!.pause!.average!.to.x).toBeGreaterThan(
+    expect(view.scene!.pause!.guess!.x).toBeCloseTo(
       view.scene!.pause!.ball.x,
+      9,
     );
 
     playToPause({ averageHorizontalVelocity: vx2 - 1 });
@@ -838,7 +833,6 @@ describe("CannonAnimation, Level 2 (#142)", () => {
 
     expect(view.scene!.pause).toBeDefined();
     expect(view.scene!.pause!.guess).toBeUndefined();
-    expect(view.scene!.pause!.average).toBeUndefined();
   });
 
   it("draws no pause for frames without the ball", () => {

@@ -215,26 +215,13 @@ export class KonvaCannon implements CannonView {
 
   /**
    * Level 2's pause: Δx along the floor, Δy up to the ball, the time above
-   * it, and the player's point and average-velocity line in gold.
+   * it, and the player's point in gold.
    */
   private drawPause(scene: CannonScene, pause: CannonPauseScene): void {
     const { horizontal, vertical } = pause;
     const stageWidth = this.layer.getStage().width();
     const keepOnStage = (text: Konva.Text, x: number) =>
       text.x(Math.max(Math.min(x, stageWidth - text.width() - 4), 0));
-
-    if (pause.average !== undefined) {
-      const average = pause.average;
-      const line = guide(average);
-      line.stroke("#f2c14e");
-      line.dash([2, 5]);
-      const words = label(average.label, 0, 0);
-      words.fill("#f2c14e");
-      // Above the middle of the line, so it stays clear of the floor.
-      words.y((average.from.y + average.to.y) / 2 - 20);
-      keepOnStage(words, (average.from.x + average.to.x) / 2 - words.width());
-      this.scene.add(line, words);
-    }
 
     const across = label(horizontal.label, 0, horizontal.from.y + 12);
     across.fontSize(14);

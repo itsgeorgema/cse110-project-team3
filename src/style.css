@@ -1268,9 +1268,10 @@ progress::-moz-progress-bar {
   background: #182c33;
   border: 1px solid #6e8b7c;
   border-radius: 8px;
-  width: min(600px, calc(100vw - 32px));
+  /* Wide enough that the animation stage is not squished (#142). */
+  width: min(820px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
-  padding: clamp(20px, 4vw, 36px);
+  padding: clamp(16px, 4vw, 36px);
   overflow-y: auto;
 }
 .level-panel button {
@@ -1327,6 +1328,12 @@ progress::-moz-progress-bar {
 }
 .level-panel .level-stage[hidden] {
   display: none;
+}
+/* A phone-wide stage is too short at 16:7, so it is taller there. */
+@media (max-width: 600px) {
+  .level-panel .level-stage {
+    aspect-ratio: 4 / 3;
+  }
 }
 .level-panel .level-problem {
   border-top: 1px solid #6e8b7c;

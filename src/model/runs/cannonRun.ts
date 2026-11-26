@@ -18,12 +18,10 @@ import {
 export const CANNON_BALL_ID = "ball";
 
 /**
- * Level 2's (#142) extra objects, fixed in every frame: the player's point
- * (horizontalDisplacement, verticalDisplacement), and where their average
- * velocity carries the ball by the pause, (v̄x t, v̄y t).
+ * Level 2's (#142) extra object, fixed in every frame: the player's point
+ * (horizontalDisplacement, verticalDisplacement).
  */
 export const CANNON_GUESS_ID = "guess";
-export const CANNON_AVERAGE_ID = "average";
 
 /** The longest a run plays, in seconds, if nothing else stops it. */
 export const CANNON_TIME_CAP_S = 10;
@@ -368,8 +366,7 @@ export function buildCannonLevel1Run(
  * Level 2 (#142): the stuntman flies the level's real launch,
  * x = v cos θ t and y = v sin θ t - g t² / 2, 60 frames per second, and the
  * run stops exactly at t = the level's `time`, before it lands. Every frame
- * also carries the player's point and their average velocity times t, which
- * the view marks at the pause.
+ * also carries the player's point, which the view marks at the pause.
  */
 export function buildCannonLevel2Run(
   submission: AnswerSubmission,
@@ -380,29 +377,13 @@ export function buildCannonLevel2Run(
     x: finite("horizontalDisplacement", values.horizontalDisplacement),
     y: finite("verticalDisplacement", values.verticalDisplacement),
   };
-  const averageX = finite(
-    "averageHorizontalVelocity",
-    values.averageHorizontalVelocity,
-  );
-  const averageY = finite(
-    "averageVerticalVelocity",
-    values.averageVerticalVelocity,
-  );
   const { vx, vy, gravity, time } = pauseLaunch(level);
   const arena = cannonPauseArena(level);
-  const marks = [
-    { id: CANNON_GUESS_ID, position: guess, angle: 0 },
-    {
-      id: CANNON_AVERAGE_ID,
-      position: { x: averageX * time, y: averageY * time },
-      angle: 0,
-    },
-  ];
   return flyUntilStopped(
     (t) => ({ x: vx * t, y: vy * t - (gravity * t * t) / 2 }),
     arena,
     time,
-    marks,
+    [{ id: CANNON_GUESS_ID, position: guess, angle: 0 }],
   );
 }
 

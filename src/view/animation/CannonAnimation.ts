@@ -2,7 +2,6 @@ import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
 import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import {
-  CANNON_AVERAGE_ID,
   CANNON_BALL_ID,
   CANNON_GUESS_ID,
   cannonArena,
@@ -80,8 +79,6 @@ export interface CannonPauseScene {
   readonly vertical: CannonGuide;
   /** The player's (Δx, Δy). On the ball when they are right. */
   readonly guess?: Vec2;
-  /** From the cannon to the player's average velocity times t. */
-  readonly average?: CannonGuide;
 }
 
 export interface CannonMessage {
@@ -356,7 +353,6 @@ export class CannonAnimation implements AnimationEngine {
       });
     const below = screen({ x: ball.x, y: 0 });
     const guess = last.objects[CANNON_GUESS_ID]?.position;
-    const average = last.objects[CANNON_AVERAGE_ID]?.position;
     this.drawScene({
       ...this.scene,
       pause: {
@@ -365,13 +361,6 @@ export class CannonAnimation implements AnimationEngine {
         horizontal: { from: screen({ x: 0, y: 0 }), to: below, label: "Δx" },
         vertical: { from: below, to: screen(ball), label: "Δy" },
         ...(guess && { guess: screen(guess) }),
-        ...(average && {
-          average: {
-            from: screen({ x: 0, y: 0 }),
-            to: screen(average),
-            label: "Average velocity × t",
-          },
-        }),
       },
     });
   }
