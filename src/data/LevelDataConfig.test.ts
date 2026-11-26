@@ -44,7 +44,7 @@ describe("createLevelDataConfig should handle invalid inputs", () => {
     ).toThrow("levelId does not exist");
   });
 
-  it.each([0, 2, 99])("rejects cannonTrajectory level %s", (levelId) => {
+  it.each([0, 3, 99])("rejects cannonTrajectory level %s", (levelId) => {
     expect(() =>
       new LevelDataConfigFactory().createLevelDataConfig(
         "cannonTrajectory",
@@ -1605,5 +1605,249 @@ describe("createLevelDataConfig for cannon trajectory game, level 1", () => {
         -config.expectedUserInput.initialHorizontalVelocity,
     };
     expect(validator.validateInput(submit(negativeStart), config)).toBe(false);
+  });
+});
+
+describe("createLevelDataConfig for cannon trajectory game, level 2", () => {
+  const createConfig = () =>
+    new LevelDataConfigFactory().createLevelDataConfig("cannonTrajectory", 2);
+
+  const expectValidCannonTrajectoryLevel2Problem = (
+    levelDataConfig: LevelDataConfig,
+  ) => {
+    const {
+      problemStatement,
+      problemStatementVariablesValues,
+      expectedUserInput,
+    } = levelDataConfig;
+
+    // Extract the given values from the problem statement.
+    const speedMatch = problemStatement.match(/stuntman at (\d+) m\/s/);
+    const angleMatch = problemStatement.match(/angle of (\d+) degrees/);
+    const timeMatch = problemStatement.match(/to t = (\d+(?:\.\d)?) s,/);
+    expect(speedMatch).not.toBeNull();
+    expect(angleMatch).not.toBeNull();
+    expect(timeMatch).not.toBeNull();
+    const launchSpeed = Number(speedMatch?.[1]);
+    const launchAngle = Number(angleMatch?.[1]);
+    const time = Number(timeMatch?.[1]);
+    const g = 9.81;
+
+    expect(problemStatementVariablesValues).toEqual({
+      launchSpeed,
+      launchAngle,
+      time,
+      gravitationalAcceleration: g,
+    });
+
+    // Validate ranges: integer speed and angle, t in tenths of a second.
+    expect(Number.isInteger(launchSpeed)).toBe(true);
+    expect(launchSpeed).toBeGreaterThanOrEqual(10);
+    expect(launchSpeed).toBeLessThanOrEqual(25);
+    expect(Number.isInteger(launchAngle)).toBe(true);
+    expect(launchAngle).toBeGreaterThanOrEqual(20);
+    expect(launchAngle).toBeLessThanOrEqual(60);
+    expect(time).toBeGreaterThanOrEqual(0.1);
+    expect(time * 10).toBeCloseTo(Math.round(time * 10), 9);
+
+    // t must be before landing, computed independently of PhysicsEngine.
+    const radians = (launchAngle * Math.PI) / 180;
+    const vx = launchSpeed * Math.cos(radians);
+    const vy = launchSpeed * Math.sin(radians);
+    expect(time).toBeLessThan((2 * vy) / g);
+
+    // Validate expected answers against the kinematics equations.
+    const finalVy = vy - g * time;
+    expect(expectedUserInput.averageHorizontalVelocity).toBeCloseTo(vx, 6);
+    expect(expectedUserInput.averageVerticalVelocity).toBeCloseTo(
+      (vy + finalVy) / 2,
+      6,
+    );
+    expect(expectedUserInput.horizontalDisplacement).toBeCloseTo(vx * time, 6);
+    expect(expectedUserInput.verticalDisplacement).toBeCloseTo(
+      vy * time - 0.5 * g * time * time,
+      6,
+    );
+    expect(expectedUserInput.verticalDisplacement).toBeGreaterThan(0);
+
+    // Validate problem statement formatting.
+    expect(problemStatement).not.toMatch(/\s{2,}/);
+    expect(problemStatement).not.toMatch(/^\s|\s$/);
+    expect(problemStatement).not.toMatch(/\s+[,.;:!?)}\]]/);
+
+    // Validate problem statement wording and structure.
+    expect(problemStatement).toMatch(
+      /^A cannon launches a stuntman at \d+ m\/s at an angle of \d+ degrees above the ground\. The initial horizontal velocity is speed times cos of the angle, and the initial vertical velocity is speed times sin of the angle\. When acceleration is constant, the average velocity over a time interval is the initial velocity plus the final velocity, divided by 2: average velocity = initial velocity \+ \(acceleration \* t\) \/ 2\. Nothing pushes the stuntman sideways, so the horizontal acceleration is 0\. Gravity \(9\.81 m\/s\^2\) pulls downward, so the vertical acceleration is -9\.81 m\/s\^2\. Displacement is the change in position: displacement = average velocity \* t\. From launch to t = \d+(\.\d)? s, what are the stuntman's average horizontal velocity, average vertical velocity, horizontal displacement \(delta x\), and vertical displacement \(delta y\)\? Round your answers to two decimal places\.$/,
+    );
+
+    expect(() => assertLevelConfig(levelDataConfig)).not.toThrow();
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("deterministic test: generates the expected problem for fixed random values", () => {
+    // speed = floor(0.5 * 16) + 10 = 18, angle = floor(0.5 * 41) + 20 = 40
+    // flight time = 2 * 18 * sin(40) / 9.81 = 2.36 s, so t is 1 to 23 tenths
+    // t = (floor(0.5 * 23) + 1) / 10 = 1.2 s
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const config = createConfig();
+
+    expect(config.problemStatementVariablesValues).toEqual({
+      launchSpeed: 18,
+      launchAngle: 40,
+      time: 1.2,
+      gravitationalAcceleration: 9.81,
+    });
+    // Hand-computed answers, rounded to two decimals.
+    expect(config.expectedUserInput.averageHorizontalVelocity).toBeCloseTo(
+      13.79,
+      2,
+    );
+    expect(config.expectedUserInput.averageVerticalVelocity).toBeCloseTo(
+      5.68,
+      2,
+    );
+    expect(config.expectedUserInput.horizontalDisplacement).toBeCloseTo(
+      16.55,
+      2,
+    );
+    expect(config.expectedUserInput.verticalDisplacement).toBeCloseTo(6.82, 2);
+    expectValidCannonTrajectoryLevel2Problem(config);
+  });
+
+  it.each([
+    // Shortest flight (about 0.70 s): t is the earliest tenth.
+    { random: 0, launchSpeed: 10, launchAngle: 20, time: 0.1 },
+    // Longest flight (about 4.41 s): t is the last tenth before landing.
+    { random: 0.9999, launchSpeed: 25, launchAngle: 60, time: 4.4 },
+  ])(
+    "generates a valid problem at the range edge: $launchSpeed m/s, $launchAngle degrees, t = $time s",
+    ({ random, launchSpeed, launchAngle, time }) => {
+      vi.spyOn(Math, "random").mockReturnValue(random);
+      const config = createConfig();
+
+      expect(config.problemStatementVariablesValues).toMatchObject({
+        launchSpeed,
+        launchAngle,
+        time,
+      });
+      expectValidCannonTrajectoryLevel2Problem(config);
+    },
+  );
+
+  it("keeps t before landing at the shortest flight", () => {
+    // 10 m/s at 20 degrees lands at 0.697 s, so the latest t must be 0.6 s.
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0.9999);
+    const config = createConfig();
+
+    expect(config.problemStatementVariablesValues.time).toBe(0.6);
+    expectValidCannonTrajectoryLevel2Problem(config);
+  });
+
+  it("randomized tests (1000): generates valid and correctly formatted problems", () => {
+    for (let i = 0; i < 1000; i++) {
+      expectValidCannonTrajectoryLevel2Problem(createConfig());
+    }
+  });
+
+  it("generates the correct level configuration metadata", () => {
+    const config = createConfig();
+
+    expect(config).toMatchObject({
+      gameId: "cannonTrajectory",
+      levelId: 2,
+      problemStatementVariables: [
+        "launchSpeed",
+        "launchAngle",
+        "time",
+        "gravitationalAcceleration",
+      ],
+      userInputVariables: [
+        "averageHorizontalVelocity",
+        "averageVerticalVelocity",
+        "horizontalDisplacement",
+        "verticalDisplacement",
+      ],
+      toleranceRule: { absolute: 0.05 },
+    });
+    expect(config.userInputVariablesUnits).toEqual({
+      averageHorizontalVelocity: "m/s",
+      averageVerticalVelocity: "m/s",
+      horizontalDisplacement: "m",
+      verticalDisplacement: "m",
+    });
+    expect(config.bounds).toEqual({
+      averageHorizontalVelocity: { min: 0 },
+      horizontalDisplacement: { min: 0 },
+      verticalDisplacement: { min: 0 },
+    });
+  });
+
+  it("accepts answers computed from rounded intermediate values, and rejects common mistakes", () => {
+    // Longest flight and latest t, where rounding errors add up the most.
+    vi.spyOn(Math, "random").mockReturnValue(0.9999);
+    const config = createConfig();
+    const validator = new DefaultAnswerValidator();
+    const submit = (values: Record<string, number>) => ({
+      gameId: config.gameId,
+      levelId: config.levelId,
+      values,
+      units: config.userInputVariablesUnits,
+    });
+    const isCorrect = (values: Record<string, number>) =>
+      validator.validateAnswer(submit(values), config).correct;
+    const round2 = (value: number) => Number(value.toFixed(2));
+    const { launchSpeed, launchAngle, time, gravitationalAcceleration } =
+      config.problemStatementVariablesValues;
+    const expected = config.expectedUserInput;
+
+    // A student rounds each average velocity, then multiplies by t.
+    const radians = (launchAngle * Math.PI) / 180;
+    const averageHorizontalVelocity = round2(launchSpeed * Math.cos(radians));
+    const averageVerticalVelocity = round2(
+      launchSpeed * Math.sin(radians) - (gravitationalAcceleration * time) / 2,
+    );
+    const studentAnswer = {
+      averageHorizontalVelocity,
+      averageVerticalVelocity,
+      horizontalDisplacement: round2(averageHorizontalVelocity * time),
+      verticalDisplacement: round2(averageVerticalVelocity * time),
+    };
+    expect(isCorrect(expected)).toBe(true);
+    expect(isCorrect(studentAnswer)).toBe(true);
+
+    // Using the initial vertical velocity instead of the average is wrong.
+    const initialVerticalVelocity = launchSpeed * Math.sin(radians);
+    expect(
+      isCorrect({
+        ...expected,
+        averageVerticalVelocity: initialVerticalVelocity,
+        verticalDisplacement: initialVerticalVelocity * time,
+      }),
+    ).toBe(false);
+
+    // Swapping sin and cos is wrong.
+    expect(
+      isCorrect({
+        ...expected,
+        averageHorizontalVelocity: initialVerticalVelocity,
+      }),
+    ).toBe(false);
+
+    // A negative delta y is out of bounds while the stuntman is in the air.
+    expect(
+      validator.validateInput(
+        submit({
+          ...expected,
+          verticalDisplacement: -expected.verticalDisplacement,
+        }),
+        config,
+      ),
+    ).toBe(false);
   });
 });

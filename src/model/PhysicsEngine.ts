@@ -311,6 +311,36 @@ export class PhysicsEngine {
     return this.multiply(speed, Math.sin(angleRadians));
   }
 
+  /** Time for a launched object to come back down to its launch height: 2 * vy / g. */
+  public static calculateFlightTime(
+    initialVerticalVelocity: number,
+    gravitationalAcceleration: number,
+  ): number {
+    this.validateNumber(
+      initialVerticalVelocity,
+      "PhysicsEngine.calculateFlightTime input variable initial vertical velocity",
+    );
+    this.validateNumber(
+      gravitationalAcceleration,
+      "PhysicsEngine.calculateFlightTime input variable gravitational acceleration",
+    );
+    if (initialVerticalVelocity < 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.initialVerticalVelocity must be >= 0. Received: ${initialVerticalVelocity}`,
+      );
+    }
+    if (gravitationalAcceleration <= 0) {
+      throw new RangeError(
+        `PhysicsEngine.calculateFlightTime.gravitationalAcceleration must be > 0. Received: ${gravitationalAcceleration}`,
+      );
+    }
+
+    return this.multiply(
+      2,
+      this.divide(initialVerticalVelocity, gravitationalAcceleration),
+    );
+  }
+
   /**
    * Returns the track's normal force on a coaster at the top of a loop,
    * taking the direction toward the center (down) as positive.
