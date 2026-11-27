@@ -1,6 +1,7 @@
 import type { LevelAddress } from "../model/LevelAddress.ts";
 import {
   buildCannonLevel1Run,
+  buildCannonLevel2Run,
   buildCannonLevel3Run,
 } from "../model/runs/cannonRun.ts";
 import {
@@ -29,6 +30,7 @@ export const runRegistry: Readonly<
   },
   cannonTrajectory: {
     1: buildCannonLevel1Run,
+    2: buildCannonLevel2Run,
     3: buildCannonLevel3Run,
   },
   circularMotion: {

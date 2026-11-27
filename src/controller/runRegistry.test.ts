@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCannonLevel1Run,
+  buildCannonLevel2Run,
   buildCannonLevel3Run,
 } from "../model/runs/cannonRun.ts";
 import {
@@ -42,10 +43,10 @@ describe("runBuilderFor", () => {
     );
   });
 
-  it("has no run for the cannon's Level 2 yet", () => {
-    expect(
-      runBuilderFor({ gameId: "cannonTrajectory", levelId: 2 }),
-    ).toBeUndefined();
+  it("finds the cannon's Level 2 run", () => {
+    expect(runBuilderFor({ gameId: "cannonTrajectory", levelId: 2 })).toBe(
+      buildCannonLevel2Run,
+    );
   });
 
   it("finds the circular motion Level 1 and Level 3 runs", () => {

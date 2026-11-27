@@ -89,6 +89,17 @@ export const previewNodes: readonly MapNode[] = [
     y: 910,
   },
   {
+    id: "mid-flight",
+    level: { gameId: "cannonTrajectory", levelId: 2 },
+    title: "Caught mid-flight",
+    subtitle: "Projectile motion · Find where you are",
+    story:
+      "Halfway through the flight, a spotlight catches you in the air. Work out your average velocity and how far across and up you have flown at that moment, so the crew knows where to aim the net.",
+    chapter: 1,
+    x: 120,
+    y: 1045,
+  },
+  {
     id: "tent-roof",
     level: { gameId: "cannonTrajectory", levelId: 3 },
     title: "Through the tent roof",
@@ -139,7 +150,8 @@ export const previewConnections = [
   ["backstage", "big-top"],
   ["big-top", "midway"],
   ["midway", "wheel"],
-  ["wheel", "tent-roof"],
+  ["wheel", "mid-flight"],
+  ["mid-flight", "tent-roof"],
   ["tent-roof", "fence"],
   ["fence", "loop-top"],
   ["loop-top", "dawn"],
