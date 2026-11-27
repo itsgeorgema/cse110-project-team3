@@ -16,7 +16,14 @@ export const PUSH_SECONDS = 2;
 export const STANDARD_GRAVITY = 9.81;
 
 /**
- * Minigame 2 runs (#140). Positions are in meters: x along the floor from
+ * How long Level 2's crate moves under the typed forces, in seconds, before
+ * it holds for REST_HOLD_SECONDS and then snaps back to rest.
+ */
+export const REST_MOVE_SECONDS = 1;
+export const REST_HOLD_SECONDS = 0.4;
+
+/**
+ * Minigame 2 runs (#140, #141). Positions are in meters: x along the floor from
  * where the crate starts, y up from the floor, both 0 at the start. The motion
  * is a closed formula, so the frames come straight from it.
  */
@@ -89,4 +96,33 @@ export function buildNetForceLevel1Run(
     x: (acceleration * t * t) / 2,
     y: 0,
   }));
+}
+
+/**
+ * Level 2: the crate should stay at rest. It moves up or down under the typed
+ * normal force and gravity, a = (F_N − F_g) / m, for REST_MOVE_SECONDS: it
+ * lifts off if F_N > F_g and sinks into the floor if F_N < F_g. It holds
+ * there for REST_HOLD_SECONDS, then the last frame puts it back at rest.
+ * Balanced forces keep it still the whole run.
+ */
+export function buildNetForceLevel2Run(
+  submission: AnswerSubmission,
+  level: LevelDataConfig,
+): SimulationState[] {
+  const gravitational = finite(
+    "gravitationalForce",
+    submission.values.gravitationalForce,
+  );
+  const normal = finite("normalForce", submission.values.normalForce);
+  const acceleration = (normal - gravitational) / crateMass(level);
+  const moving = crateRun(REST_MOVE_SECONDS, (t) => ({
+    x: 0,
+    y: (acceleration * t * t) / 2,
+  }));
+  const reset = snapshotState(
+    moving.length,
+    (REST_MOVE_SECONDS + REST_HOLD_SECONDS) * 1000,
+    [{ id: CRATE_ID, position: { x: 0, y: 0 }, angle: 0 }],
+  );
+  return [...moving, reset];
 }

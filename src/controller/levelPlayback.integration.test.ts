@@ -566,6 +566,7 @@ class RecordingCrate implements CrateView {
   forces: readonly Force[] = [];
   state: DiagramState | undefined;
   front: number | undefined;
+  readonly tops: number[] = [];
   message: CrateMessage | undefined;
   drawScene(scene: CrateScene): void {
     this.scene = scene;
@@ -574,8 +575,9 @@ class RecordingCrate implements CrateView {
     this.forces = forces;
     this.state = state;
   }
-  moveCrate(left: number): void {
+  moveCrate(left: number, top: number): void {
     this.front = left + this.scene!.crateSize;
+    this.tops.push(top);
   }
   showMessage(message: CrateMessage | undefined): void {
     this.message = message;
@@ -605,7 +607,8 @@ function playNetForceLevel(levelId: 1 | 2) {
     vi.fn(),
     { animation, buildRun, progress },
   );
-  const answer = (values: Readonly<Record<string, number>>) => {
+  /** Plays an answer to the end, with an extra refresh at `midMs` if given. */
+  const answer = (values: Readonly<Record<string, number>>, midMs?: number) => {
     controller.submitAnswer({
       gameId: "netForce",
       levelId,
@@ -614,6 +617,7 @@ function playNetForceLevel(levelId: 1 | 2) {
       ),
     });
     frames.tick(0);
+    if (midMs !== undefined) frames.tick(midMs);
     frames.tick(60_000);
   };
   return { level, crate, progress, answer };
@@ -669,5 +673,69 @@ describe("Minigame 2 Level 1 playback, end to end (#140)", () => {
 
     expect(crate.message?.text).toMatch(/^Past by \d+(\.\d)? m$/);
     expect(crate.message?.correct).toBe(false);
+  });
+});
+
+describe("Minigame 2 Level 2 playback, end to end (#141)", () => {
+  it("labels F_g and F_N with ? before an answer", () => {
+    const { crate } = playNetForceLevel(2);
+
+    expect(crate.state).toBe("beforeAnswer");
+    expect(crate.forces.map((force) => [force.label, force.size])).toEqual([
+      ["F_g", undefined],
+      ["F_N", undefined],
+    ]);
+  });
+
+  it("keeps the crate still for the right answer, rounded to two places", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(2);
+    const rounded = Object.fromEntries(
+      Object.entries(level.expectedUserInput).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    answer(rounded);
+
+    expect(crate.tops.every((top) => top === crate.tops[0])).toBe(true);
+    expect(crate.message).toEqual({
+      text: "Balanced: net force = 0 N",
+      correct: true,
+    });
+    expect(crate.forces.map((force) => [force.label, force.size])).toEqual([
+      ["F_g", rounded.gravitationalForce],
+      ["F_N", rounded.normalForce],
+    ]);
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("sinks the crate for a normal force of 0, then says F_N is too low", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(2);
+    const expected = level.expectedUserInput;
+    const restTop = crate.tops[0];
+
+    answer({ ...expected, normalForce: 0 }, 1000);
+
+    expect(Math.max(...crate.tops)).toBeGreaterThan(restTop);
+    expect(crate.tops.at(-1)).toBe(restTop);
+    expect(crate.message).toEqual({
+      text: `F_N is ${Math.round(expected.normalForce * 10) / 10} N too low`,
+      correct: false,
+    });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("says a net force of m·g is wrong for a crate at rest", () => {
+    const { level, crate, answer } = playNetForceLevel(2);
+    const expected = level.expectedUserInput;
+
+    answer({ ...expected, netForce: expected.gravitationalForce });
+
+    expect(crate.message).toEqual({
+      text: "A crate at rest has no net force",
+      correct: false,
+    });
   });
 });

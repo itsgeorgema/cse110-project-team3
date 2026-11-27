@@ -13,7 +13,10 @@ import {
   buildKinematicsLevel2Run,
   buildKinematicsLevel3Run,
 } from "../model/runs/kinematicsRun.ts";
-import { buildNetForceLevel1Run } from "../model/runs/netForceRun.ts";
+import {
+  buildNetForceLevel1Run,
+  buildNetForceLevel2Run,
+} from "../model/runs/netForceRun.ts";
 import { runBuilderFor } from "./runRegistry.ts";
 
 describe("runBuilderFor", () => {
@@ -32,9 +35,12 @@ describe("runBuilderFor", () => {
     );
   });
 
-  it("finds the net force Level 1 run", () => {
+  it("finds the net force Level 1 and Level 2 runs", () => {
     expect(runBuilderFor({ gameId: "netForce", levelId: 1 })).toBe(
       buildNetForceLevel1Run,
+    );
+    expect(runBuilderFor({ gameId: "netForce", levelId: 2 })).toBe(
+      buildNetForceLevel2Run,
     );
   });
 

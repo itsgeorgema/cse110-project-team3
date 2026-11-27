@@ -13,7 +13,10 @@ import {
   buildKinematicsLevel2Run,
   buildKinematicsLevel3Run,
 } from "../model/runs/kinematicsRun.ts";
-import { buildNetForceLevel1Run } from "../model/runs/netForceRun.ts";
+import {
+  buildNetForceLevel1Run,
+  buildNetForceLevel2Run,
+} from "../model/runs/netForceRun.ts";
 import type { RunBuilder } from "./GameController.ts";
 
 /**
@@ -31,6 +34,7 @@ export const runRegistry: Readonly<
   },
   netForce: {
     1: buildNetForceLevel1Run,
+    2: buildNetForceLevel2Run,
   },
   cannonTrajectory: {
     1: buildCannonLevel1Run,

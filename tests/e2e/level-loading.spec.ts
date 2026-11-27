@@ -165,6 +165,10 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await dialog.getByLabel("netForce (N)", { exact: true }).fill("0");
   await dialog.getByRole("button", { name: "Check answer" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
+  // The resting crate now plays its run (#141); the attempt counts when it ends.
+  await expect(
+    dialog.getByRole("button", { name: "Return to story map", exact: true }),
+  ).toBeEnabled({ timeout: 5_000 });
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
   // The cleared level is redrawn as cleared at once (#106).
