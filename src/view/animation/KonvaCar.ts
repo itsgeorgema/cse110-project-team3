@@ -95,9 +95,9 @@ export class KonvaCar implements CarView {
         }),
         new Konva.Text({
           // Centered over the bracket, wide enough never to wrap.
-          x: (scene.startX + scene.gateX) / 2 - 80,
-          y: bracketY - 20,
-          width: 160,
+          x: (scene.startX + scene.gateX) / 2 - 120,
+          y: bracketY - 20 * scene.label.split("\n").length,
+          width: 240,
           align: "center",
           text: scene.label,
           fontSize: 14,

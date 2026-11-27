@@ -5,6 +5,7 @@ import {
   buildKinematicsLevel1Run,
   buildKinematicsLevel2Run,
   buildKinematicsLevel3Run,
+  buildKinematicsLevel4Run,
 } from "../../model/runs/kinematicsRun.ts";
 import {
   CarAnimation,
@@ -238,5 +239,100 @@ describe("CarAnimation", () => {
 
     // a = 1 instead of 2 ends at 28 m, 8 m short of the 36 m gate.
     expect(car.message).toEqual({ text: "Short by 8 m", correct: false });
+  });
+
+  const level4 = {
+    gameId: "kinematics",
+    levelId: 4,
+    problemStatementVariablesValues: {
+      initialVelocity: 5,
+      acceleration: 2,
+      time: 4,
+    },
+    toleranceRule: { absolute: 0.00001 },
+  } as unknown as LevelDataConfig;
+
+  function submission4(averageVelocity: number, distance: number) {
+    return {
+      gameId: "kinematics",
+      levelId: 4,
+      values: { averageVelocity, distance },
+      units: { averageVelocity: "m/s", distance: "m" },
+    };
+  }
+
+  /** Plays Level 4 to the end with the player's two answers. */
+  function play4(
+    averageVelocity: number,
+    distance: number,
+    correct: boolean,
+  ): void {
+    const answer = submission4(averageVelocity, distance);
+    engine.showResult({ submittedAnswer: answer, correct, feedback: "" });
+    engine.play(buildKinematicsLevel4Run(answer, level4));
+    frames.tick(0);
+    frames.tick(5000);
+  }
+
+  it("puts Level 4's gate at v0*t + a*t^2/2 and labels its numbers", () => {
+    engine.showLevel(level4);
+
+    expect(car.scene?.label).toBe("5 m/s, +2 m/s² for 4 s");
+    expect(car.scene?.gateX).toBeGreaterThan(car.scene!.startX);
+  });
+
+  it("adds the player's average velocity to the label once they answer", () => {
+    engine.showLevel(level4);
+    engine.showResult({
+      submittedAnswer: submission4(7.5, 36),
+      correct: false,
+      feedback: "",
+    });
+
+    expect(car.scene?.label).toBe(
+      "5 m/s, +2 m/s² for 4 s\nYour average velocity: 7.5 m/s",
+    );
+  });
+
+  it("stops Level 4's car at the gate for the right answers and says Correct!", () => {
+    engine.showLevel(level4);
+    play4(9, 36, true);
+
+    expect(car.carX).toBeCloseTo(car.scene!.gateX!, 6);
+    expect(car.message).toEqual({ text: "Correct!", correct: true });
+  });
+
+  it("says how far short a wrong distance stops (gate = 36 m)", () => {
+    engine.showLevel(level4);
+    play4(9, 20, false);
+
+    expect(car.message).toEqual({ text: "Short by 16 m", correct: false });
+  });
+
+  it("says how far past the gate a too-big distance goes", () => {
+    engine.showLevel(level4);
+    play4(9, 40, false);
+
+    expect(car.message).toEqual({
+      text: "Past the gate by 4 m",
+      correct: false,
+    });
+  });
+
+  it("gives a wrong average velocity with the right distance its own message", () => {
+    engine.showLevel(level4);
+    play4(8, 36, false);
+
+    expect(car.message).toEqual({
+      text: "Average velocity should be (start + end) / 2",
+      correct: false,
+    });
+  });
+
+  it("shows the gate message when both answers are wrong", () => {
+    engine.showLevel(level4);
+    play4(8, 20, false);
+
+    expect(car.message?.text).toBe("Short by 16 m");
   });
 });

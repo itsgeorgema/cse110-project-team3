@@ -67,6 +67,17 @@ export const previewNodes: readonly MapNode[] = [
     y: 565,
   },
   {
+    id: "main-gate",
+    level: { gameId: "kinematics", levelId: 4 },
+    title: "Through the main gate",
+    subtitle: "Average velocity · Speed up for the gate",
+    story:
+      "The gate is just ahead and the car keeps speeding up. Use its starting speed, its acceleration and the time to find its average velocity and the distance to the gate.",
+    chapter: 0,
+    x: 420,
+    y: 620,
+  },
+  {
     id: "crate-push",
     level: { gameId: "netForce", levelId: 1 },
     title: "Push the crate",
@@ -170,7 +181,8 @@ export const previewNodes: readonly MapNode[] = [
 export const previewConnections = [
   ["dressing-room", "backstage"],
   ["backstage", "big-top"],
-  ["big-top", "crate-push"],
+  ["big-top", "main-gate"],
+  ["main-gate", "crate-push"],
   ["crate-push", "midway"],
   ["midway", "wheel"],
   ["wheel", "mid-flight"],

@@ -184,6 +184,77 @@ describe.each([
   });
 });
 
+describe("Minigame 1 Level 4 playback, end to end", () => {
+  function playLevel4() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "kinematics",
+      4,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const car = new RecordingCar();
+    const animation = new CarAnimation(
+      car,
+      { width: 600, height: 260 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const answer = (averageVelocity: number, distance: number) => {
+      controller.submitAnswer({
+        gameId: "kinematics",
+        levelId: 4,
+        fields: {
+          averageVelocity: String(averageVelocity),
+          distance: String(distance),
+        },
+      });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    return { level, car, progress, answer };
+  }
+
+  it("plays the right answers to the gate and says Correct!", () => {
+    const { level, car, progress, answer } = playLevel4();
+    const { averageVelocity, distance } = level.expectedUserInput;
+
+    answer(averageVelocity, distance);
+
+    expect(car.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("plays a too-short distance short of the gate", () => {
+    const { level, car, progress, answer } = playLevel4();
+    const { averageVelocity, distance } = level.expectedUserInput;
+
+    answer(averageVelocity, distance / 2);
+
+    expect(car.message?.text).toMatch(/^Short by \d/);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("gives a wrong average velocity with the right distance its own message", () => {
+    const { level, car, progress, answer } = playLevel4();
+    const { averageVelocity, distance } = level.expectedUserInput;
+
+    answer(averageVelocity + 1, distance);
+
+    expect(car.message?.text).toBe(
+      "Average velocity should be (start + end) / 2",
+    );
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+});
+
 /** CannonAnimation's drawing, recorded instead of drawn. */
 class RecordingCannon implements CannonView {
   message: CannonMessage | undefined;

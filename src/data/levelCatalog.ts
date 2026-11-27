@@ -25,6 +25,12 @@ export function createLevelCatalog(
       createConfig: () => factory.createLevelDataConfig("kinematics", 3),
     },
     {
+      gameId: "kinematics",
+      levelId: 4,
+      title: "Through the main gate",
+      createConfig: () => factory.createLevelDataConfig("kinematics", 4),
+    },
+    {
       gameId: "netForce",
       levelId: 1,
       title: "Push the crate",
