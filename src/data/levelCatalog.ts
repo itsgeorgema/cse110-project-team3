@@ -38,12 +38,6 @@ export function createLevelCatalog(
     },
     {
       gameId: "netForce",
-      levelId: 1,
-      title: "Push the crate",
-      createConfig: () => factory.createLevelDataConfig("netForce", 1),
-    },
-    {
-      gameId: "netForce",
       levelId: 2,
       title: "The blocked gate",
       createConfig: () => factory.createLevelDataConfig("netForce", 2),
