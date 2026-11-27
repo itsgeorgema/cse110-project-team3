@@ -1,16 +1,20 @@
 import type { LevelDataConfig } from "../../data/LevelDataConfig.ts";
 import type { AnswerValidationResult } from "../../model/AnswerValidator.ts";
+import { withinTolerance } from "../../model/DefaultAnswerValidator.ts";
 import type { SimulationState, Vec2 } from "../../model/SimulationState.ts";
 import {
   COASTER_CART_ID,
   coasterTrack,
+  forceLoop,
   minimumSpeedLoop,
   staysOnLoop,
   turnRadius,
   type CoasterTrack,
+  type ForceLoop,
   type LoopTrack,
   type MinimumSpeedLoop,
 } from "../../model/runs/circularMotionRun.ts";
+import type { CrateBox, DiagramState, Force } from "../forces/ForceData.ts";
 import type { AnimationEngine } from "./AnimationEngine.ts";
 import type { FrameScheduler } from "./FrameScheduler.ts";
 import { FramePlayback } from "./FramePlayback.ts";
@@ -48,6 +52,24 @@ export interface CoasterArrow {
   readonly label: string;
 }
 
+/**
+ * Level 2's forces on the cart at the top of the loop, for ForceRenderer
+ * (#96), in stage pixels.
+ */
+export interface CoasterForces {
+  /**
+   * The box the arrows hang from: as tall as the upside-down cart, centred on
+   * it and wider, so the two arrows are apart. Nothing draws it.
+   */
+  readonly cart: CrateBox;
+  /** The longest arrow, in pixels. */
+  readonly maxArrowLength: number;
+  /** F_gravity and F_Normal, both down toward the loop's center. */
+  readonly forces: readonly Force[];
+  /** "?" labels before an answer, the typed sizes after. */
+  readonly state: DiagramState;
+}
+
 export interface CoasterMessage {
   readonly text: string;
   readonly correct: boolean;
@@ -63,6 +85,8 @@ export interface CoasterView {
   drawTrail(points: readonly Vec2[]): void;
   /** Shows the arrow at the top of the loop; undefined hides it. */
   showArrow(arrow: CoasterArrow | undefined): void;
+  /** Shows Level 2's force arrows on the cart; undefined hides them. */
+  showForces(forces: CoasterForces | undefined): void;
   /** Shows a verdict over the scene; undefined hides it. */
   showMessage(message: CoasterMessage | undefined): void;
 }
@@ -84,6 +108,14 @@ const MARGIN = 16;
 const FLOOR = 28;
 /** The cart's length, in loop radii (about the #110 mockup's). */
 const CART_LENGTH = 0.5;
+/** The cart's height from its wheels' bottom, in cart lengths (KonvaCoasterCart). */
+const CART_HEIGHT = 0.56;
+/**
+ * Width of the box Level 2's arrows hang from, in cart lengths. ForceRenderer
+ * spaces two arrows at 1/3 and 2/3 of it, so 2.4 puts them 0.4 cart lengths
+ * either side of the middle: apart, but still under the cart's body.
+ */
+const FORCE_BOX_WIDTH = 2.4;
 /** How far below the track the arrow starts, in cart lengths. */
 const ARROW_GAP = 0.55;
 /** The arrow's length, in loop radii. */
@@ -96,6 +128,23 @@ function round(value: number, places: number): string {
 }
 
 /**
+ * Level 2's answers in the #111 mockup's order, with the symbol the verdict
+ * calls each one and what it should be when it is off.
+ */
+const LEVEL2_FIELDS = [
+  ["acceleration", "a", "a should be v² / r"],
+  ["netForce", "F_net", "F_net should equal F_N + F_g"],
+  ["normalForce", "F_N", "F_N should be F_net − F_g"],
+  ["gravitationalForce", "F_g", "F_g should be m × g"],
+] as const;
+
+/** Level 2's arrows: both hang from the cart's bottom, toward the center. */
+const LEVEL2_FORCES = [
+  ["gravitationalForce", "F_gravity", "left"],
+  ["normalForce", "F_Normal", "right"],
+] as const;
+
+/**
  * The Breakout's roller coaster for Minigame 4 (#9, #139, #145). Frames come
  * from the circular motion run builders in meters with y up.
  *
@@ -103,6 +152,12 @@ function round(value: number, places: number): string {
  * arrow points to the center with the player's acceleration. A right answer
  * finishes the loop; a wrong one leaves it on the circle that acceleration
  * turns, and the verdict says how big that circle is.
+ *
+ * Level 2: the cart waits at the top under F_gravity and F_Normal arrows
+ * labelled "?", drawn by ForceRenderer. Once the player answers, it climbs the
+ * loop as in Level 1 and the arrows come back at the top, sized and labelled
+ * with the typed forces. Its path turns the circle the typed net force gives,
+ * r = m v² / F_net. The verdict marks each answer and says what is off.
  *
  * Level 3: the cart waits at the top under an F_Normal arrow until the player
  * answers, then goes over at the typed speed. The verdict says whether it
@@ -116,6 +171,9 @@ export class CoasterAnimation implements AnimationEngine {
   private track: LoopTrack | undefined;
   /** Level 1's track, with its speed; undefined on Level 3. */
   private level1: CoasterTrack | undefined;
+  /** Level 2's loop, mass and gravity, with its config; undefined otherwise. */
+  private level2:
+    { readonly loop: ForceLoop; readonly config: LevelDataConfig } | undefined;
   /** Level 3's loop, with v_min; undefined on Level 1. */
   private level3: MinimumSpeedLoop | undefined;
   private world: WorldView;
@@ -123,6 +181,7 @@ export class CoasterAnimation implements AnimationEngine {
   private states: readonly SimulationState[] = [];
   private trail: readonly Vec2[] = [];
   private arrowShown = false;
+  private forcesShown = false;
 
   constructor(
     view: CoasterView,
@@ -141,12 +200,33 @@ export class CoasterAnimation implements AnimationEngine {
 
   /**
    * Throws a RangeError when the level has no valid radius, or no valid speed
-   * (Level 1) or gravity (Level 3).
+   * (Levels 1 and 2), mass (Level 2) or gravity (Levels 2 and 3).
    */
   showLevel(level: LevelDataConfig): void {
+    if (level.levelId === 2) {
+      const loop = forceLoop(level);
+      this.level1 = undefined;
+      this.level2 = { loop, config: level };
+      this.level3 = undefined;
+      const { track } = loop;
+      this.drawTrack(track, [
+        `${track.speed} m/s`,
+        `m = ${loop.mass} kg`,
+        `r = ${track.radius} m`,
+        `g = ${loop.gravity} m/s²`,
+      ]);
+      // Waiting at the top, upside down, under the forces to label.
+      this.cart.moveTo(
+        toScreen(this.world, track.top),
+        toRotation(this.world, Math.PI),
+      );
+      this.setForces(true, track);
+      return;
+    }
     if (level.levelId === 3) {
       const loop = minimumSpeedLoop(level);
       this.level1 = undefined;
+      this.level2 = undefined;
       this.level3 = loop;
       const { mass } = level.problemStatementVariablesValues;
       this.drawTrack(loop.track, [
@@ -164,6 +244,7 @@ export class CoasterAnimation implements AnimationEngine {
     }
     const track = coasterTrack(level);
     this.level1 = track;
+    this.level2 = undefined;
     this.level3 = undefined;
     this.drawTrack(track, [`${track.speed} m/s`, `r = ${track.radius} m`]);
     this.cart.moveTo(
@@ -242,8 +323,10 @@ export class CoasterAnimation implements AnimationEngine {
   private hideOverlays(): void {
     this.view.showMessage(undefined);
     this.view.showArrow(undefined);
+    this.view.showForces(undefined);
     this.view.drawTrail([]);
     this.arrowShown = false;
+    this.forcesShown = false;
   }
 
   private cartIn(state: SimulationState) {
@@ -264,6 +347,8 @@ export class CoasterAnimation implements AnimationEngine {
     if (this.level3 !== undefined) {
       // Under the waiting cart, gone once it moves.
       this.setArrow(state.timeMs === 0, track);
+    } else if (this.level2 !== undefined) {
+      if (state.timeMs >= track.topS * 1000) this.setForces(true, track);
     } else if (state.timeMs >= track.topS * 1000) {
       this.setArrow(true, track);
     }
@@ -273,6 +358,50 @@ export class CoasterAnimation implements AnimationEngine {
     if (shown === this.arrowShown) return;
     this.arrowShown = shown;
     this.view.showArrow(shown ? this.arrowFor(track) : undefined);
+  }
+
+  private setForces(shown: boolean, track: LoopTrack): void {
+    if (shown === this.forcesShown) return;
+    this.forcesShown = shown;
+    this.view.showForces(shown ? this.forcesFor(track) : undefined);
+  }
+
+  /**
+   * F_gravity and F_Normal from the bottom of the upside-down cart at the
+   * top. Before an answer both read "?"; after, each takes the typed size, and
+   * a typed force that is not a finite number > 0 has no arrow.
+   */
+  private forcesFor(track: LoopTrack): CoasterForces {
+    const top = toScreen(this.world, track.top);
+    const pixelsPerRadius = track.radius * this.world.scale;
+    const length = CART_LENGTH * pixelsPerRadius;
+    const typed = this.result?.submittedAnswer.values;
+    const forces: Force[] = [];
+    for (const [field, label, labelPosition] of LEVEL2_FORCES) {
+      const base = {
+        label,
+        side: "bottom",
+        pointing: "away",
+        labelPosition,
+      } as const;
+      if (typed === undefined) {
+        forces.push(base);
+        continue;
+      }
+      const size = typed[field];
+      if (Number.isFinite(size) && size > 0) forces.push({ ...base, size });
+    }
+    return {
+      cart: {
+        x: top.x - (FORCE_BOX_WIDTH * length) / 2,
+        y: top.y,
+        width: FORCE_BOX_WIDTH * length,
+        height: CART_HEIGHT * length,
+      },
+      maxArrowLength: ARROW_LENGTH * pixelsPerRadius,
+      forces,
+      state: typed === undefined ? "beforeAnswer" : "afterAnswer",
+    };
   }
 
   /** Down from just under the cart at the top, toward the loop's center. */
@@ -298,6 +427,10 @@ export class CoasterAnimation implements AnimationEngine {
     if (result === undefined) return;
     if (this.level3 !== undefined) {
       this.view.showMessage(this.minimumSpeedVerdict(this.level3, result));
+      return;
+    }
+    if (this.level2 !== undefined) {
+      this.view.showMessage(this.forcesVerdict(this.level2, result));
       return;
     }
     if (result.correct) {
@@ -331,6 +464,54 @@ export class CoasterAnimation implements AnimationEngine {
         : "Incorrect minimum velocity. Roller coaster falls off the tracks.",
       correct: false,
     };
+  }
+
+  /**
+   * Level 2: what the typed net force did and the first answer that is off,
+   * over each answer marked as in the #111 mockup. Two short lines, so the
+   * banner stays clear of the arrows' labels on a small stage, e.g.
+   * "Too little net force. F_net should equal F_N + F_g" over
+   * "a ✓ · F_net ✗ · F_N ✓ · F_g ✓". The path shows how far off it went.
+   */
+  private forcesVerdict(
+    level2: { readonly loop: ForceLoop; readonly config: LevelDataConfig },
+    result: AnswerValidationResult,
+  ): CoasterMessage {
+    if (result.correct) {
+      return { text: "Correct! The cart finishes the loop.", correct: true };
+    }
+    const values = result.submittedAnswer.values;
+    if (!LEVEL2_FIELDS.every(([field]) => Number.isFinite(values[field]))) {
+      return { text: "Not quite", correct: false };
+    }
+    const { config, loop } = level2;
+    const right = LEVEL2_FIELDS.map(([field]) =>
+      withinTolerance(
+        values[field],
+        config.expectedUserInput[field],
+        config.toleranceRule,
+      ),
+    );
+    const marks = LEVEL2_FIELDS.map(
+      ([, symbol], i) => `${symbol} ${right[i] ? "✓" : "✗"}`,
+    ).join(" · ");
+    const firstOff = right.indexOf(false);
+    // Every answer within tolerance but still refused: nothing to point at.
+    if (firstOff === -1) return { text: `Not quite\n${marks}`, correct: false };
+    const hint = LEVEL2_FIELDS[firstOff][2];
+    const path = right[1]
+      ? "The cart stays on the loop"
+      : this.netForceText(loop, values.netForce);
+    return { text: `${path}. ${hint}\n${marks}`, correct: false };
+  }
+
+  /** Whether a wrong net force is too little, too much or none at all. */
+  private netForceText(loop: ForceLoop, netForce: number): string {
+    if (!(netForce > 0)) return "No net force";
+    const { speed, radius } = loop.track;
+    return turnRadius(speed, netForce / loop.mass) > radius
+      ? "Too little net force"
+      : "Too much net force";
   }
 
   /** What the typed acceleration does at this speed, in words. */

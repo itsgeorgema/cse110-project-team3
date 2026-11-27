@@ -46,15 +46,17 @@ export class ForceRenderer {
     const arrows = layoutForces(forces, state, this.options);
 
     this.group.destroyChildren();
-    const { crate } = this.options;
-    this.group.add(
-      new Konva.Rect({
-        ...crate,
-        fill: CRATE_FILL,
-        stroke: CRATE_STROKE,
-        strokeWidth: 2,
-      }),
-    );
+    const { crate, drawCrate = true } = this.options;
+    if (drawCrate) {
+      this.group.add(
+        new Konva.Rect({
+          ...crate,
+          fill: CRATE_FILL,
+          stroke: CRATE_STROKE,
+          strokeWidth: 2,
+        }),
+      );
+    }
 
     for (const arrow of arrows) {
       this.group.add(

@@ -6,6 +6,7 @@ import {
 } from "../model/runs/cannonRun.ts";
 import {
   buildCircularMotionLevel1Run,
+  buildCircularMotionLevel2Run,
   buildCircularMotionLevel3Run,
 } from "../model/runs/circularMotionRun.ts";
 import {
@@ -62,19 +63,16 @@ describe("runBuilderFor", () => {
     );
   });
 
-  it("finds the circular motion Level 1 and Level 3 runs", () => {
+  it("finds the circular motion Level 1, 2 and 3 runs", () => {
     expect(runBuilderFor({ gameId: "circularMotion", levelId: 1 })).toBe(
       buildCircularMotionLevel1Run,
+    );
+    expect(runBuilderFor({ gameId: "circularMotion", levelId: 2 })).toBe(
+      buildCircularMotionLevel2Run,
     );
     expect(runBuilderFor({ gameId: "circularMotion", levelId: 3 })).toBe(
       buildCircularMotionLevel3Run,
     );
-  });
-
-  it("has no run for circular motion's Level 2 yet", () => {
-    expect(
-      runBuilderFor({ gameId: "circularMotion", levelId: 2 }),
-    ).toBeUndefined();
   });
 
   it("returns undefined for a level of a known game that has no run yet", () => {

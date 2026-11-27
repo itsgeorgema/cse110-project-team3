@@ -1,8 +1,10 @@
 import Konva from "konva";
 import type { Vec2 } from "../../model/SimulationState.ts";
 import type { KonvaStage } from "../KonvaStage.ts";
+import { ForceRenderer } from "../forces/ForceRenderer.ts";
 import type {
   CoasterArrow,
+  CoasterForces,
   CoasterMessage,
   CoasterScene,
   CoasterView,
@@ -10,10 +12,13 @@ import type {
 
 const STRIPE_WIDTH = 40;
 const ARROW_COLOR = "#3fbf6a";
+/** Level 2's force arrows: light, so they read on the dark tent. */
+const FORCE_COLOR = "#ffffff";
 
 /**
  * CoasterAnimation's tent, loop track, arrow and trail on the real canvas
- * (Humble Object, #139): it makes no decisions, so it has no unit test;
+ * (Humble Object, #139). Level 2's force arrows are ForceRenderer's (#96,
+ * #144), without its crate. It makes no decisions, so it has no unit test;
  * CoasterAnimation's tests use a recorder. The cart is KonvaCoasterCart.
  */
 export class KonvaCoaster implements CoasterView {
@@ -22,6 +27,7 @@ export class KonvaCoaster implements CoasterView {
   private readonly trail: Konva.Line;
   private readonly arrow: Konva.Arrow;
   private readonly arrowLabel: Konva.Text;
+  private readonly forces = new Konva.Group({ listening: false });
   private readonly message: Konva.Label;
   private readonly messageText: Konva.Text;
 
@@ -64,6 +70,7 @@ export class KonvaCoaster implements CoasterView {
       this.trail,
       this.arrow,
       this.arrowLabel,
+      this.forces,
       this.message,
     );
   }
@@ -155,6 +162,26 @@ export class KonvaCoaster implements CoasterView {
     this.layer.batchDraw();
   }
 
+  showForces(forces: CoasterForces | undefined): void {
+    if (forces === undefined) {
+      this.forces.destroyChildren();
+      this.forces.visible(false);
+    } else {
+      // The cart is KonvaCoasterCart's, so only the arrows and labels here.
+      new ForceRenderer(
+        this.forces,
+        {
+          crate: forces.cart,
+          maxArrowLength: forces.maxArrowLength,
+          drawCrate: false,
+        },
+        { color: FORCE_COLOR },
+      ).render(forces.forces, forces.state);
+      this.forces.visible(true);
+    }
+    this.layer.batchDraw();
+  }
+
   showMessage(message: CoasterMessage | undefined): void {
     if (message === undefined) {
       this.message.visible(false);
@@ -169,7 +196,8 @@ export class KonvaCoaster implements CoasterView {
         this.messageText.width(Math.max(stageWidth - 16, 0));
         this.messageText.align("center");
       } else {
-        this.messageText.align("left");
+        // A two-line verdict (Level 2) reads best centred.
+        this.messageText.align(message.text.includes("\n") ? "center" : "left");
       }
       this.message.position({
         x: Math.max((stageWidth - this.message.width()) / 2, 8),

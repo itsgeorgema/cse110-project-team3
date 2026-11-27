@@ -69,6 +69,10 @@ any labelled force. Coordinates are Konva's: origin top-left, y down.
   `maxArrowLength` that is not a finite number > 0.
 - **Several diagrams** can share one Stage: each `ForceRenderer` clears and
   draws only its own `Group` and never touches the Stage.
+- **Arrows only**: with `drawCrate: false` in the options, the crate box only
+  places the arrows and nothing is drawn for it, for a body drawn elsewhere.
+  The roller coaster's Level 2 (#144) hangs `F_gravity` and `F_Normal` from
+  the upside-down cart at the top of the loop this way (`KonvaCoaster`).
 
 ## Limits (MVP)
 
