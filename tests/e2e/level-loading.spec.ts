@@ -128,10 +128,10 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
       "escape-route-progress",
       JSON.stringify({
         schemaVersion: 1,
-        completedLevels: [1, 2, 3].map((levelId) => ({
-          gameId: "kinematics",
-          levelId,
-        })),
+        completedLevels: [
+          ...[1, 2, 3].map((levelId) => ({ gameId: "kinematics", levelId })),
+          { gameId: "netForce", levelId: 1 },
+        ],
         currentLevel: { gameId: "kinematics", levelId: 1 },
       }),
     );
@@ -150,7 +150,8 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await page
     .getByRole("button", { name: /Level 3: Outrun the ringmaster/ })
     .click();
-  await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
+  await page.getByRole("button", { name: /Level 4: Push the crate/ }).click();
+  await page.getByRole("button", { name: /Level 5: The blocked gate/ }).click();
   await page.getByRole("button", { name: "Start level", exact: true }).click();
   await expect(
     dialog.getByLabel("velocity (m/s)", { exact: true }),
@@ -219,7 +220,7 @@ test("preview saves never grant completion of real levels and locked levels cann
     page.getByRole("button", { name: "Practice levels", exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: /Level 4: The blocked gate/ })
+    .getByRole("button", { name: /Level 5: The blocked gate/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toContainText(
     "Complete the earlier levels",
@@ -275,6 +276,7 @@ test("an unlocked location without a registered config stays unavailable", async
         schemaVersion: 1,
         completedLevels: [
           ...[1, 2, 3].map((levelId) => ({ gameId: "kinematics", levelId })),
+          { gameId: "netForce", levelId: 1 },
           { gameId: "netForce", levelId: 2 },
           { gameId: "cannonTrajectory", levelId: 1 },
           { gameId: "cannonTrajectory", levelId: 2 },
@@ -287,13 +289,13 @@ test("an unlocked location without a registered config stays unavailable", async
   });
   await page.goto("./");
   await page
-    .getByRole("button", { name: /Level 10: The final swing/ })
+    .getByRole("button", { name: /Level 11: The final swing/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toHaveText(
     "This level is coming soon.",
   );
   await expect(
-    page.getByRole("button", { name: /Level 9: Over the top/ }),
+    page.getByRole("button", { name: /Level 10: Over the top/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });

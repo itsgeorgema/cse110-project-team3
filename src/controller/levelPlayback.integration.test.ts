@@ -18,6 +18,13 @@ import {
   type CoasterMessage,
   type CoasterView,
 } from "../view/animation/CoasterAnimation.ts";
+import {
+  CrateAnimation,
+  type CrateMessage,
+  type CrateScene,
+  type CrateView,
+} from "../view/animation/CrateAnimation.ts";
+import type { DiagramState, Force } from "../view/forces/ForceData.ts";
 import { ManualFrames } from "../view/animation/ManualFrames.ts";
 import { GameController } from "./GameController.ts";
 import { runBuilderFor } from "./runRegistry.ts";
@@ -550,5 +557,117 @@ describe("Minigame 4 Level 3 playback, end to end (#145)", () => {
       text: "Roller coaster stays on the tracks, but your value is too high.",
       correct: false,
     });
+  });
+});
+
+/** CrateAnimation's drawing, recorded instead of drawn. */
+class RecordingCrate implements CrateView {
+  scene: CrateScene | undefined;
+  forces: readonly Force[] = [];
+  state: DiagramState | undefined;
+  front: number | undefined;
+  message: CrateMessage | undefined;
+  drawScene(scene: CrateScene): void {
+    this.scene = scene;
+  }
+  drawForces(forces: readonly Force[], state: DiagramState): void {
+    this.forces = forces;
+    this.state = state;
+  }
+  moveCrate(left: number): void {
+    this.front = left + this.scene!.crateSize;
+  }
+  showMessage(message: CrateMessage | undefined): void {
+    this.message = message;
+  }
+}
+
+/** A net force level with the real config, validator, registry and engine. */
+function playNetForceLevel(levelId: 1 | 2) {
+  const level = new LevelDataConfigFactory().createLevelDataConfig(
+    "netForce",
+    levelId,
+  );
+  const buildRun = runBuilderFor(level);
+  if (buildRun === undefined) throw new Error("level has no run builder");
+  const frames = new ManualFrames();
+  const crate = new RecordingCrate();
+  const animation = new CrateAnimation(
+    crate,
+    { width: 600, height: 300 },
+    frames.schedule,
+  );
+  const progress = { recordAttempt: vi.fn() };
+  const controller = new GameController(
+    level,
+    vi.fn(),
+    new DefaultAnswerValidator(),
+    vi.fn(),
+    { animation, buildRun, progress },
+  );
+  const answer = (values: Readonly<Record<string, number>>) => {
+    controller.submitAnswer({
+      gameId: "netForce",
+      levelId,
+      fields: Object.fromEntries(
+        Object.entries(values).map(([field, value]) => [field, String(value)]),
+      ),
+    });
+    frames.tick(0);
+    frames.tick(60_000);
+  };
+  return { level, crate, progress, answer };
+}
+
+describe("Minigame 2 Level 1 playback, end to end (#140)", () => {
+  it("labels only the unknown push before an answer", () => {
+    const { crate } = playNetForceLevel(1);
+
+    expect(crate.state).toBe("beforeAnswer");
+    expect(crate.forces.map((force) => force.label)).toEqual(["F_push"]);
+    expect(crate.forces[0].size).toBeUndefined();
+  });
+
+  it("pushes the right force onto the line and labels the typed value", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(1);
+    const { force } = level.expectedUserInput;
+
+    answer({ force });
+
+    expect(crate.front).toBeCloseTo(crate.scene!.finishX!, 6);
+    expect(crate.message).toEqual({ text: "Correct!", correct: true });
+    expect(crate.state).toBe("afterAnswer");
+    expect(crate.forces.map((f) => [f.label, f.size])).toEqual([
+      ["F_g", level.problemStatementVariablesValues.mass * 9.81],
+      ["F_N", level.problemStatementVariablesValues.mass * 9.81],
+      ["F_push", force],
+    ]);
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("stops a push of half the force halfway to the line", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(1);
+    const { acceleration } = level.problemStatementVariablesValues;
+
+    answer({ force: level.expectedUserInput.force / 2 });
+
+    // Half the force covers half of a T² / 2 = 2a over 2 s: a m short.
+    expect(crate.message).toEqual({
+      text: `Short by ${acceleration} m`,
+      correct: false,
+    });
+    expect(crate.front).toBeLessThan(crate.scene!.finishX!);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("sends a push of mass times g, the usual mix-up, past the line", () => {
+    const { level, crate, answer } = playNetForceLevel(1);
+    const { mass } = level.problemStatementVariablesValues;
+
+    answer({ force: mass * 9.81 });
+
+    expect(crate.message?.text).toMatch(/^Past by \d+(\.\d)? m$/);
+    expect(crate.message?.correct).toBe(false);
   });
 });
