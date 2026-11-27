@@ -39,6 +39,10 @@ export const runRegistry: Readonly<
     1: buildNetForceLevel1Run,
     2: buildNetForceLevel2Run,
   },
+  netForce: {
+    1: buildNetForceLevel1Run,
+    2: buildNetForceLevel2Run,
+  },
   cannonTrajectory: {
     1: buildCannonLevel1Run,
     2: buildCannonLevel2Run,
