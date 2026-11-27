@@ -26,6 +26,12 @@ export function createLevelCatalog(
     },
     {
       gameId: "netForce",
+      levelId: 1,
+      title: "Push the crate",
+      createConfig: () => factory.createLevelDataConfig("netForce", 1),
+    },
+    {
+      gameId: "netForce",
       levelId: 2,
       title: "The blocked gate",
       createConfig: () => factory.createLevelDataConfig("netForce", 2),
@@ -38,6 +44,12 @@ export function createLevelCatalog(
     },
     {
       gameId: "cannonTrajectory",
+      levelId: 2,
+      title: "Caught mid-flight",
+      createConfig: () => factory.createLevelDataConfig("cannonTrajectory", 2),
+    },
+    {
+      gameId: "cannonTrajectory",
       levelId: 3,
       title: "Through the tent roof",
       createConfig: () => factory.createLevelDataConfig("cannonTrajectory", 3),
@@ -47,6 +59,12 @@ export function createLevelCatalog(
       levelId: 1,
       title: "The midnight loop",
       createConfig: () => factory.createLevelDataConfig("circularMotion", 1),
+    },
+    {
+      gameId: "circularMotion",
+      levelId: 2,
+      title: "Hold on at the top",
+      createConfig: () => factory.createLevelDataConfig("circularMotion", 2),
     },
     {
       gameId: "circularMotion",

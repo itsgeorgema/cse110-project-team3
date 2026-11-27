@@ -14,7 +14,15 @@ describe("overworld data integration", () => {
     ]);
     expect(graph.neighbors("big-top").map((node) => node.id)).toEqual([
       "backstage",
+      "crate-push",
+    ]);
+    expect(graph.neighbors("crate-push").map((node) => node.id)).toEqual([
+      "big-top",
       "midway",
+    ]);
+    expect(graph.neighbors("loop-forces").map((node) => node.id)).toEqual([
+      "fence",
+      "loop-top",
     ]);
   });
   it("does not treat preview saves as real achievements", () => {
@@ -37,6 +45,9 @@ describe("overworld data integration", () => {
       "locked",
       "locked",
       "locked",
+      "locked",
+      "locked",
+      "locked",
     ]);
   });
   it("keeps unimplemented locations out of navigation after completing earlier levels", () => {
@@ -46,7 +57,7 @@ describe("overworld data integration", () => {
       { isCompleted: () => true },
     );
     expect(navigation.current.id).toBe("loop-top");
-    expect(navigation.selectLevel(previewNodes[8].level)).toMatchObject({
+    expect(navigation.selectLevel(previewNodes[11].level)).toMatchObject({
       ok: false,
       reason: "unimplemented",
     });

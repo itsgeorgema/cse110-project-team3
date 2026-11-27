@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCannonLevel1Run,
+  buildCannonLevel2Run,
   buildCannonLevel3Run,
 } from "../model/runs/cannonRun.ts";
 import {
   buildCircularMotionLevel1Run,
+  buildCircularMotionLevel2Run,
   buildCircularMotionLevel3Run,
 } from "../model/runs/circularMotionRun.ts";
 import {
@@ -13,6 +15,10 @@ import {
   buildKinematicsLevel3Run,
   buildKinematicsLevel4Run,
 } from "../model/runs/kinematicsRun.ts";
+import {
+  buildNetForceLevel1Run,
+  buildNetForceLevel2Run,
+} from "../model/runs/netForceRun.ts";
 import { runBuilderFor } from "./runRegistry.ts";
 
 describe("runBuilderFor", () => {
@@ -31,6 +37,15 @@ describe("runBuilderFor", () => {
     );
   });
 
+  it("finds the net force Level 1 and Level 2 runs", () => {
+    expect(runBuilderFor({ gameId: "netForce", levelId: 1 })).toBe(
+      buildNetForceLevel1Run,
+    );
+    expect(runBuilderFor({ gameId: "netForce", levelId: 2 })).toBe(
+      buildNetForceLevel2Run,
+    );
+  });
+
   it("finds the cannon's Level 1 run", () => {
     expect(runBuilderFor({ gameId: "cannonTrajectory", levelId: 1 })).toBe(
       buildCannonLevel1Run,
@@ -43,26 +58,24 @@ describe("runBuilderFor", () => {
     );
   });
 
-  it("has no run for the cannon's Level 2 yet", () => {
-    expect(
-      runBuilderFor({ gameId: "cannonTrajectory", levelId: 2 }),
-    ).toBeUndefined();
+  it("finds the cannon's Level 2 run", () => {
+    expect(runBuilderFor({ gameId: "cannonTrajectory", levelId: 2 })).toBe(
+      buildCannonLevel2Run,
+    );
   });
 
-  it("finds the circular motion Level 1 and Level 3 runs", () => {
+  it("finds the circular motion Level 1, 2 and 3 runs", () => {
     expect(runBuilderFor({ gameId: "circularMotion", levelId: 1 })).toBe(
       buildCircularMotionLevel1Run,
+    );
+    expect(runBuilderFor({ gameId: "circularMotion", levelId: 2 })).toBe(
+      buildCircularMotionLevel2Run,
     );
     expect(runBuilderFor({ gameId: "circularMotion", levelId: 3 })).toBe(
       buildCircularMotionLevel3Run,
     );
   });
 
-  it("has no run for circular motion's Level 2 yet", () => {
-    expect(
-      runBuilderFor({ gameId: "circularMotion", levelId: 2 }),
-    ).toBeUndefined();
-  });
   it("finds the getaway car's Level 4 run", () => {
     expect(runBuilderFor({ gameId: "kinematics", levelId: 4 })).toBe(
       buildKinematicsLevel4Run,

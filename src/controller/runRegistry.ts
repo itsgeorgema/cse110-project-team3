@@ -1,10 +1,12 @@
 import type { LevelAddress } from "../model/LevelAddress.ts";
 import {
   buildCannonLevel1Run,
+  buildCannonLevel2Run,
   buildCannonLevel3Run,
 } from "../model/runs/cannonRun.ts";
 import {
   buildCircularMotionLevel1Run,
+  buildCircularMotionLevel2Run,
   buildCircularMotionLevel3Run,
 } from "../model/runs/circularMotionRun.ts";
 import {
@@ -13,6 +15,10 @@ import {
   buildKinematicsLevel3Run,
   buildKinematicsLevel4Run,
 } from "../model/runs/kinematicsRun.ts";
+import {
+  buildNetForceLevel1Run,
+  buildNetForceLevel2Run,
+} from "../model/runs/netForceRun.ts";
 import type { RunBuilder } from "./GameController.ts";
 
 /**
@@ -29,12 +35,18 @@ export const runRegistry: Readonly<
     3: buildKinematicsLevel3Run,
     4: buildKinematicsLevel4Run,
   },
+  netForce: {
+    1: buildNetForceLevel1Run,
+    2: buildNetForceLevel2Run,
+  },
   cannonTrajectory: {
     1: buildCannonLevel1Run,
+    2: buildCannonLevel2Run,
     3: buildCannonLevel3Run,
   },
   circularMotion: {
     1: buildCircularMotionLevel1Run,
+    2: buildCircularMotionLevel2Run,
     3: buildCircularMotionLevel3Run,
   },
 };

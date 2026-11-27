@@ -67,15 +67,26 @@ export const previewNodes: readonly MapNode[] = [
     y: 565,
   },
   {
+    id: "crate-push",
+    level: { gameId: "netForce", levelId: 1 },
+    title: "Push the crate",
+    subtitle: "Newton’s second law · Shove it to the gate",
+    story:
+      "A heavy circus crate blocks the path to the exit gate. Use its mass and the acceleration you need to work out how hard to push, so the crate slides right up to the gate.",
+    chapter: 1,
+    x: 480,
+    y: 680,
+  },
+  {
     id: "midway",
     level: { gameId: "netForce", levelId: 2 },
     title: "The blocked gate",
     subtitle: "Balanced forces · Investigate the crate",
     story:
-      "A heavy circus crate rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
+      "The crate now rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
     chapter: 1,
-    x: 420,
-    y: 790,
+    x: 440,
+    y: 890,
   },
   {
     id: "wheel",
@@ -87,6 +98,17 @@ export const previewNodes: readonly MapNode[] = [
     chapter: 1,
     x: 245,
     y: 910,
+  },
+  {
+    id: "mid-flight",
+    level: { gameId: "cannonTrajectory", levelId: 2 },
+    title: "Caught mid-flight",
+    subtitle: "Projectile motion · Find where you are",
+    story:
+      "Halfway through the flight, a spotlight catches you in the air. Work out your average velocity and how far across and up you have flown at that moment, so the crew knows where to aim the net.",
+    chapter: 1,
+    x: 120,
+    y: 1045,
   },
   {
     id: "tent-roof",
@@ -107,8 +129,19 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "An abandoned roller coaster winds toward the edge of the carnival. Work out the cart’s acceleration at the top of the loop, so it stays on the track and carries your escape around.",
     chapter: 2,
-    x: 410,
-    y: 1400,
+    x: 420,
+    y: 1340,
+  },
+  {
+    id: "loop-forces",
+    level: { gameId: "circularMotion", levelId: 2 },
+    title: "Hold on at the top",
+    subtitle: "Circular motion · Label the forces",
+    story:
+      "Upside down at the top of the loop, the cart is held in its circle by gravity and the track. Work out the acceleration, the net force, and the normal and gravitational forces on the cart, so it holds on all the way round.",
+    chapter: 2,
+    x: 210,
+    y: 1470,
   },
   {
     id: "loop-top",
@@ -118,8 +151,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
     chapter: 2,
-    x: 250,
-    y: 1510,
+    x: 390,
+    y: 1480,
   },
   {
     id: "dawn",
@@ -137,10 +170,13 @@ export const previewNodes: readonly MapNode[] = [
 export const previewConnections = [
   ["dressing-room", "backstage"],
   ["backstage", "big-top"],
-  ["big-top", "midway"],
+  ["big-top", "crate-push"],
+  ["crate-push", "midway"],
   ["midway", "wheel"],
-  ["wheel", "tent-roof"],
+  ["wheel", "mid-flight"],
+  ["mid-flight", "tent-roof"],
   ["tent-roof", "fence"],
-  ["fence", "loop-top"],
+  ["fence", "loop-forces"],
+  ["loop-forces", "loop-top"],
   ["loop-top", "dawn"],
 ] as const;

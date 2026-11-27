@@ -12,6 +12,12 @@ const CRATE_STROKE = "#5a3523";
 const ARROW_COLOR = "#162c34";
 const LABEL_FONT_SIZE = 14;
 
+/** How the diagram looks. Every field is optional and has a default. */
+export interface DiagramStyle {
+  /** Arrow and label color, e.g. a light color on a dark stage. */
+  readonly color?: string;
+}
+
 /**
  * Draws a free body diagram into a Konva Group it is given (#96).
  *
@@ -22,10 +28,16 @@ const LABEL_FONT_SIZE = 14;
 export class ForceRenderer {
   private readonly group: Konva.Group;
   private readonly options: DiagramOptions;
+  private readonly color: string;
 
-  constructor(group: Konva.Group, options: DiagramOptions) {
+  constructor(
+    group: Konva.Group,
+    options: DiagramOptions,
+    style: DiagramStyle = {},
+  ) {
     this.group = group;
     this.options = options;
+    this.color = style.color ?? ARROW_COLOR;
   }
 
   /** Lays out first, so invalid input throws and leaves the previous drawing intact.
@@ -34,22 +46,24 @@ export class ForceRenderer {
     const arrows = layoutForces(forces, state, this.options);
 
     this.group.destroyChildren();
-    const { crate } = this.options;
-    this.group.add(
-      new Konva.Rect({
-        ...crate,
-        fill: CRATE_FILL,
-        stroke: CRATE_STROKE,
-        strokeWidth: 2,
-      }),
-    );
+    const { crate, drawCrate = true } = this.options;
+    if (drawCrate) {
+      this.group.add(
+        new Konva.Rect({
+          ...crate,
+          fill: CRATE_FILL,
+          stroke: CRATE_STROKE,
+          strokeWidth: 2,
+        }),
+      );
+    }
 
     for (const arrow of arrows) {
       this.group.add(
         new Konva.Arrow({
           points: [arrow.tail.x, arrow.tail.y, arrow.tip.x, arrow.tip.y],
-          stroke: ARROW_COLOR,
-          fill: ARROW_COLOR,
+          stroke: this.color,
+          fill: this.color,
           strokeWidth: 3,
           pointerLength: 10,
           pointerWidth: 10,
@@ -61,7 +75,7 @@ export class ForceRenderer {
         y: arrow.labelAnchor.y,
         text: arrow.labelText,
         fontSize: LABEL_FONT_SIZE,
-        fill: ARROW_COLOR,
+        fill: this.color,
       });
       alignLabel(label, arrow);
       this.group.add(label);

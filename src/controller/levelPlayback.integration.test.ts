@@ -9,14 +9,23 @@ import {
 import {
   CannonAnimation,
   type CannonMessage,
+  type CannonScene,
   type CannonView,
 } from "../view/animation/CannonAnimation.ts";
 import {
   CoasterAnimation,
   type CoasterArrow,
+  type CoasterForces,
   type CoasterMessage,
   type CoasterView,
 } from "../view/animation/CoasterAnimation.ts";
+import {
+  CrateAnimation,
+  type CrateMessage,
+  type CrateScene,
+  type CrateView,
+} from "../view/animation/CrateAnimation.ts";
+import type { DiagramState, Force } from "../view/forces/ForceData.ts";
 import { ManualFrames } from "../view/animation/ManualFrames.ts";
 import { GameController } from "./GameController.ts";
 import { runBuilderFor } from "./runRegistry.ts";
@@ -249,7 +258,10 @@ describe("Minigame 1 Level 4 playback, end to end", () => {
 /** CannonAnimation's drawing, recorded instead of drawn. */
 class RecordingCannon implements CannonView {
   message: CannonMessage | undefined;
-  drawScene(): void {}
+  pause: CannonScene["pause"];
+  drawScene(scene: CannonScene): void {
+    this.pause = scene.pause;
+  }
   drawTrail(): void {}
   showMessage(message: CannonMessage | undefined): void {
     this.message = message;
@@ -257,7 +269,7 @@ class RecordingCannon implements CannonView {
 }
 
 /** A cannon level with the real config, validator, registry and engine. */
-function playCannonLevel(levelId: 1 | 3) {
+function playCannonLevel(levelId: 1 | 2 | 3) {
   const level = new LevelDataConfigFactory().createLevelDataConfig(
     "cannonTrajectory",
     levelId,
@@ -338,6 +350,66 @@ describe("Minigame 3 Level 1 playback, end to end (#138)", () => {
   });
 });
 
+describe("Minigame 3 Level 2 playback, end to end (#142)", () => {
+  const playLevel = () => playCannonLevel(2);
+  const rounded = (values: Readonly<Record<string, number>>) =>
+    Object.fromEntries(
+      Object.entries(values).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+  it("pauses the right answer, rounded to two places, at t with the marker on the ball", () => {
+    const { level, cannon, progress, answer } = playLevel();
+
+    answer(rounded(level.expectedUserInput));
+
+    expect(cannon.pause?.timeLabel).toBe(
+      `At t = ${level.problemStatementVariablesValues.time} s`,
+    );
+    expect(cannon.pause?.horizontal.label).toBe("Δx");
+    expect(cannon.pause?.vertical.label).toBe("Δy");
+    expect(cannon.pause?.guess?.x).toBeCloseTo(cannon.pause!.ball.x, 6);
+    expect(cannon.pause?.guess?.y).toBeCloseTo(cannon.pause!.ball.y, 6);
+    expect(cannon.message).toEqual({ text: "Correct!", correct: true });
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("shows the gap and says how far a wrong Δx is", () => {
+    const { level, cannon, progress, answer } = playLevel();
+    const expected = rounded(level.expectedUserInput);
+
+    answer({
+      ...expected,
+      horizontalDisplacement: expected.horizontalDisplacement + 2.3,
+    });
+
+    expect(cannon.pause?.guess?.x).toBeGreaterThan(cannon.pause!.ball.x);
+    expect(cannon.message).toEqual({
+      text: "Δx is 2.3 m too far",
+      correct: false,
+    });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("says a wrong average vertical velocity, the usual sign slip", () => {
+    const { level, cannon, answer } = playLevel();
+    const expected = rounded(level.expectedUserInput);
+    const v = level.problemStatementVariablesValues;
+    // Adding g t / 2 instead of subtracting it.
+    const slip =
+      expected.averageVerticalVelocity + v.gravitationalAcceleration * v.time;
+
+    answer({ ...expected, averageVerticalVelocity: slip });
+
+    expect(cannon.message?.text).toMatch(
+      /^Average vertical velocity is \d+(\.\d+)? m\/s too high$/,
+    );
+  });
+});
+
 describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
   const playLevel = () => playCannonLevel(3);
 
@@ -353,7 +425,15 @@ describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
   });
 
   it("says a too-slow speed passed below the net", () => {
+    // A net 30 m away and 6 m up. On a random level, 1 m/s slow can land
+    // short instead (a 3 m net 27 m or more away), so the level is fixed.
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     const { level, cannon, progress, answer } = playLevel();
+    vi.restoreAllMocks();
+    expect(level.problemStatementVariablesValues).toMatchObject({
+      horizontalDistance: 30,
+      targetHeight: 6,
+    });
 
     answer({ launchSpeed: level.expectedUserInput.launchSpeed - 1 });
 
@@ -387,11 +467,15 @@ describe("Minigame 3 Level 3 playback, end to end (#143)", () => {
 /** CoasterAnimation's drawing, recorded instead of drawn. */
 class RecordingCoaster implements CoasterView {
   arrow: CoasterArrow | undefined;
+  forces: CoasterForces | undefined;
   message: CoasterMessage | undefined;
   drawScene(): void {}
   drawTrail(): void {}
   showArrow(arrow: CoasterArrow | undefined): void {
     this.arrow = arrow;
+  }
+  showForces(forces: CoasterForces | undefined): void {
+    this.forces = forces;
   }
   showMessage(message: CoasterMessage | undefined): void {
     this.message = message;
@@ -476,6 +560,109 @@ describe("Minigame 4 Level 1 playback, end to end (#139)", () => {
   });
 });
 
+describe("Minigame 4 Level 2 playback, end to end (#144)", () => {
+  function playLevel() {
+    const level = new LevelDataConfigFactory().createLevelDataConfig(
+      "circularMotion",
+      2,
+    );
+    const buildRun = runBuilderFor(level);
+    if (buildRun === undefined) throw new Error("level has no run builder");
+    const frames = new ManualFrames();
+    const coaster = new RecordingCoaster();
+    const cart = { setLength: vi.fn(), moveTo: vi.fn() };
+    const animation = new CoasterAnimation(
+      coaster,
+      cart,
+      { width: 600, height: 300 },
+      frames.schedule,
+    );
+    const progress = { recordAttempt: vi.fn() };
+    const controller = new GameController(
+      level,
+      vi.fn(),
+      new DefaultAnswerValidator(),
+      vi.fn(),
+      { animation, buildRun, progress },
+    );
+    const expected = level.expectedUserInput;
+    /** Submits the right answers, rounded to two places, with `changes`. */
+    const answer = (changes: Record<string, number> = {}) => {
+      const fields: Record<string, string> = {};
+      for (const field of level.userInputVariables) {
+        fields[field] = String(changes[field] ?? expected[field].toFixed(2));
+      }
+      controller.submitAnswer({ gameId: "circularMotion", levelId: 2, fields });
+      frames.tick(0);
+      frames.tick(60_000);
+    };
+    return { level, coaster, cart, progress, answer, expected };
+  }
+
+  it("shows F_gravity and F_Normal as ? at the top before an answer", () => {
+    const { coaster } = playLevel();
+    expect(coaster.forces?.state).toBe("beforeAnswer");
+    expect(coaster.forces?.forces.map((f) => f.label)).toEqual([
+      "F_gravity",
+      "F_Normal",
+    ]);
+  });
+
+  it("finishes the loop for the right answers, rounded to two places", () => {
+    const { coaster, cart, progress, answer, expected } = playLevel();
+
+    answer();
+
+    expect(coaster.message).toEqual({
+      text: "Correct! The cart finishes the loop.",
+      correct: true,
+    });
+    // The arrows show the typed forces; only the path plays the exact ones (#114).
+    expect(coaster.forces?.state).toBe("afterAnswer");
+    expect(coaster.forces?.forces.map((f) => f.size)).toEqual([
+      Number(expected.gravitationalForce.toFixed(2)),
+      Number(expected.normalForce.toFixed(2)),
+    ]);
+    const [position, rotation] = cart.moveTo.mock.calls.at(-1)!;
+    expect(position.x).toBeGreaterThan(300);
+    expect(rotation).toBeGreaterThan(0);
+    expect(rotation).toBeLessThan(90);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("sends half the net force wide off the loop and names it", () => {
+    const { coaster, cart, progress, answer, expected } = playLevel();
+
+    answer({ netForce: expected.netForce / 2 });
+
+    expect(coaster.message).toEqual({
+      text:
+        "Too little net force. F_net should equal F_N + F_g\n" +
+        "a ✓ · F_net ✗ · F_N ✓ · F_g ✓",
+      correct: false,
+    });
+    // Off the loop to the left, not down the right ramp.
+    expect(cart.moveTo.mock.calls.at(-1)![0].x).toBeLessThan(300);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("keeps the cart on for a wrong normal force, but marks it", () => {
+    const { coaster, cart, answer, expected } = playLevel();
+
+    answer({ normalForce: expected.normalForce + 100 });
+
+    expect(coaster.message?.text).toBe(
+      "The cart stays on the loop. F_N should be F_net − F_g\n" +
+        "a ✓ · F_net ✓ · F_N ✗ · F_g ✓",
+    );
+    expect(coaster.forces?.forces[1].size).toBeCloseTo(
+      expected.normalForce + 100,
+      1,
+    );
+    expect(cart.moveTo.mock.calls.at(-1)![0].x).toBeGreaterThan(300);
+  });
+});
+
 describe("Minigame 4 Level 3 playback, end to end (#145)", () => {
   function playLevel() {
     const level = new LevelDataConfigFactory().createLevelDataConfig(
@@ -555,6 +742,186 @@ describe("Minigame 4 Level 3 playback, end to end (#145)", () => {
 
     expect(coaster.message).toEqual({
       text: "Roller coaster stays on the tracks, but your value is too high.",
+      correct: false,
+    });
+  });
+});
+
+/** CrateAnimation's drawing, recorded instead of drawn. */
+class RecordingCrate implements CrateView {
+  scene: CrateScene | undefined;
+  forces: readonly Force[] = [];
+  state: DiagramState | undefined;
+  front: number | undefined;
+  readonly tops: number[] = [];
+  message: CrateMessage | undefined;
+  drawScene(scene: CrateScene): void {
+    this.scene = scene;
+  }
+  drawForces(forces: readonly Force[], state: DiagramState): void {
+    this.forces = forces;
+    this.state = state;
+  }
+  moveCrate(left: number, top: number): void {
+    this.front = left + this.scene!.crateSize;
+    this.tops.push(top);
+  }
+  showMessage(message: CrateMessage | undefined): void {
+    this.message = message;
+  }
+}
+
+/** A net force level with the real config, validator, registry and engine. */
+function playNetForceLevel(levelId: 1 | 2) {
+  const level = new LevelDataConfigFactory().createLevelDataConfig(
+    "netForce",
+    levelId,
+  );
+  const buildRun = runBuilderFor(level);
+  if (buildRun === undefined) throw new Error("level has no run builder");
+  const frames = new ManualFrames();
+  const crate = new RecordingCrate();
+  const animation = new CrateAnimation(
+    crate,
+    { width: 600, height: 300 },
+    frames.schedule,
+  );
+  const progress = { recordAttempt: vi.fn() };
+  const controller = new GameController(
+    level,
+    vi.fn(),
+    new DefaultAnswerValidator(),
+    vi.fn(),
+    { animation, buildRun, progress },
+  );
+  /** Plays an answer to the end, with an extra refresh at `midMs` if given. */
+  const answer = (values: Readonly<Record<string, number>>, midMs?: number) => {
+    controller.submitAnswer({
+      gameId: "netForce",
+      levelId,
+      fields: Object.fromEntries(
+        Object.entries(values).map(([field, value]) => [field, String(value)]),
+      ),
+    });
+    frames.tick(0);
+    if (midMs !== undefined) frames.tick(midMs);
+    frames.tick(60_000);
+  };
+  return { level, crate, progress, answer };
+}
+
+describe("Minigame 2 Level 1 playback, end to end (#140)", () => {
+  it("labels only the unknown push before an answer", () => {
+    const { crate } = playNetForceLevel(1);
+
+    expect(crate.state).toBe("beforeAnswer");
+    expect(crate.forces.map((force) => force.label)).toEqual(["F_push"]);
+    expect(crate.forces[0].size).toBeUndefined();
+  });
+
+  it("pushes the right force onto the line and labels the typed value", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(1);
+    const { force } = level.expectedUserInput;
+
+    answer({ force });
+
+    expect(crate.front).toBeCloseTo(crate.scene!.finishX!, 6);
+    expect(crate.message).toEqual({ text: "Correct!", correct: true });
+    expect(crate.state).toBe("afterAnswer");
+    expect(crate.forces.map((f) => [f.label, f.size])).toEqual([
+      ["F_g", level.problemStatementVariablesValues.mass * 9.81],
+      ["F_N", level.problemStatementVariablesValues.mass * 9.81],
+      ["F_push", force],
+    ]);
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("stops a push of half the force halfway to the line", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(1);
+    const { acceleration } = level.problemStatementVariablesValues;
+
+    answer({ force: level.expectedUserInput.force / 2 });
+
+    // Half the force covers half of a T² / 2 = 2a over 2 s: a m short.
+    expect(crate.message).toEqual({
+      text: `Short by ${acceleration} m`,
+      correct: false,
+    });
+    expect(crate.front).toBeLessThan(crate.scene!.finishX!);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("sends a push of mass times g, the usual mix-up, past the line", () => {
+    const { level, crate, answer } = playNetForceLevel(1);
+    const { mass } = level.problemStatementVariablesValues;
+
+    answer({ force: mass * 9.81 });
+
+    expect(crate.message?.text).toMatch(/^Past by \d+(\.\d)? m$/);
+    expect(crate.message?.correct).toBe(false);
+  });
+});
+
+describe("Minigame 2 Level 2 playback, end to end (#141)", () => {
+  it("labels F_g and F_N with ? before an answer", () => {
+    const { crate } = playNetForceLevel(2);
+
+    expect(crate.state).toBe("beforeAnswer");
+    expect(crate.forces.map((force) => [force.label, force.size])).toEqual([
+      ["F_g", undefined],
+      ["F_N", undefined],
+    ]);
+  });
+
+  it("keeps the crate still for the right answer, rounded to two places", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(2);
+    const rounded = Object.fromEntries(
+      Object.entries(level.expectedUserInput).map(([field, value]) => [
+        field,
+        Number(value.toFixed(2)),
+      ]),
+    );
+
+    answer(rounded);
+
+    expect(crate.tops.every((top) => top === crate.tops[0])).toBe(true);
+    expect(crate.message).toEqual({
+      text: "Balanced: net force = 0 N",
+      correct: true,
+    });
+    expect(crate.forces.map((force) => [force.label, force.size])).toEqual([
+      ["F_g", rounded.gravitationalForce],
+      ["F_N", rounded.normalForce],
+    ]);
+    expect(progress.recordAttempt).toHaveBeenCalledTimes(1);
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(true);
+  });
+
+  it("sinks the crate for a normal force of 0, then says F_N is too low", () => {
+    const { level, crate, progress, answer } = playNetForceLevel(2);
+    const expected = level.expectedUserInput;
+    const restTop = crate.tops[0];
+
+    answer({ ...expected, normalForce: 0 }, 1000);
+
+    expect(Math.max(...crate.tops)).toBeGreaterThan(restTop);
+    expect(crate.tops.at(-1)).toBe(restTop);
+    expect(crate.message).toEqual({
+      text: `F_N is ${Math.round(expected.normalForce * 10) / 10} N too low`,
+      correct: false,
+    });
+    expect(progress.recordAttempt.mock.calls[0][0].correct).toBe(false);
+  });
+
+  it("says a net force of m·g is wrong for a crate at rest", () => {
+    const { level, crate, answer } = playNetForceLevel(2);
+    const expected = level.expectedUserInput;
+
+    answer({ ...expected, netForce: expected.gravitationalForce });
+
+    expect(crate.message).toEqual({
+      text: "A crate at rest has no net force",
       correct: false,
     });
   });

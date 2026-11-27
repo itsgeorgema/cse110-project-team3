@@ -128,10 +128,10 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
       "escape-route-progress",
       JSON.stringify({
         schemaVersion: 1,
-        completedLevels: [1, 2, 3].map((levelId) => ({
-          gameId: "kinematics",
-          levelId,
-        })),
+        completedLevels: [
+          ...[1, 2, 3].map((levelId) => ({ gameId: "kinematics", levelId })),
+          { gameId: "netForce", levelId: 1 },
+        ],
         currentLevel: { gameId: "kinematics", levelId: 1 },
       }),
     );
@@ -150,7 +150,8 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await page
     .getByRole("button", { name: /Level 3: Outrun the ringmaster/ })
     .click();
-  await page.getByRole("button", { name: /Level 4: The blocked gate/ }).click();
+  await page.getByRole("button", { name: /Level 4: Push the crate/ }).click();
+  await page.getByRole("button", { name: /Level 5: The blocked gate/ }).click();
   await page.getByRole("button", { name: "Start level", exact: true }).click();
   await expect(
     dialog.getByLabel("velocity (m/s)", { exact: true }),
@@ -164,6 +165,10 @@ test("switching map levels replaces fields and feedback; Escape clears the sessi
   await dialog.getByLabel("netForce (N)", { exact: true }).fill("0");
   await dialog.getByRole("button", { name: "Check answer" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Correct!");
+  // The resting crate now plays its run (#141); the attempt counts when it ends.
+  await expect(
+    dialog.getByRole("button", { name: "Return to story map", exact: true }),
+  ).toBeEnabled({ timeout: 5_000 });
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
   // The cleared level is redrawn as cleared at once (#106).
@@ -219,7 +224,7 @@ test("preview saves never grant completion of real levels and locked levels cann
     page.getByRole("button", { name: "Practice levels", exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: /Level 4: The blocked gate/ })
+    .getByRole("button", { name: /Level 5: The blocked gate/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toContainText(
     "Complete the earlier levels",
@@ -275,10 +280,13 @@ test("an unlocked location without a registered config stays unavailable", async
         schemaVersion: 1,
         completedLevels: [
           ...[1, 2, 3].map((levelId) => ({ gameId: "kinematics", levelId })),
+          { gameId: "netForce", levelId: 1 },
           { gameId: "netForce", levelId: 2 },
           { gameId: "cannonTrajectory", levelId: 1 },
+          { gameId: "cannonTrajectory", levelId: 2 },
           { gameId: "cannonTrajectory", levelId: 3 },
           { gameId: "circularMotion", levelId: 1 },
+          { gameId: "circularMotion", levelId: 2 },
           { gameId: "circularMotion", levelId: 3 },
         ],
       }),
@@ -286,13 +294,13 @@ test("an unlocked location without a registered config stays unavailable", async
   });
   await page.goto("./");
   await page
-    .getByRole("button", { name: /Level 9: The final swing/ })
+    .getByRole("button", { name: /Level 12: The final swing/ })
     .dispatchEvent("click");
   await expect(page.locator(".navigation-status")).toHaveText(
     "This level is coming soon.",
   );
   await expect(
-    page.getByRole("button", { name: /Level 8: Over the top/ }),
+    page.getByRole("button", { name: /Level 11: Over the top/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });

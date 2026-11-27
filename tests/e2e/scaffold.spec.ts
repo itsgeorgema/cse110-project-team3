@@ -21,7 +21,7 @@ async function expectMap(
     page.getByRole("region", { name: "Scrollable story map" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /^Level \d+:/ })).toHaveCount(
-    9,
+    12,
   );
   await expect(
     page.getByRole("button", { name: new RegExp(`Level ${expectedCurrent}:`) }),
@@ -38,7 +38,7 @@ async function expectMap(
     "value",
     String(expectedCleared),
   );
-  await expect(page.getByRole("progressbar")).toHaveAttribute("max", "9");
+  await expect(page.getByRole("progressbar")).toHaveAttribute("max", "12");
 }
 
 for (const viewport of [
@@ -65,7 +65,7 @@ for (const viewport of [
     }) => {
       await page.goto("./");
       const locked = page.getByRole("button", {
-        name: /Level 4: The blocked gate/,
+        name: /Level 5: The blocked gate/,
       });
       // aria-disabled communicates refusal while allowing an explanatory message.
       await locked.dispatchEvent("click");

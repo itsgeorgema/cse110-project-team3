@@ -113,7 +113,7 @@ test("a locked saved position falls back to an available level", async ({
     page.getByRole("button", { name: /Level 1: The getaway car/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("button", { name: /Level 4: The blocked gate/ }),
+    page.getByRole("button", { name: /Level 5: The blocked gate/ }),
   ).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("button", { name: "Start level", exact: true }).click();
   await expect(

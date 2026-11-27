@@ -141,10 +141,13 @@ describe("production level catalog", () => {
       { gameId: "kinematics", levelId: 1 },
       { gameId: "kinematics", levelId: 2 },
       { gameId: "kinematics", levelId: 3 },
+      { gameId: "netForce", levelId: 1 },
       { gameId: "netForce", levelId: 2 },
       { gameId: "cannonTrajectory", levelId: 1 },
+      { gameId: "cannonTrajectory", levelId: 2 },
       { gameId: "cannonTrajectory", levelId: 3 },
       { gameId: "circularMotion", levelId: 1 },
+      { gameId: "circularMotion", levelId: 2 },
       { gameId: "circularMotion", levelId: 3 },
     ]);
     for (const level of manager.listLevels()) {
