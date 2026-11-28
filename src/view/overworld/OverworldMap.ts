@@ -83,7 +83,8 @@ export class OverworldMap {
     const cleared = nodes.filter((node) => node.state === "cleared").length;
     const selected = current;
     this.container.innerHTML = `
-      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="topbar-actions"><span class="preview-badge">Story map</span><span class="quit-hint" id="quit-hint">Leaving? Use Quit instead of closing the tab.</span><button class="quit-game" type="button" aria-describedby="quit-hint">Quit</button></span></header>
+      <p class="quit-banner" id="quit-hint">Leaving the game? Use the <strong>Quit</strong> button instead of closing the tab, so you can save your progress.</p>
+      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="topbar-actions"><span class="preview-badge">Story map</span><button class="quit-game" type="button" aria-describedby="quit-hint">Quit</button></span></header>
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
