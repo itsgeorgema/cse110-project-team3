@@ -111,7 +111,7 @@ button:not(:disabled):active {
   grid-template-columns: 300px minmax(360px, 1fr) 290px;
   max-width: 1600px;
   margin: auto;
-  min-height: calc(100dvh - 84px);
+  min-height: calc(100dvh - 84px - var(--quit-banner-height));
 }
 
 .story-sidebar {
@@ -229,18 +229,40 @@ progress::-moz-progress-bar {
   gap: 10px;
 }
 
+:root {
+  --quit-banner-height: 34px;
+}
+
+.quit-banner {
+  box-sizing: border-box;
+  min-height: var(--quit-banner-height);
+  margin: 0;
+  padding: 8px 18px;
+  border-bottom: 1px solid #dbb37c;
+  background: #2a2a22;
+  color: #edc998;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.quit-banner strong {
+  color: #f4dcb6;
+}
+
 .quit-game {
-  border: 1px solid #35494d;
+  border: 1px solid #dbb37c;
   border-radius: 20px;
-  padding: 8px 14px;
-  background: transparent;
-  color: #b1c0bb;
-  font-size: 11px;
+  padding: 9px 20px;
+  background: #dbb37c;
+  color: #17292e;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .quit-game:hover {
-  border-color: #6e8b7c;
-  color: #e5e9e0;
+  border-color: #edc998;
+  background: #edc998;
 }
 
 .chapter-nav {
@@ -356,7 +378,7 @@ progress::-moz-progress-bar {
 }
 
 .map-scroll {
-  height: calc(100dvh - 175px);
+  height: calc(100dvh - 175px - var(--quit-banner-height));
   min-height: 510px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -901,6 +923,9 @@ progress::-moz-progress-bar {
   .preview-badge {
     font-size: 9px;
     padding: 6px 9px;
+  }
+  .quit-banner {
+    font-size: 11px;
   }
   .overworld {
     display: block;
