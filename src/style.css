@@ -229,18 +229,27 @@ progress::-moz-progress-bar {
   gap: 10px;
 }
 
+.quit-hint {
+  max-width: 26ch;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #a4b4b2;
+  text-align: right;
+}
+
 .quit-game {
-  border: 1px solid #35494d;
+  border: 1px solid #dbb37c;
   border-radius: 20px;
-  padding: 8px 14px;
-  background: transparent;
-  color: #b1c0bb;
-  font-size: 11px;
+  padding: 9px 20px;
+  background: #dbb37c;
+  color: #17292e;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .quit-game:hover {
-  border-color: #6e8b7c;
-  color: #e5e9e0;
+  border-color: #edc998;
+  background: #edc998;
 }
 
 .chapter-nav {
@@ -901,6 +910,9 @@ progress::-moz-progress-bar {
   .preview-badge {
     font-size: 9px;
     padding: 6px 9px;
+  }
+  .quit-hint {
+    display: none;
   }
   .overworld {
     display: block;
