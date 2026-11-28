@@ -174,5 +174,4 @@ Sprint 1 issues: https://github.com/itsgeorgema/cse110-project-team3/issues?q=la
 
 Released under the [MIT License](LICENSE). See
 [docs/licensing.md](docs/licensing.md) for why we chose it and for third-party
-licenses. Before adding outside code, assets, dependencies, or AI-generated
-code, read [CONTRIBUTING.md](CONTRIBUTING.md).
+licenses.

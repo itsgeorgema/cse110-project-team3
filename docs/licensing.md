@@ -2,15 +2,13 @@
 
 This project is released under the [MIT License](../LICENSE). This page
 explains why we chose it and lists the third-party software the game uses.
-The rules for adding outside code are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Why MIT
 
 - **It works with everything we depend on.** Our dependencies use MIT or
   Apache-2.0 (see the table below). Both are permissive, so we can ship them
-  under MIT as long as we keep their notices. A copyleft license such as GPL
-  is not needed, and choosing one would stop us from using code under more
-  restrictive terms later without relicensing.
+  under MIT as long as we keep their notices. None of them requires a
+  copyleft license such as GPL.
 - **It suits code written with a lot of AI help.** Much of this code was
   written with generative AI tools, which the course allows for the team
   project. In the US, text an AI generates without enough human authorship
@@ -32,8 +30,7 @@ domain dedications** (Unlicense, CC0) drop the warranty disclaimer, or are not
 meant for software.
 
 A license does not make copied code legal. If an AI tool reproduces
-someone else's licensed code, our MIT notice does not cover it. That is why
-[CONTRIBUTING.md](../CONTRIBUTING.md) has rules for AI-generated code.
+someone else's licensed code, our MIT notice does not cover it.
 
 Students hold copyright to their own work under UC San Diego policy. Each
 contributor keeps their copyright and licenses their contributions under MIT.
@@ -57,7 +54,7 @@ are under the SIL Open Font License 1.1. `src/style.css` loads them from Google
 Fonts, so we do not redistribute the font files.
 
 The repository has no third-party images, audio, or copied code snippets. If
-you add any, add a row here (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+you add any, add a row here.
 
 To check a dependency's license, read the `license` field in
 `node_modules/<package>/package.json`.
