@@ -119,6 +119,41 @@ test("closing the tab warns until the player quits", async ({ page }) => {
   await expect.poll(() => dialogs).toEqual(["beforeunload"]);
 });
 
+// Browsers do not let the page word the close-tab prompt, so the page says it (#133).
+const QUIT_REMINDER =
+  "Leaving the game? Use the Quit button instead of closing the tab, so you can save your progress.";
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 400, height: 800 },
+]) {
+  test(`a banner reminds players to leave with Quit at ${viewport.width}px wide`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await startWith(page, twoLevelsCleared);
+
+    const banner = page.getByText(QUIT_REMINDER);
+    await expect(banner).toBeVisible();
+    // The banner sits above the top bar, at the very top of the page.
+    expect((await banner.boundingBox())!.y).toBe(0);
+    const quit = page.getByRole("button", { name: "Quit", exact: true });
+    await expect(quit).toBeVisible();
+    await expect(quit).toHaveAccessibleDescription(QUIT_REMINDER);
+  });
+}
+
+test("the Quit banner does not make the desktop map page scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await startWith(page, twoLevelsCleared);
+  await expect(page.getByText(QUIT_REMINDER)).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollHeight),
+  ).toBeLessThanOrEqual(900);
+});
+
 test("Keep playing closes the quit dialog and returns focus", async ({
   page,
 }) => {
