@@ -19,6 +19,8 @@ current app has a story map that launches registered levels in a shared dialog.
   Quit button; `main.ts` supplies those actions (#3).
 - [`QuitDialog.ts`](./QuitDialog.ts) asks whether to keep or delete progress
   when quitting, then shows a goodbye screen with **Play again** (#3).
+- [`QuitHint.ts`](./QuitHint.ts) tells the player to use Quit and highlights
+  the button after they cancel the browser's close prompt (#133).
 - [`progressFile.ts`](./progressFile.ts) downloads an exported progress file
   named `escape-route-progress-YYYY-MM-DD.json`.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,

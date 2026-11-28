@@ -8,7 +8,8 @@ uses progression queries to control story-map navigation.
 
 - [`LeaveGuard.ts`](./LeaveGuard.ts) asks the browser to confirm closing or
   reloading the tab until the player quits through the Quit button (#3).
-  `arm()` and `disarm()` are idempotent. Browsers show their own prompt text.
+  `arm()` and `disarm()` are idempotent. Browsers show their own prompt text,
+  so an optional `onStay` callback runs if the player cancels the prompt (#133).
 
 - [`OverworldNavigation.ts`](./OverworldNavigation.ts) validates map selections
   against `OverworldGraph`, registered levels, and `ProgressionSystem`. It owns

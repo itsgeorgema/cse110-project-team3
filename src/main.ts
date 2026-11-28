@@ -23,6 +23,7 @@ import type { AttemptRecorder } from "./controller/GameController.ts";
 import { LeaveGuard } from "./controller/LeaveGuard.ts";
 import { downloadProgressFile } from "./view/progressFile.ts";
 import { QuitDialog } from "./view/QuitDialog.ts";
+import { QuitHint } from "./view/QuitHint.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -128,14 +129,17 @@ function resetProgress(): void {
   }
 }
 
-// Closing the tab asks the player to use Quit first (#3).
-const leaveGuard = new LeaveGuard(window);
+// Closing the tab asks the player to use Quit first (#3). If they stay, a
+// hint points them to the Quit button (#133).
+const quitHint = new QuitHint(document.body, container);
+const leaveGuard = new LeaveGuard(window, () => quitHint.show());
 leaveGuard.arm();
 const quitDialog = new QuitDialog(
   document.body,
   container,
   (choice) => {
     if (choice === "delete") resetProgress();
+    quitHint.hide();
     leaveGuard.disarm();
   },
   () => location.reload(),

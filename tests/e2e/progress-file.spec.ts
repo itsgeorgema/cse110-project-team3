@@ -119,6 +119,25 @@ test("closing the tab warns until the player quits", async ({ page }) => {
   await expect.poll(() => dialogs).toEqual(["beforeunload"]);
 });
 
+test("staying after the close warning points to the Quit button", async ({
+  page,
+}) => {
+  await startWith(page, twoLevelsCleared);
+  // Browsers only warn after the player has interacted with the page.
+  await page.getByRole("button", { name: "Quit" }).click();
+  await page.getByRole("button", { name: "Keep playing" }).click();
+
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  await page.close({ runBeforeUnload: true });
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Quit button" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Quit" })).toHaveClass(
+    /quit-game--highlight/,
+  );
+});
+
 test("Keep playing closes the quit dialog and returns focus", async ({
   page,
 }) => {

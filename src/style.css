@@ -230,17 +230,62 @@ progress::-moz-progress-bar {
 }
 
 .quit-game {
-  border: 1px solid #35494d;
+  border: 1px solid #dbb37c;
   border-radius: 20px;
-  padding: 8px 14px;
-  background: transparent;
-  color: #b1c0bb;
-  font-size: 11px;
+  padding: 9px 20px;
+  background: #dbb37c;
+  color: #17292e;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .quit-game:hover {
-  border-color: #6e8b7c;
+  border-color: #f0cf9e;
+  background: #f0cf9e;
+}
+
+/* Draws the eye to Quit after the player cancels closing the tab (#133). */
+.quit-game--highlight {
+  animation: quit-pulse 1.2s ease-out 3;
+}
+
+@keyframes quit-pulse {
+  from {
+    box-shadow: 0 0 0 0 rgb(219 179 124 / 80%);
+  }
+  to {
+    box-shadow: 0 0 0 14px rgb(219 179 124 / 0%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quit-game--highlight {
+    animation: none;
+    outline: 3px solid #f0cf9e;
+    outline-offset: 3px;
+  }
+}
+
+.quit-hint {
+  position: fixed;
+  top: 96px;
+  right: 24px;
+  z-index: 20;
+  max-width: min(340px, calc(100vw - 32px));
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #dbb37c;
+  border-radius: 8px;
+  background: #182c33;
   color: #e5e9e0;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+.quit-hint[hidden] {
+  display: none;
 }
 
 .chapter-nav {
@@ -881,6 +926,10 @@ progress::-moz-progress-bar {
 }
 
 @media (max-width: 600px) {
+  .quit-hint {
+    top: 76px;
+    right: 16px;
+  }
   .topbar {
     height: 65px;
     padding: 0 18px;
