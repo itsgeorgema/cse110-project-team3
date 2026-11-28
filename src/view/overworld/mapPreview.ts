@@ -72,8 +72,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The gate is just ahead and the car keeps speeding up. Use its starting speed, its acceleration and the time to find its average velocity and the distance to the gate.",
     chapter: 0,
-    x: 450,
-    y: 650,
+    x: 380,
+    y: 655,
   },
   {
     id: "crate-push",
