@@ -23,6 +23,8 @@ import type { AttemptRecorder } from "./controller/GameController.ts";
 import { LeaveGuard } from "./controller/LeaveGuard.ts";
 import { downloadProgressFile } from "./view/progressFile.ts";
 import { QuitDialog } from "./view/QuitDialog.ts";
+import { LicensesDialog } from "./view/LicensesDialog.ts";
+import { gameNotice, thirdPartyNotices } from "./view/licenseNotices.ts";
 
 // Composition root: the one place that builds the objects and wires them together.
 const container = document.querySelector<HTMLDivElement>("#app");
@@ -141,6 +143,13 @@ const quitDialog = new QuitDialog(
   () => location.reload(),
 );
 
+// Open source notices for the game and what it ships with (#35).
+const licensesDialog = new LicensesDialog(
+  document.body,
+  gameNotice,
+  thirdPartyNotices,
+);
+
 const navigation = new OverworldNavigation(
   new OverworldGraph(previewNodes, previewConnections),
   levelManager.listLevels(),
@@ -200,5 +209,6 @@ const map = new OverworldMap(
       return undefined;
     },
     quit: (trigger) => quitDialog.open(trigger),
+    showLicenses: (trigger) => licensesDialog.open(trigger),
   },
 );

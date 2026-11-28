@@ -3,18 +3,20 @@ import type { OverworldNavigation } from "../../controller/OverworldNavigation.t
 import { chapters, previewNodes } from "./mapPreview.ts";
 import type { MapNode } from "./mapPreview.ts";
 
-/** Progress file and quit actions from the sidebar and top bar (#3). */
+/** Progress file, quit (#3), and licenses (#35) actions from the sidebar and top bar. */
 export interface ProgressActions {
   downloadProgress(): void;
   /** Resolves to an error message to show, or undefined after a successful import. */
   importProgress(file: File): Promise<string | undefined>;
   quit(trigger: HTMLButtonElement): void;
+  showLicenses(trigger: HTMLButtonElement): void;
 }
 
 const noProgressActions: ProgressActions = {
   downloadProgress: () => {},
   importProgress: async () => undefined,
   quit: () => {},
+  showLicenses: () => {},
 };
 
 type ProgressMapNode = MapNode & {
@@ -84,7 +86,7 @@ export class OverworldMap {
     const selected = current;
     this.container.innerHTML = `
       <p class="quit-banner" id="quit-hint">Leaving the game? Use the <strong>Quit</strong> button instead of closing the tab, so you can save your progress.</p>
-      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="topbar-actions"><span class="preview-badge">Story map</span><button class="quit-game" type="button" aria-describedby="quit-hint">Quit</button></span></header>
+      <header class="topbar"><a class="wordmark" href="#" aria-label="Escape Route, top of map">ESCAPE ROUTE</a><span class="edition">A CIRCUS STORY</span><span class="topbar-actions"><span class="preview-badge">Story map</span><button class="show-licenses" type="button">Licenses</button><button class="quit-game" type="button" aria-describedby="quit-hint">Quit</button></span></header>
       <main class="overworld">
         <aside class="story-sidebar">
           <h1>The Great<br>Escape</h1>
@@ -188,6 +190,13 @@ export class OverworldMap {
       .querySelector<HTMLButtonElement>(".quit-game")!
       .addEventListener("click", (event) =>
         this.progressActions.quit(event.currentTarget as HTMLButtonElement),
+      );
+    this.container
+      .querySelector<HTMLButtonElement>(".show-licenses")!
+      .addEventListener("click", (event) =>
+        this.progressActions.showLicenses(
+          event.currentTarget as HTMLButtonElement,
+        ),
       );
   }
 
