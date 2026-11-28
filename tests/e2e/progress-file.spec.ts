@@ -138,6 +138,73 @@ test("staying after the close warning points to the Quit button", async ({
   );
 });
 
+/** True when the Quit hint is the topmost element at its own center. */
+function hintIsOnTop(page: Page) {
+  return page.evaluate(() => {
+    const hint = document.querySelector(".quit-hint")!;
+    const box = hint.getBoundingClientRect();
+    const top = document.elementFromPoint(
+      box.left + box.width / 2,
+      box.top + box.height / 2,
+    );
+    return top !== null && hint.contains(top);
+  });
+}
+
+test("the Quit hint shows above an open level panel", async ({ page }) => {
+  await startWith(page, twoLevelsCleared);
+  await page
+    .getByRole("button", { name: /Level 3: Outrun the ringmaster/ })
+    .click();
+  await page.getByRole("button", { name: "Start level" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  await page.close({ runBeforeUnload: true });
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Quit button" }),
+  ).toBeVisible();
+  await expect.poll(() => hintIsOnTop(page)).toBe(true);
+});
+
+test("a modal opened while the Quit hint shows stays below it", async ({
+  page,
+}) => {
+  await startWith(page, twoLevelsCleared);
+  await page.getByRole("button", { name: "Quit" }).click();
+  await page.getByRole("button", { name: "Keep playing" }).click();
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  await page.close({ runBeforeUnload: true });
+  await expect(
+    page.getByRole("status").filter({ hasText: "Quit button" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Quit" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Quit the game?" }),
+  ).toBeVisible();
+  await expect.poll(() => hintIsOnTop(page)).toBe(true);
+
+  // Closing the modal brings the hint back to the page, still visible.
+  await page.getByRole("button", { name: "Keep playing" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Quit button" }),
+  ).toBeVisible();
+});
+
+test("moving the pointer toward the tabs shows the Quit hint", async ({
+  page,
+}) => {
+  await startWith(page, twoLevelsCleared);
+  await page.mouse.move(400, 200);
+  await page.mouse.move(400, -10);
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Quit button" }),
+  ).toBeVisible();
+});
+
 test("Keep playing closes the quit dialog and returns focus", async ({
   page,
 }) => {

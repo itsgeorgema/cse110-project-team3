@@ -60,36 +60,40 @@ describe("LeaveGuard (#3)", () => {
     expect(tab.closeTab().prompted).toBe(true);
   });
 
-  it("runs onStay after the prompt, once the player stays (#133)", () => {
+  it("runs onWarn at once and onStay after the prompt (#133)", () => {
     const tab = fakeWindow();
     const pending: (() => void)[] = [];
+    let warned = 0;
     let stayed = 0;
-    const guard = new LeaveGuard(
-      tab.target,
-      () => stayed++,
-      (callback) => pending.push(callback),
-    );
+    const guard = new LeaveGuard(tab.target, {
+      onWarn: () => warned++,
+      onStay: () => stayed++,
+      schedule: (callback) => pending.push(callback),
+    });
     guard.arm();
     tab.closeTab();
-    // Nothing runs while the browser prompt is still open.
+    expect(warned).toBe(1);
+    // onStay waits until the browser prompt has closed.
     expect(stayed).toBe(0);
     pending.forEach((callback) => callback());
     expect(stayed).toBe(1);
   });
 
-  it("does not run onStay once disarmed", () => {
+  it("runs neither callback once disarmed", () => {
     const tab = fakeWindow();
     const pending: (() => void)[] = [];
+    let warned = 0;
     let stayed = 0;
-    const guard = new LeaveGuard(
-      tab.target,
-      () => stayed++,
-      (callback) => pending.push(callback),
-    );
+    const guard = new LeaveGuard(tab.target, {
+      onWarn: () => warned++,
+      onStay: () => stayed++,
+      schedule: (callback) => pending.push(callback),
+    });
     guard.arm();
     guard.disarm();
     tab.closeTab();
     expect(pending).toHaveLength(0);
+    expect(warned).toBe(0);
     expect(stayed).toBe(0);
   });
 });

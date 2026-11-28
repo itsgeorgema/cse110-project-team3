@@ -129,11 +129,20 @@ function resetProgress(): void {
   }
 }
 
-// Closing the tab asks the player to use Quit first (#3). If they stay, a
-// hint points them to the Quit button (#133).
+// Closing the tab asks the player to use Quit first (#3). A hint points them
+// to the Quit button as the warning shows and again if they stay (#133).
 const quitHint = new QuitHint(document.body, container);
-const leaveGuard = new LeaveGuard(window, () => quitHint.show());
+const leaveGuard = new LeaveGuard(window, {
+  onWarn: () => quitHint.show(),
+  onStay: () => quitHint.show(),
+});
 leaveGuard.arm();
+// Browsers may not repaint behind their prompt, so also show the hint when
+// the pointer leaves the page toward the tabs and the close button.
+document.addEventListener("mouseout", (event) => {
+  if (leaveGuard.isArmed && !event.relatedTarget && event.clientY <= 0)
+    quitHint.show();
+});
 const quitDialog = new QuitDialog(
   document.body,
   container,

@@ -269,9 +269,7 @@ progress::-moz-progress-bar {
 
 .quit-hint {
   position: fixed;
-  top: 96px;
-  right: 24px;
-  z-index: 20;
+  inset: 96px 24px auto auto;
   max-width: min(340px, calc(100vw - 32px));
   margin: 0;
   padding: 12px 16px;
@@ -282,10 +280,6 @@ progress::-moz-progress-bar {
   font-size: 14px;
   line-height: 1.5;
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
-}
-
-.quit-hint[hidden] {
-  display: none;
 }
 
 .chapter-nav {
@@ -927,8 +921,7 @@ progress::-moz-progress-bar {
 
 @media (max-width: 600px) {
   .quit-hint {
-    top: 76px;
-    right: 16px;
+    inset: 76px 16px auto auto;
   }
   .topbar {
     height: 65px;
