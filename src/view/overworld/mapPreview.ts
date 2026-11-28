@@ -1,8 +1,6 @@
 import type { LevelAddress } from "../../model/LevelAddress.ts";
 
-/** Map locations reference real configs where available. Remaining circus-preview
- * addresses are upcoming locations and must never be passed to a level factory.
- */
+/** Map locations, each bound to a real level config. */
 export interface MapNode {
   readonly id: string;
   readonly level: LevelAddress;
@@ -23,12 +21,12 @@ export const chapters = [
   {
     title: "After the applause",
     subtitle: "The lights go out. The adventure goes on.",
-    y: 650,
+    y: 760,
   },
   {
     title: "The other side",
     subtitle: "Somewhere beyond the fence, a new beginning.",
-    y: 1230,
+    y: 1310,
   },
 ] as const;
 
@@ -64,7 +62,7 @@ export const previewNodes: readonly MapNode[] = [
       "The ringmaster’s guards have spotted your escape. Use the car’s initial velocity, final velocity, and elapsed time to calculate its acceleration.",
     chapter: 0,
     x: 280,
-    y: 565,
+    y: 520,
   },
   {
     id: "main-gate",
@@ -74,8 +72,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The gate is just ahead and the car keeps speeding up. Use its starting speed, its acceleration and the time to find its average velocity and the distance to the gate.",
     chapter: 0,
-    x: 420,
-    y: 620,
+    x: 450,
+    y: 650,
   },
   {
     id: "crate-push",
@@ -86,7 +84,7 @@ export const previewNodes: readonly MapNode[] = [
       "A heavy circus crate blocks the path to the exit gate. Use its mass and the acceleration you need to work out how hard to push, so the crate slides right up to the gate.",
     chapter: 1,
     x: 480,
-    y: 680,
+    y: 790,
   },
   {
     id: "midway",
@@ -97,7 +95,7 @@ export const previewNodes: readonly MapNode[] = [
       "The crate now rests on the ground beside the exit gate. Before planning your next move, calculate its gravitational force, the ground’s normal force, and the net force.",
     chapter: 1,
     x: 440,
-    y: 890,
+    y: 1000,
   },
   {
     id: "wheel",
@@ -108,7 +106,7 @@ export const previewNodes: readonly MapNode[] = [
       "The human cannonball’s cannon offers a daring route out. Split the launch velocity into its horizontal and vertical parts and write how each changes over time, so the flight lands in the safety net.",
     chapter: 1,
     x: 245,
-    y: 910,
+    y: 1020,
   },
   {
     id: "mid-flight",
@@ -119,7 +117,7 @@ export const previewNodes: readonly MapNode[] = [
       "Halfway through the flight, a spotlight catches you in the air. Work out your average velocity and how far across and up you have flown at that moment, so the crew knows where to aim the net.",
     chapter: 1,
     x: 120,
-    y: 1045,
+    y: 1155,
   },
   {
     id: "tent-roof",
@@ -130,7 +128,7 @@ export const previewNodes: readonly MapNode[] = [
       "A torn gap in the tent roof is the only way past the guards. The cannon is fixed at 45 degrees, so work out the launch speed that carries the flight through the net hanging below the gap.",
     chapter: 1,
     x: 300,
-    y: 1115,
+    y: 1225,
   },
   {
     id: "fence",
@@ -141,7 +139,7 @@ export const previewNodes: readonly MapNode[] = [
       "An abandoned roller coaster winds toward the edge of the carnival. Work out the cart’s acceleration at the top of the loop, so it stays on the track and carries your escape around.",
     chapter: 2,
     x: 420,
-    y: 1340,
+    y: 1420,
   },
   {
     id: "loop-forces",
@@ -152,7 +150,7 @@ export const previewNodes: readonly MapNode[] = [
       "Upside down at the top of the loop, the cart is held in its circle by gravity and the track. Work out the acceleration, the net force, and the normal and gravitational forces on the cart, so it holds on all the way round.",
     chapter: 2,
     x: 210,
-    y: 1470,
+    y: 1550,
   },
   {
     id: "loop-top",
@@ -163,18 +161,7 @@ export const previewNodes: readonly MapNode[] = [
       "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
     chapter: 2,
     x: 390,
-    y: 1480,
-  },
-  {
-    id: "dawn",
-    level: { gameId: "circus-preview", levelId: 7 },
-    title: "The final swing",
-    subtitle: "Coming soon · Momentum and the trapeze",
-    story:
-      "One last trapeze swing stands between you and freedom. Explore momentum and time your release for a final leap beyond the circus fence.",
-    chapter: 2,
-    x: 330,
-    y: 1625,
+    y: 1560,
   },
 ];
 
@@ -190,5 +177,4 @@ export const previewConnections = [
   ["tent-roof", "fence"],
   ["fence", "loop-forces"],
   ["loop-forces", "loop-top"],
-  ["loop-top", "dawn"],
 ] as const;

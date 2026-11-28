@@ -29,8 +29,8 @@ Do not close the entire issue until its animation acceptance criteria are met.
   query before resetting navigation. `LevelSession` still owns level loading.
 
 The existing `mapPreview.ts` file is the single source of node positions, story
-metadata, edges, and level bindings. Its first four nodes reference registered
-levels; the last three remain upcoming locations. The graph is constructed from
+metadata, edges, and level bindings. Every node references a registered
+level. The graph is constructed from
 that data once in the composition root. The graph's node order supplies the
 existing linear progression order; graph connections independently control
 which moves are possible. A branching unlock policy would require separate

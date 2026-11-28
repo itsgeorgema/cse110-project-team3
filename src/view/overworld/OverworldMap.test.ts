@@ -52,17 +52,35 @@ describe("overworld data integration", () => {
       "locked",
       "locked",
       "locked",
-      "locked",
     ]);
   });
+  it("binds every map location to an implemented level", () => {
+    const catalog = createLevelCatalog();
+    for (const node of previewNodes)
+      expect(
+        catalog.some(
+          (level) =>
+            level.gameId === node.level.gameId &&
+            level.levelId === node.level.levelId,
+        ),
+      ).toBe(true);
+  });
   it("keeps unimplemented locations out of navigation after completing earlier levels", () => {
+    const placeholder = {
+      ...previewNodes[0],
+      id: "placeholder",
+      level: { gameId: "circus-preview", levelId: 7 },
+    };
     const navigation = new OverworldNavigation(
-      new OverworldGraph(previewNodes, previewConnections),
+      new OverworldGraph(
+        [...previewNodes, placeholder],
+        [...previewConnections, ["loop-top", "placeholder"]],
+      ),
       createLevelCatalog(),
       { isCompleted: () => true },
     );
     expect(navigation.current.id).toBe("loop-top");
-    expect(navigation.selectLevel(previewNodes[12].level)).toMatchObject({
+    expect(navigation.selectLevel(placeholder.level)).toMatchObject({
       ok: false,
       reason: "unimplemented",
     });

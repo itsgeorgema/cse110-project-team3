@@ -269,38 +269,3 @@ test("a config rejected by the format check never renders and can be retried", a
     dialog.getByLabel("velocity (m/s)", { exact: true }),
   ).toBeVisible();
 });
-
-test("an unlocked location without a registered config stays unavailable", async ({
-  page,
-}) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "escape-route-progress",
-      JSON.stringify({
-        schemaVersion: 1,
-        completedLevels: [
-          ...[1, 2, 3, 4].map((levelId) => ({ gameId: "kinematics", levelId })),
-          { gameId: "netForce", levelId: 1 },
-          { gameId: "netForce", levelId: 2 },
-          { gameId: "cannonTrajectory", levelId: 1 },
-          { gameId: "cannonTrajectory", levelId: 2 },
-          { gameId: "cannonTrajectory", levelId: 3 },
-          { gameId: "circularMotion", levelId: 1 },
-          { gameId: "circularMotion", levelId: 2 },
-          { gameId: "circularMotion", levelId: 3 },
-        ],
-      }),
-    );
-  });
-  await page.goto("./");
-  await page
-    .getByRole("button", { name: /Level 13: The final swing/ })
-    .dispatchEvent("click");
-  await expect(page.locator(".navigation-status")).toHaveText(
-    "This level is coming soon.",
-  );
-  await expect(
-    page.getByRole("button", { name: /Level 12: Over the top/ }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("dialog")).not.toBeVisible();
-});
