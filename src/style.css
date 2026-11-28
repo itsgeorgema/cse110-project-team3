@@ -521,9 +521,12 @@ progress::-moz-progress-bar {
 
 .map-node[aria-pressed="true"] .node-label {
   background: #182d34;
+  border-color: #c9a66b;
   box-shadow: 0 3px 10px #0c1a2260;
 }
 
+/* Unselected labels get their own backdrop (lighter than the selected one)
+   so trees, tents and the river behind them can't make the text hard to read. */
 .node-label {
   display: flex;
   align-items: center;
@@ -531,7 +534,10 @@ progress::-moz-progress-bar {
   gap: 5px;
   margin-top: 12px;
   padding: 9px 12px;
+  border: 1px solid #4a6a6d;
   border-radius: 5px;
+  background: rgb(44 71 77 / 92%);
+  box-shadow: 0 2px 6px #0c1a2240;
   white-space: nowrap;
 }
 

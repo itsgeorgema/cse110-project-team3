@@ -120,3 +120,60 @@ test("a locked saved position falls back to an available level", async ({
     page.getByRole("dialog", { name: "The getaway car" }),
   ).toBeVisible();
 });
+
+// Labels sit over trees, tents and the river, so each one needs its own
+// backdrop, and unselected labels must still look different from the selected one (#76).
+test("every map label has a backdrop that differs from the selected one", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  // Clear Level 1 so Level 2 can be selected.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "escape-route-progress",
+      JSON.stringify({
+        schemaVersion: 1,
+        completedLevels: [{ gameId: "kinematics", levelId: 1 }],
+        currentLevel: { gameId: "kinematics", levelId: 1 },
+      }),
+    );
+  });
+  await page.goto("./");
+  const labelStyle = (node: string) =>
+    page.locator(`[data-node="${node}"] .node-label`).evaluate((label) => {
+      const style = getComputedStyle(label);
+      return {
+        background: style.backgroundColor,
+        border: style.borderTopColor,
+      };
+    });
+  const alpha = (color: string) => {
+    const parts = color.match(/[\d.]+/g)!.map(Number);
+    return parts.length === 4 ? parts[3] : 1;
+  };
+
+  const nodes = await page
+    .locator(".map-node")
+    .evaluateAll((buttons) => buttons.map((b) => b.getAttribute("data-node")!));
+  expect(nodes.length).toBeGreaterThan(1);
+  for (const node of nodes) {
+    expect(alpha((await labelStyle(node)).background)).toBeGreaterThanOrEqual(
+      0.9,
+    );
+  }
+
+  const [first, second] = nodes;
+  const selected = await labelStyle(first);
+  const unselected = await labelStyle(second);
+  expect(unselected.background).not.toBe(selected.background);
+  expect(unselected.border).not.toBe(selected.border);
+
+  // The selected look follows the selection.
+  await page.locator(`[data-node="${second}"]`).click();
+  await expect(page.locator(`[data-node="${second}"]`)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(await labelStyle(second)).toEqual(selected);
+  expect(await labelStyle(first)).toEqual(unselected);
+});
