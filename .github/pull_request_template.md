@@ -11,6 +11,11 @@
 - [ ] Critical UI changes have browser coverage where applicable.
 - [ ] I checked that the tests fail when the behavior they protect is broken.
 
+## Licensing
+
+- [ ] Any outside code, assets, or new dependencies have a compatible license, are credited, and are listed in `docs/licensing.md` (see `CONTRIBUTING.md`).
+- [ ] I checked that AI-generated code does not copy licensed code.
+
 ## Test exemption rationale
 
 <!-- Leave empty when tests changed. Otherwise explain why new tests are unnecessary,
