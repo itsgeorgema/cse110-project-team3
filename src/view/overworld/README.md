@@ -10,9 +10,9 @@ scope are recorded in [`docs/overworld-preview.md`](../../../docs/overworld-prev
 - `OverworldMap.ts` renders native HTML controls and inline SVG scenery and route
   lines. It reads coordinates/connections from `OverworldGraph` and delegates
   status and selection to `OverworldNavigation`, which uses `ProgressionSystem`.
-- `mapPreview.ts` binds the first three locations to kinematics levels 1–3 and
-  the fourth to the implemented net-force level 2. Remaining locations retain
-  unregistered placeholder addresses. Positions use a 680 × 1770 reference map.
+- `mapPreview.ts` binds each of the twelve locations to a registered level.
+  The unbuilt "The final swing" placeholder was removed (#161); add a location
+  only once its level exists. Positions use a 680 × 1770 reference map.
 - Available registered locations expose **Start level** or **Replay level**.
   The composition root opens `LevelPanel` and loads through `LevelSession`.
   Locked locations remain disabled; unregistered locations cannot launch.

@@ -16,11 +16,12 @@ and route lines. The existing Konva stage is not mounted on this screen.
 fixtures:
 
 - `previewNodes`: marker IDs, positions on a 680 × 1770 reference map, story
-  copy, chapter membership, and placeholder level addresses.
+  copy, chapter membership, and level addresses.
 - `previewConnections`: pairs of marker IDs used to draw the route.
 - `chapters`: chapter labels and scroll destinations.
 
-The `circus-preview` game ID and numbered levels are not registered level data.
+Old saves may still contain `circus-preview` addresses; they are not registered
+level data and no map location uses them.
 The `cleared`, `current`, and `locked` states and progress count are display
 state. `OverworldMap` marks supplied completed addresses as cleared, then uses
 fixture order to choose the current and locked markers. It does not call

@@ -17,8 +17,7 @@ A loading failure displays a message and **Try again**. The return button is
 always available. There is no separate practice picker or query-string launch
 path that bypasses map availability.
 
-The first three locations load kinematics levels 1–3; the fourth loads the
-implemented net-force level 2. Later locations are unregistered placeholders.
+Every map location loads a registered level; see `levelCatalog.ts` for the list.
 New saves have no completions, and old preview achievements do not unlock real
 levels. Answer checking works before animation exists. Recording completion
 and unlocking subsequent levels after playback remain #80 integration work;
