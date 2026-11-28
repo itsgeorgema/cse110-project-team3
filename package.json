@@ -2,6 +2,7 @@
   "name": "cse110-project-team3",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.12"

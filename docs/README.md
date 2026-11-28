@@ -23,6 +23,8 @@ approaches. Update the relevant note with the implementing change.
 
 - [Testing plan](./testing/README.md): existing coverage, issue-linked test
   acceptance, and guidance for adding tests with implemented features.
+- [Licensing](./licensing.md): why the project is MIT-licensed and which
+  third-party software it uses, with licenses.
 - [Repository overview, scripts, CI, and deployment](../README.md): local setup,
   checks, browser tests, GitHub Actions, and Pages deployment.
 
