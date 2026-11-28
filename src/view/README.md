@@ -15,10 +15,14 @@ current app has a story map that launches registered levels in a shared dialog.
   map with native HTML controls and inline SVG scenery. Marker selection changes
   the current location only when `OverworldNavigation` accepts the destination.
   The controller supplies progression status and validated graph connections.
-  The sidebar offers Reset, Download and Import progress, and the top bar a
-  Quit button; `main.ts` supplies those actions (#3).
+  The sidebar offers Reset, Download and Import progress, and the top bar
+  Licenses and Quit buttons; `main.ts` supplies those actions (#3, #35).
 - [`QuitDialog.ts`](./QuitDialog.ts) asks whether to keep or delete progress
   when quitting, then shows a goodbye screen with **Play again** (#3).
+- [`LicensesDialog.ts`](./LicensesDialog.ts) lists the game's license and the
+  open source software it uses, from the top bar's **Licenses** button (#35).
+  [`licenseNotices.ts`](./licenseNotices.ts) holds the entries and imports each
+  bundled package's license text. See [licensing](../../docs/licensing.md).
 - [`progressFile.ts`](./progressFile.ts) downloads an exported progress file
   named `escape-route-progress-YYYY-MM-DD.json`.
 - [`overworld/mapPreview.ts`](./overworld/mapPreview.ts) contains story copy,

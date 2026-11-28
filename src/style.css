@@ -265,6 +265,20 @@ progress::-moz-progress-bar {
   background: #edc998;
 }
 
+.show-licenses {
+  border: 1px solid #6e8b7c;
+  border-radius: 20px;
+  padding: 9px 16px;
+  background: transparent;
+  color: #e5e9e0;
+  font-size: 12px;
+}
+
+.show-licenses:hover {
+  border-color: #dbb37c;
+  color: #edc998;
+}
+
 .chapter-nav {
   border-top: 1px solid #2c3d42;
 }
@@ -1430,4 +1444,88 @@ progress::-moz-progress-bar {
 .quit-screen p {
   color: #a6b7b3;
   margin: 0 0 16px;
+}
+
+.licenses-dialog {
+  color: #e5e9e0;
+  background: #182c33;
+  border: 1px solid #6e8b7c;
+  border-radius: 8px;
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: clamp(20px, 4vw, 32px);
+}
+.licenses-dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+.licenses-dialog h2 {
+  margin-top: 0;
+}
+.licenses-dialog h3 {
+  margin: 24px 0 8px;
+  color: #a6b7b3;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.licenses-dialog p {
+  line-height: 1.6;
+}
+.licenses-dialog a {
+  color: #edc998;
+}
+.license-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.license-list li {
+  padding: 12px 0;
+  border-top: 1px solid #2c3d42;
+}
+.license-entry-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.license-badge {
+  border: 1px solid #6e8b7c;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #a6b7b3;
+  font-size: 11px;
+  font-weight: 500;
+}
+.licenses-dialog .license-use {
+  margin: 4px 0;
+  color: #a6b7b3;
+  font-size: 13px;
+}
+.licenses-dialog summary,
+.license-text-link {
+  font-size: 13px;
+  cursor: pointer;
+}
+.licenses-dialog pre {
+  overflow-x: auto;
+  max-height: 260px;
+  margin: 8px 0 0;
+  padding: 12px;
+  border-radius: 4px;
+  background: #10201f;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.licenses-close {
+  margin-top: 20px;
+  background: #dbb37c;
+  border: 1px solid #dbb37c;
+  border-radius: 4px;
+  padding: 10px 16px;
+  color: #17292e;
+  font-weight: 600;
 }

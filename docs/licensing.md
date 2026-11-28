@@ -2,6 +2,8 @@
 
 This project is released under the [MIT License](../LICENSE). This page
 explains why we chose it and lists the third-party software the game uses.
+Players see the same list, with each bundled package's full license text,
+from the **Licenses** button in the map's top bar (#35).
 
 ## Why MIT
 
@@ -55,6 +57,14 @@ Fonts, so we do not redistribute the font files.
 
 The repository has no third-party images, audio, or copied code snippets. If
 you add any, add a row here.
+
+When you add something players get, such as a runtime dependency, a font, or
+an asset, also add it to
+[`src/view/licenseNotices.ts`](../src/view/licenseNotices.ts) so it appears on
+the in-game Licenses page. Bundled packages import their `LICENSE` file there
+with `?raw`, because MIT requires shipping the copyright and permission
+notice. `licenseNotices.test.ts` fails if a package in `dependencies` has no
+notice.
 
 To check a dependency's license, read the `license` field in
 `node_modules/<package>/package.json`.
