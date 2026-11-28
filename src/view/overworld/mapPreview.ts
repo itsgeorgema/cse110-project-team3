@@ -72,8 +72,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The gate is just ahead and the car keeps speeding up. Use its starting speed, its acceleration and the time to find its average velocity and the distance to the gate.",
     chapter: 0,
-    x: 450,
-    y: 650,
+    x: 380,
+    y: 655,
   },
   {
     id: "crate-push",
@@ -161,7 +161,7 @@ export const previewNodes: readonly MapNode[] = [
       "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
     chapter: 2,
     x: 340,
-    y: 1625,
+    y: 1605,
   },
 ];
 

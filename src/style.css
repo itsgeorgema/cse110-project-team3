@@ -649,7 +649,7 @@ progress::-moz-progress-bar {
 
 .map-ending {
   position: absolute;
-  bottom: 35px;
+  bottom: 20px;
   width: 100%;
   text-align: center;
   font-size: 8px;
