@@ -160,8 +160,8 @@ export const previewNodes: readonly MapNode[] = [
     story:
       "The coaster’s last loop leaves no room for error. At the top, only gravity and the track hold the cart in its circle, so work out the slowest speed that keeps it on the track instead of falling off.",
     chapter: 2,
-    x: 390,
-    y: 1560,
+    x: 340,
+    y: 1625,
   },
 ];
 

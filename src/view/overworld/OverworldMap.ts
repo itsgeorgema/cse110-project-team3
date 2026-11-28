@@ -235,6 +235,7 @@ export class OverworldMap {
       <g transform="translate(470 1130)" stroke="#75908c" stroke-width="3" fill="none"><circle r="66"/><circle r="7"/><path d="m0 0-35 105M0 0l35 105M-66 0H66M0-66V66M-47-47l94 94M-47 47l94-94"/><g fill="#ae9473" stroke="#ae9473"><rect x="-11" y="-74" width="22" height="14" rx="4"/><rect x="-75" y="-4" width="22" height="14" rx="4"/><rect x="53" y="-4" width="22" height="14" rx="4"/></g></g>
       <g transform="translate(78 1260) rotate(-8)" fill="#7f8d7e"><path d="M0 0h110v8H0zm0 22h110v8H0z"/><path d="M8-12h7v56H8zm30 0h7v56h-7zm30 0h7v56h-7zm30 0h7v56h-7z"/></g>
       <g fill="#6e8b7c"><path d="m130 280 4-12 4 12m-17 2 2-8 3 8M520 840l4-12 4 12m-17 2 2-8 3 8M145 1440l4-12 4 12m-17 2 2-8 3 8"/></g>
+      <g transform="translate(450 1570)" stroke="#a0b5a1" fill="none" stroke-width="2"><circle r="30"/><path d="M-48 0h96M0-48v96M-34-34l68 68M-34 34l68-68"/></g>
     </svg>`;
   }
 }
